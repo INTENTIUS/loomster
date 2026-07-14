@@ -8,7 +8,10 @@
     "tsc": "tsc --noEmit",
     "lint": "chant lint .",
     "test": "vitest run",
-    "build": "npm run tsc"
+    "build": "npm run tsc",
+    "synth:shared-foundation": "chant build src/shared-foundation --lexicon aws -o dist/shared-foundation.template.json",
+    "synth:downstream-stub": "chant build src/downstream-stub --lexicon aws -o dist/downstream-stub.template.json",
+    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub"
   },
   "dependencies": {
     "@intentius/chant": "file:../chant/packages/core",

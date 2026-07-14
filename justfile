@@ -20,5 +20,9 @@ lint:
 test:
     npx vitest run
 
+# Synthesize the shared-foundation + downstream-stub CFN templates into dist/.
+synth:
+    npm run synth
+
 # Everything CI-relevant.
 check: build lint test
