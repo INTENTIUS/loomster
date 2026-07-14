@@ -1,0 +1,23 @@
+{
+  "name": "loom-on-chant",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Production deployment of awslabs/loom (pinned v1.6.0) on chant — component-based, tiered light/production/production-ha, generated CI.",
+  "scripts": {
+    "tsc": "tsc --noEmit",
+    "lint": "chant lint .",
+    "test": "vitest run",
+    "build": "npm run tsc"
+  },
+  "dependencies": {
+    "@intentius/chant": "file:../chant/packages/core",
+    "@intentius/chant-lexicon-aws": "file:../chant/lexicons/aws"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  }
+}
