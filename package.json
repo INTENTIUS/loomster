@@ -11,7 +11,8 @@
     "build": "npm run tsc",
     "synth:shared-foundation": "chant build src/shared-foundation --lexicon aws -o dist/shared-foundation.template.json",
     "synth:downstream-stub": "chant build src/downstream-stub --lexicon aws -o dist/downstream-stub.template.json",
-    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub"
+    "synth:loom-db": "chant build src/loom-db --lexicon aws -o dist/loom-db.template.json",
+    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub && npm run synth:loom-db"
   },
   "dependencies": {
     "@intentius/chant": "file:../chant/packages/core",
