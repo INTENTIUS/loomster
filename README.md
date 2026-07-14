@@ -40,6 +40,18 @@ step from CI. Until then, `chant` must be checked out as a sibling directory
 (`../chant` relative to this repo) for `file:` resolution to work — CI does
 this explicitly (see `.github/workflows/ci.yml`).
 
+A **fresh** sibling `chant` checkout isn't usable as-is — `file:` linking only
+symlinks the package itself, not its own dependencies or generated code:
+
+```
+cd ../chant && npm install               # chant's own deps (zod, tsx, typescript, ...)
+cd ../chant/lexicons/aws && npm run generate   # codegen (gitignored src/generated/)
+```
+
+If you already have a `chant` checkout you've worked in before, it likely
+already has both — this only bites a genuinely fresh clone (which is exactly
+what CI does on every run).
+
 ## Develop
 
 ```
