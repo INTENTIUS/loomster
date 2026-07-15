@@ -26,7 +26,10 @@
     "generate:github": "chant build --components --generate github -o .github/workflows/components.yml",
     "ops:build": "chant build ops",
     "export-bundle": "bash scripts/export-bundle.sh",
-    "vendor": "bash scripts/vendor-loom.sh"
+    "vendor": "bash scripts/vendor-loom.sh",
+    "local-up": "bash scripts/local/local-up.sh",
+    "local-down": "bash scripts/local/local-down.sh",
+    "synth:local": "chant build src/local --lexicon docker -o dist/local/docker-compose.yml"
   },
   "dependencies": {
     "@intentius/chant": "^0.18.17",

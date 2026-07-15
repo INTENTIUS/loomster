@@ -7,7 +7,7 @@ import type { ChantConfig } from "@intentius/chant";
 const loomEnv = process.env.LOOM_ENV ?? "dev";
 
 export default {
-  lexicons: ["aws", "temporal"],
+  lexicons: ["aws", "temporal", "docker"],
   // Whatever LOOM_ENV this build/lint/lifecycle invocation targets is the
   // only allowed environment — same single-deployment-at-a-time convention
   // every src/*/params.ts file already follows.
@@ -50,6 +50,16 @@ export default {
         // name, tier name) — again, not a composite prop expression.
         files: ["scripts/**"],
         rules: { EVL002: "off", EVL003: "off", EVL004: "off" },
+      },
+      {
+        // src/local/** is the docker-lexicon local-run compose graph (#49,
+        // epic #45) — Service/Network props for `docker-compose.yml`, not AWS
+        // CloudFormation composites. They use the docker lexicon's own `env()`
+        // interpolation (resolved by docker compose at runtime as `${VAR}`),
+        // which chant's AWS-oriented EVL static-evaluability rules misflag as
+        // non-literal resource-constructor properties.
+        files: ["src/local/**"],
+        rules: { EVL001: "off", EVL002: "off", EVL003: "off", EVL004: "off" },
       },
     ],
   },
