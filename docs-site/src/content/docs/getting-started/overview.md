@@ -3,9 +3,11 @@ title: What loomster is
 description: Component table, real wins vs. parity with Loom's own SAM deploy, org topology, and known gaps — the honest picture before you start the tutorial.
 ---
 
-loomster is the production deployment of [awslabs/loom](https://github.com/awslabs/loom) on [chant](https://intentius.io/chant) — component-based, tiered (`light` / `production` / `production-ha`), with generated CI and a parameterization/naming scheme that lets multiple Loom instances coexist in one or many AWS accounts without collision. Pinned to Loom `v1.6.0`, a moving `as-is` AWS Labs sample — breaking changes are expected upstream between versions.
+loomster is typed, tiered infrastructure-as-code for [awslabs/loom](https://github.com/awslabs/loom) on [chant](https://intentius.io/chant) — component-based, tiered (`light` / `production` / `production-ha`), with generated CI and a parameterization/naming scheme that lets multiple Loom instances coexist in one or many AWS accounts without collision. Pinned to Loom `v1.6.0`, a moving `as-is` AWS Labs sample — breaking changes are expected upstream between versions.
 
-This page is the short version: what's here, what's a genuine improvement over Loom's own deploy, what's just parity dressed up as a win, and where the edges are today. The [Tutorial](/getting-started/tutorial/) is the hands-on walkthrough; this page is the map.
+The full six-component stack builds Loom's real images and deploys end to end on a local emulator ([Floci](https://floci.io), light tier), and the synthesized CloudFormation is fidelity-audited against Loom's own `v1.6.0` templates. A real-AWS end-to-end run — the bar for calling this a production deployment a team has run for real — is still pending; see [Known gaps](#known-gaps).
+
+This page is the short version: what's here, what's a genuine improvement over Loom's own deploy, what's just parity dressed up as a win, and where the edges are today. The [Tutorial](/loomster/getting-started/tutorial/) is the hands-on walkthrough; this page is the map.
 
 ## Components
 
@@ -42,7 +44,7 @@ Loom's own deploy today is a manual, multi-step SAM process behind a `DEPLOYMENT
 - **"No state file."** CloudFormation already manages state as a service — that's true of vanilla SAM too. It's a real advantage over a Terraform-style state file, but it isn't something chant adds on top of SAM.
 - **Walk-away / spec-true.** chant emits standard CloudFormation and stops. SAM does exactly the same thing. The actual difference being argued for is the authoring and orchestration path that produces the template, not the fact that the output format is CloudFormation.
 
-See the Tutorial's [Positioning, honestly](/getting-started/tutorial/#positioning-honestly) section for the full argument.
+See the Tutorial's [Positioning, honestly](/loomster/getting-started/tutorial/#positioning-honestly) section for the full argument.
 
 ## Org topology
 
@@ -53,16 +55,17 @@ Loom is one control plane with **logical** (group-based) multi-tenancy, not hard
 
 **Rule of thumb: groups inside a boundary, a new Loom per boundary.** If the answer to "should these two teams be able to see each other's Loom resources at all, ever" is no, that's a topology (instance/account) decision, not a group. If the answer is "yes, but scoped," that's a group plus an ABAC tag, inside one Loom.
 
-See the Tutorial's [Org topology](/getting-started/tutorial/#org-topology) section for the runnable proof (`adoption.test.ts`) that the two axes are genuinely orthogonal.
+See the Tutorial's [Org topology](/loomster/getting-started/tutorial/#org-topology) section for the runnable proof (`adoption.test.ts`) that the two axes are genuinely orthogonal.
 
 ## Known gaps
 
 Documented here rather than papered over, so a team adopting this today knows exactly where the edges are:
 
+- **Real-AWS end-to-end is not yet run.** The full stack deploys 7/7 on the Floci emulator (light tier), but the `production` / `production-ha` tiers have only been synthesized and fidelity-audited, not applied against a live AWS account (`INTENTIUS/loomster#22`). Floci proves the control plane (stacks reach `CREATE_COMPLETE`) but does not run the app workload, so the runtime Verify checks (`wait-steady-state`, `health-gate`) are gated to real AWS.
 - `loom-backend`/`loom-frontend` always provision their own ECS execution/task IAM roles — no `reference-existing` seam for those yet.
-- PrivateLink is tier-gated only, with no independent `omit` on `production`/`production-ha`.
+- PrivateLink is tier-gated only, with no independent `omit` on `production`/`production-ha` (`INTENTIUS/loomster#29`).
+- `loom-agents` does not yet synthesize the AgentCore code-interpreter execution role Loom ships in `code_interpreter_role.yaml` (`INTENTIUS/loomster#39`).
 - No bastion composite — Loom's own upstream template doesn't define one either.
 - `chant lifecycle snapshot|diff` against this repo's whole project root still fails to build on one remaining, more pervasive export-name collision (`INTENTIUS/chant#932`) — every per-component and per-component-graph command in the Tutorial is unaffected.
-- `deploy.yml`'s real `chant run` invocation is still a placeholder.
 
-The full seam-by-seam detail — every default and what replacing it requires — is in [Adoption](/guides/adoption/).
+The full seam-by-seam detail — every default and what replacing it requires — is in [Adoption](/loomster/guides/adoption/).

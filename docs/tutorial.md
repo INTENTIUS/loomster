@@ -47,11 +47,8 @@ that comparison holds and where it doesn't.
 ## Prerequisites
 
 - Node.js 22+, npm.
-- A sibling `../chant` checkout — this repo dev-links `@intentius/chant`
-  and its lexicons via `file:` (see the root [README](../README.md)'s
-  "chant dependency" section) ahead of a published release. Needs its own
-  `npm install` plus `npm run generate` in `lexicons/aws` (and
-  `lexicons/gitlab`/`lexicons/github` if you also touch CI generation).
+- `npm install` — this repo consumes published `@intentius/chant` and its
+  lexicons from npm; no sibling checkout, no codegen step, no `file:` links.
 - Docker, for the light-tier walkthrough (runs [Floci](https://floci.io)
   locally) — not needed for `npm run synth`, `npm run tsc`, `npm run lint`,
   or `npm test`.
@@ -266,15 +263,15 @@ stays inert until a team opts in:
 2. Provision a GitHub **environment** named `production` holding the AWS
    credentials the job assumes.
 
-Today `deploy.yml`'s own apply step is a placeholder (`echo "TODO: npx chant
-run --components all --env prod"`) — wiring the real invocation through is
-tracked as its own follow-up, and this tutorial isn't going to claim
-otherwise. What *is* real and already shipped is everything the deploy step
-would call: every component above, and the gated Ops below it. Run the
-same `npx chant run --components <name> --env production` sequence from
-Part 1 by hand (behind your own change-management process) until that
-wiring lands, or wire it into `deploy.yml` yourself — nothing about the
-components needs to change either way.
+`deploy.yml`'s apply step runs the real orchestrator — it vendors Loom's
+source, configures AWS credentials + ECR login, and runs
+`chant run --components all --env "$LOOM_ENV"`, the same dependency-ordered
+sequence Part 1 runs locally. One honest caveat: that wiring has been
+exercised end to end against the Floci emulator, not yet against a live AWS
+account (`INTENTIUS/loomster#22`). For the first real-account apply, run the
+`npx chant run --components <name> --env production` sequence from Part 1 by
+hand behind your own change-management process, then let the pipeline take
+over — nothing about the components changes either way.
 
 Beyond the initial stand-up, `production`/`production-ha` get durable,
 gated Ops for the concerns a one-shot `chant run` doesn't cover — upgrade,
@@ -525,7 +522,8 @@ detail, lives in [`docs/adoption.md`](adoption.md)'s "Known gaps" section:
   [Lifecycle](#lifecycle-observe-reconcile-upgrade-rotate-teardown) above)
   — every per-component and per-component-graph command in this tutorial is
   unaffected.
-- `deploy.yml`'s real `chant run` invocation is still a placeholder — see
+- The deploy pipeline runs the real orchestrator but has only been exercised
+  against Floci, not a live AWS account (`INTENTIUS/loomster#22`) — see
   [Part 2](#part-2--production--production-ha-against-real-aws) above.
 
 ## Where to go next
