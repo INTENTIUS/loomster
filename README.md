@@ -167,6 +167,49 @@ git clone --branch v1.6.0 https://github.com/awslabs/loom vendor/loom
 Not required for typecheck/lint/test/synth — those never touch the
 filesystem at `vendor/loom`, only an actual deploy does.
 
+## Lifecycle: observe + reconcile (`chant#904`)
+
+Beyond the initial stand-up, the running deployment is watched for drift and
+kept in sync with source — the two `Ops` under [`ops/`](ops/):
+
+| Op | Position | What it does |
+|---|---|---|
+| `loom-watch` (`ops/loom-watch.op.ts`) | observe | `WatchOp` on a 15-minute cron: `chant lifecycle diff --live` across every stack this build targets (all five components above, since chant's lifecycle commands build the whole project for the current `LOOM_ENV`/`LOOM_TIER`). Drift surfaces as the `Drift` search attribute. Runs on **every** tier. |
+| `loom-reconcile` (`ops/loom-reconcile.op.ts`) | reconcile | `ReconcileOp`, owned-only (`scope: { owned: true }`): when live drifts from source, opens a cloud → code PR that regenerates the affected TypeScript. Never mutates the cloud, never commits to main. |
+
+Both are stateless and retriable, so they run **one-shot on the local
+executor** by default:
+
+```
+npm run watch        # chant run loom-watch
+npm run reconcile     # chant run loom-reconcile
+```
+
+**Per-env dial (`chant#890`).** `light` sits at observe only; `production`/
+`production-ha` additionally get `loom-reconcile` on an hourly schedule —
+`ops/params.ts`'s `reconcilesOnScheduleForTier` decides, and `chant build`
+simply has nothing to discover for the schedule on `light` (an `undefined`
+export). `loom-watch` schedules on every tier.
+
+Search attributes (`OpName`/`Watch`/`Env`/`Drift`/`Reconcile`/`PR`) are
+registered via [`ops/search-attributes.ts`](ops/search-attributes.ts) so the
+first scheduled run's `upsertSearchAttributes()` call succeeds. Ownership
+marking (`chant.config.ts`'s `ownership` field) is what `scope: { owned: true }`
+scopes reconciliation to — a foreign, non-chant resource is never touched.
+
+Synthesize the generated workflow/worker code + `temporal-setup.sh` +
+schedules:
+
+```
+npm run synth:ops    # chant build ops -o dist/temporal-manifest.txt
+```
+
+Out of scope here: emitting these as scheduled CI (`chant#906`, which this
+work blocks) and the durable/gated concerns — upgrade, data-safety, rotation,
+teardown (`chant#905`). See `chant#903` for the lifecycle umbrella and its
+per-operation-backend rule (CI-cron/local for observe+reconcile, Temporal
+only for what needs a durable gate).
+
 ## Deploy
 
 Deployment is via **GitHub Actions** (`.github/workflows/deploy.yml`), not a
@@ -177,7 +220,9 @@ separate CD tool. It's **gated** so it stays inert until you opt in:
    this job needs.
 
 Right now the deploy step is a placeholder — the real `chant run` invocation
-lands once the composites (`#886`-`#889`) and lifecycle Ops (`#903`) exist.
+lands once the composites (`#886`-`#889`) exist alongside the remaining
+lifecycle Ops (`#905`, `#906`); observe + reconcile (`#904`) are covered
+above.
 
 ## Status
 

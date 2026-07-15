@@ -20,7 +20,8 @@ lint:
 test:
     npx vitest run
 
-# Synthesize the shared-foundation + downstream-stub CFN templates into dist/.
+# Synthesize the CFN templates (dist/*.template.json) + the lifecycle Ops'
+# worker code + temporal-setup.sh (dist/temporal-manifest.txt, dist/schedules/).
 synth:
     npm run synth
 
@@ -29,6 +30,16 @@ synth:
 # infracost isn't installed. Run `just synth` first.
 estimate-cost:
     npm run estimate-cost
+
+# Observe: one-shot `chant lifecycle diff --live` across every stack this
+# build targets (chant#904). Scheduled form needs Temporal — see ops/loom-watch.op.ts.
+watch:
+    npm run watch
+
+# Reconcile (cloud → code, owned-only): opens a PR when live drifts from
+# source (chant#904). Never commits to main — see ops/loom-reconcile.op.ts.
+reconcile:
+    npm run reconcile
 
 # Everything CI-relevant.
 check: build lint test
