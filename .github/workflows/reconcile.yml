@@ -1,0 +1,80 @@
+name: reconcile
+
+# Scheduled CI-cron trigger for the reconcile position of the lifecycle dial
+# (chant#906, part of the #903 lifecycle umbrella under epic #885). A thin
+# trigger only: this job's one real step is `npm run reconcile` (`chant run
+# loom-reconcile` -> ReconcileOp, chant#904). ReconcileOp only ever changes
+# source via a PR — it never mutates the cloud and never commits to main;
+# see ops/loom-reconcile.op.ts. No apply/rollback/gate logic lives here — see
+# docs/src/content/docs/components/orchestration.mdx's "keep logic out of
+# the trigger".
+#
+# CI-cron is one trigger host among several (chant#906's settled decision) —
+# a team may run this instead of, or alongside, loom-reconcile's own
+# Temporal schedule. chant#890's per-env dial applies to this host too:
+# `light` observes only (see watch.yml), so the job's own `if:` below
+# requires `LOOM_TIER` to be `production`/`production-ha` in addition to the
+# opt-in variable, mirroring ops/params.ts's `reconcilesOnScheduleForTier`.
+#
+# Inert until a team opts in — see README.md's "Scheduled CI" section.
+on:
+  # Same cadence as ops/loom-reconcile.op.ts's own Temporal schedule for
+  # production/production-ha; independent trigger host, not kept in sync
+  # with it mechanically.
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: ${{ vars.SCHEDULED_RECONCILE == 'true' && (vars.LOOM_TIER == 'production' || vars.LOOM_TIER == 'production-ha') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Scope AWS credentials to a protected environment, same as deploy.yml —
+    # the reconcile's Plan phase needs read access to the cloud (its Apply
+    # equivalent is the opened PR itself, never a direct mutation).
+    environment: production
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: loom-on-chant
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: INTENTIUS/chant
+          path: chant
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      # See ci.yml: the sibling chant checkout needs its own deps installed
+      # plus the aws lexicon's generated (gitignored) codegen output.
+      - run: npm install
+        working-directory: chant
+      - run: npm run generate
+        working-directory: chant/lexicons/aws
+      - run: npm install
+        working-directory: loom-on-chant
+      # reconcilePr (chant-lexicon-temporal) shells out to `git commit` in
+      # pull-request mode — needs an identity, which a fresh runner has none
+      # of. This is setup, not deploy logic: no branch/commit/PR decision is
+      # made here, that's entirely ReconcileOp's own phases.
+      - name: git identity for reconcile commits
+        working-directory: loom-on-chant
+        run: git config user.name "chant-lifecycle[bot]" && git config user.email "chant-lifecycle[bot]@users.noreply.github.com"
+      - name: reconcile
+        working-directory: loom-on-chant
+        run: npm run reconcile
+        env:
+          LOOM_ENV: ${{ vars.LOOM_ENV || 'dev' }}
+          LOOM_TIER: ${{ vars.LOOM_TIER || 'light' }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # reconcilePr shells out to `gh pr create` — gh reads GH_TOKEN.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

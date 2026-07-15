@@ -20,6 +20,7 @@
     "synth:ops": "chant build ops -o dist/temporal-manifest.txt",
     "watch": "chant run loom-watch",
     "reconcile": "chant run loom-reconcile",
+    "audit": "chant run loom-audit",
     "estimate-cost": "bash scripts/estimate-cost.sh",
     "generate:gitlab": "chant build --components --generate gitlab -o .gitlab-ci.yml",
     "ops:build": "chant build ops"

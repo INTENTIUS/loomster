@@ -1,0 +1,63 @@
+name: cost-report
+
+# Scheduled CI-cron trigger for the cost concern (chant#906, ties to
+# chant#896's opt-in Infracost hook). A thin trigger only: this job
+# synthesizes the CFN templates (`npm run synth`, no live cloud calls) then
+# runs the existing `scripts/estimate-cost.sh` (`npm run estimate-cost`) —
+# no pricing logic of its own lives here or in that script; see README.md's
+# "Cost estimate (optional)" section.
+#
+# Not gated behind a cloud `environment` — synth is local codegen and
+# estimate-cost.sh has no hard dependency on Infracost being installed or
+# authenticated (a no-op notice per component otherwise, never a failure).
+#
+# Inert until a team opts in — see README.md's "Scheduled CI" section.
+on:
+  # Weekly, Monday 06:00 UTC.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cost-report
+  cancel-in-progress: false
+
+jobs:
+  cost-report:
+    if: ${{ vars.SCHEDULED_COST_REPORT == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: loom-on-chant
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: INTENTIUS/chant
+          path: chant
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      # See ci.yml: the sibling chant checkout needs its own deps installed
+      # plus the aws lexicon's generated (gitignored) codegen output.
+      - run: npm install
+        working-directory: chant
+      - run: npm run generate
+        working-directory: chant/lexicons/aws
+      - run: npm install
+        working-directory: loom-on-chant
+      - name: synth
+        working-directory: loom-on-chant
+        run: npm run synth
+      # A real report needs `infracost` on PATH and authenticated — neither
+      # is provisioned here (see README.md's "Wiring it into a real runner"
+      # note); without it this step prints a skip notice per component and
+      # exits 0, per scripts/estimate-cost.sh's own no-hard-dependency design.
+      - name: estimate cost
+        working-directory: loom-on-chant
+        run: npm run estimate-cost
+        env:
+          INFRACOST_CLI_AUTHENTICATION_TOKEN: ${{ secrets.INFRACOST_CLI_AUTHENTICATION_TOKEN }}

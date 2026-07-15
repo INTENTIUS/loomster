@@ -251,11 +251,69 @@ schedules:
 npm run synth:ops    # chant build ops -o dist/temporal-manifest.txt
 ```
 
-Out of scope here: emitting these as scheduled CI (`chant#906`, which this
-work blocks) and the durable/gated concerns — upgrade, data-safety, rotation,
-teardown (`chant#905`). See `chant#903` for the lifecycle umbrella and its
-per-operation-backend rule (CI-cron/local for observe+reconcile, Temporal
-only for what needs a durable gate).
+Emitting these as scheduled CI is `chant#906` — see "Scheduled CI" below.
+The durable/gated concerns — upgrade, data-safety, rotation, teardown — are
+`chant#905`, covered above. See `chant#903` for the lifecycle umbrella and
+its per-operation-backend rule (CI-cron/local for observe+reconcile,
+Temporal only for what needs a durable gate).
+
+## Scheduled CI (`chant#906`)
+
+Beyond running one-shot locally (`npm run watch`/`reconcile`/`audit`,
+`just estimate-cost` — see above), the stateless lifecycle concerns also run
+on a schedule via plain GitHub Actions cron — a second, independent trigger
+host alongside (or instead of) each Op's own Temporal schedule.
+`chant#906`'s settled decision: CI-cron is *one* trigger host, not the only
+one. The durable/gated Ops (`chant#905` — upgrade, rotation, teardown) are
+never scheduled here, only on Temporal, since they need a durable gate a
+cron job cannot give them — no apply/rollback/gate logic is inlined into
+this YAML at all (see `docs/src/content/docs/components/orchestration.mdx`'s
+"keep logic out of the trigger").
+
+| Workflow | Runs | Cron | Gate (opt-in) |
+|---|---|---|---|
+| [`.github/workflows/watch.yml`](.github/workflows/watch.yml) | `npm run watch` (`loom-watch`) | every 15 min | `vars.SCHEDULED_WATCH == 'true'` |
+| [`.github/workflows/reconcile.yml`](.github/workflows/reconcile.yml) | `npm run reconcile` (`loom-reconcile`) | hourly | `vars.SCHEDULED_RECONCILE == 'true'` **and** `vars.LOOM_TIER` is `production`/`production-ha` (chant#890's dial — `light` observes only, same as the Temporal-scheduled path) |
+| [`.github/workflows/cost-report.yml`](.github/workflows/cost-report.yml) | `npm run synth && npm run estimate-cost` (`chant#896`) | weekly, Monday 06:00 UTC | `vars.SCHEDULED_COST_REPORT == 'true'` |
+| [`.github/workflows/audit.yml`](.github/workflows/audit.yml) | `npm run audit` (`loom-audit`) | daily | `vars.SCHEDULED_AUDIT == 'true'` |
+
+Every one is a thin trigger — the single meaningful step is the same
+`npm run <script>` a developer would run locally. All four also declare
+`workflow_dispatch` for an on-demand run without waiting for the next tick.
+
+**Enabling a schedule.** Each workflow stays inert until a team opts in —
+the same pattern `deploy.yml` uses:
+
+1. Set the workflow's repo **variable** (table above) to `true`.
+2. `watch.yml`/`reconcile.yml` additionally need the `production`
+   **environment** (AWS credentials) — the same one `deploy.yml` uses —
+   since both run a live `chant lifecycle diff`. `cost-report.yml`/
+   `audit.yml` never touch AWS.
+3. `reconcile.yml` opens PRs via `gh pr create` — it needs `contents: write`
+   + `pull-requests: write` (already declared in the workflow) and the
+   default `GITHUB_TOKEN`, no extra secret to set.
+4. `cost-report.yml`'s real numbers need `infracost` installed plus a repo
+   secret `INFRACOST_CLI_AUTHENTICATION_TOKEN` — neither is provisioned by
+   the workflow itself (see "Cost estimate (optional)" above); without them
+   it still runs and prints a per-component skip notice, never fails.
+5. Set repo variables `LOOM_ENV`/`LOOM_TIER` if this deployment isn't the
+   `dev`/`light` defaults `ops/params.ts` falls back to.
+6. `cost-report.yml`'s `npm run synth` step needs the same adopter-supplied
+   parameters a real deploy does (`LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS`
+   and friends — see "Adoption" above) wired in as environment variables;
+   without them, synthesizing `loom-db` (and any other VPC-attached
+   composite) fails the same way a real deploy would, since chant has no
+   placeholder subnet/VPC ids of its own to invent.
+
+**`loom-audit`'s finding-mode is `report` only.** `WorkflowAuditOp` accepts
+`issue`/`pull-request` too, but the underlying `workflowSupplyChainAudit`
+activity doesn't open the write itself yet — see
+[`ops/loom-audit.op.ts`](ops/loom-audit.op.ts). A finding today surfaces by
+reading the scheduled run's own output.
+
+GitLab-cron equivalents are out of scope here — `chant#906` is GitHub-first,
+matching `chant#892`'s GitLab-after ordering for the component pipeline.
+
 ## GitLab CI (chant#892)
 
 `chant build --components --generate gitlab` synthesizes a `.gitlab-ci.yml`
@@ -329,10 +387,10 @@ separate CD tool. It's **gated** so it stays inert until you opt in:
 2. A GitHub **environment** named `production` holding the AWS credentials
    this job needs.
 
-Right now the deploy step is a placeholder — the real `chant run` invocation
-lands once the composites (`#886`-`#889`) exist alongside the remaining
-lifecycle Ops (`#905`, `#906`); observe + reconcile (`#904`) are covered
-above.
+Right now the deploy step is a placeholder — wiring the real `chant run`
+invocation is its own follow-up. The composites (`#886`-`#889`) and every
+lifecycle Op it would sit alongside (`#904`-`#906`) are already in place;
+see the sections above.
 
 ## Status
 

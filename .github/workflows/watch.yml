@@ -1,0 +1,69 @@
+name: watch
+
+# Scheduled CI-cron trigger for the observe position of the lifecycle dial
+# (chant#906, part of the #903 lifecycle umbrella under epic #885). A thin
+# trigger only: this job's one real step is `npm run watch` (`chant run
+# loom-watch` -> WatchOp, chant#904's `chant lifecycle diff --live`). No
+# apply/rollback/gate logic lives here — see
+# docs/src/content/docs/components/orchestration.mdx's "keep logic out of
+# the trigger" and README.md's "Scheduled CI" section.
+#
+# CI-cron is one trigger host among several (chant#906's settled decision,
+# see the issue's comments) — a team may run this instead of, or alongside,
+# loom-watch's own Temporal schedule (ops/loom-watch.op.ts). Every tier
+# watches (chant#890's per-env dial only gates *reconcile* — see
+# reconcile.yml).
+#
+# Inert until a team opts in — see README.md's "Scheduled CI" section for
+# the repo variable + environment this needs.
+on:
+  # Same cadence as ops/loom-watch.op.ts's own Temporal schedule, but this
+  # is an independent trigger host — not kept in sync with it mechanically.
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    if: ${{ vars.SCHEDULED_WATCH == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Scope AWS credentials to a protected environment, same as deploy.yml —
+    # a live diff needs read access to the cloud.
+    environment: production
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: loom-on-chant
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: INTENTIUS/chant
+          path: chant
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      # See ci.yml: the sibling chant checkout needs its own deps installed
+      # plus the aws lexicon's generated (gitignored) codegen output —
+      # loom-watch's `chant lifecycle diff` builds every aws-lexicon
+      # composite this repo declares.
+      - run: npm install
+        working-directory: chant
+      - run: npm run generate
+        working-directory: chant/lexicons/aws
+      - run: npm install
+        working-directory: loom-on-chant
+      - name: watch
+        working-directory: loom-on-chant
+        run: npm run watch
+        env:
+          LOOM_ENV: ${{ vars.LOOM_ENV || 'dev' }}
+          LOOM_TIER: ${{ vars.LOOM_TIER || 'light' }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
