@@ -7,7 +7,7 @@
  * so none of chant's EVL rules apply to it.
  */
 
-import { Ref } from "@intentius/chant-lexicon-aws";
+import { Ref, Split } from "@intentius/chant-lexicon-aws";
 import { LoomDb, type DataSeam } from "../composites/loom-db";
 import * as params from "./params";
 
@@ -29,7 +29,17 @@ function buildData(): DataSeam {
 
   return {
     mode: "provision",
-    network: { vpcId: params.vpcId as string, subnetIds: params.dbSubnetIds as string[] },
+    network: {
+      vpcId: Ref(params.vpcId) as unknown as string,
+      // `pPrivateSubnetIds`'s Ref is already the comma-joined string
+      // shared-foundation's `oPrivateSubnetIds` output produced — split it
+      // for the DBProxy's real-list `VpcSubnetIds`, but also hand the
+      // already-joined string straight through as `subnetIdsCsv` so
+      // `buildDbCore` never needs to `.join(",")` a value it can't see
+      // until deploy time (see ../composites/loom-db.ts).
+      subnetIds: Split(",", Ref(params.privateSubnetIds)) as unknown as string[],
+      subnetIdsCsv: Ref(params.privateSubnetIds) as unknown as string,
+    },
     dbIngress: params.useSourceSecurityGroup
       ? { mode: "security-group", sourceSecurityGroupId: Ref(params.ecsSecurityGroupId) as unknown as string }
       : { mode: "cidr", cidr: params.allowedCidr },

@@ -225,6 +225,30 @@ export function literalOutputValue(value: string): SubIntrinsic {
   return new SubIntrinsic(["", ""], [value]);
 }
 
+/**
+ * Comma-join 2+ values (each a plain string or an `AttrRef`/`Ref`
+ * masquerading as `string`, same convention as everywhere else in this
+ * file) into a single output-safe value — deliberately built as an
+ * `Fn::Sub`, not `Fn::Join` (chant#928/loomster#35). `@intentius/chant-
+ * lexicon-aws`'s serializer resolves a `LexiconOutput`'s value correctly
+ * when it's a bare `AttrRef` (a dedicated fast path), but a value wrapped in
+ * any other `Intrinsic` — `Join` included — is written to the template's
+ * `Outputs` section as-is, without the same whole-tree walk `Properties`
+ * get; any `AttrRef` nested inside that `Join` (e.g. two provisioned
+ * subnets' `.SubnetId`s) then leaks into the CloudFormation template as an
+ * unresolved internal `{__attrRef: ...}` envelope instead of a proper
+ * `Fn::GetAtt` — invalid CFN JSON. `Sub`'s own interpolation resolves each
+ * `AttrRef` directly (see `defaultInterpolationSerializer` in chant core),
+ * sidestepping that gap entirely, so joining through `Sub` here is the
+ * actual fix, not just a style choice. (Filed upstream as a chant serializer
+ * bug — this workaround stays even after that lands, since `output()`
+ * callers shouldn't have to know which lexicon-internal path is safe.)
+ */
+export function joinOutputValues(values: string[]): SubIntrinsic {
+  const parts = ["", ...Array(Math.max(values.length - 1, 0)).fill(","), ""];
+  return new SubIntrinsic(parts, values);
+}
+
 /** Loom's ECR lifecycle policy (keep the last 10 images) — identical for both repos. Hoisted to a module-level constant so `buildEcrRepos` only ever references it by name (EVL001: resource constructor properties must be statically evaluable). */
 const ECR_LIFECYCLE_POLICY_TEXT = JSON.stringify({
   rules: [

@@ -84,6 +84,7 @@ export const loomBackend: Component = {
           pTargetGroupArn: stackOutput("shared-foundation", "oBackendTargetGroupArn"),
           pArtifactBucket: stackOutput("shared-foundation", "oArtifactBucket"),
           pEcrKmsKeyArn: stackOutput("shared-foundation", "oEcrKmsKeyArn"),
+          pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
           pDatabaseSecretArn: stackOutput("loom-db", "oRdsSecretArn"),
           pSecretsKmsKeyArn: stackOutput("loom-db", "oSecretsKmsKeyArn"),
           pCognitoUserPoolId: stackOutput("loom-cognito", "oCognitoUserPoolId"),

@@ -61,6 +61,7 @@ export const loomFrontend: Component = {
           pEcsClusterArn: clusterArn,
           pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
           pTargetGroupArn: stackOutput("shared-foundation", "oFrontendTargetGroupArn"),
+          pPublicSubnetIds: stackOutput("shared-foundation", "oPublicSubnetIds"),
           pImageUri: "@Publish.uri",
         },
       },

@@ -4,19 +4,22 @@
  * (LOOM001 — nothing hardcoded in this file or the composite), same
  * convention `shared-foundation`/`loom-db`/`loom-cognito`'s `params.ts` use.
  *
- * The nine cross-stack values (cluster/SG/target-group/ECR-KMS from
- * shared-foundation, the connection-secret ARN + its KMS key from loom-db,
- * the user pool id from loom-cognito) plus the published image are genuine
- * CloudFormation `Parameter`s — real Ref()-able declarables collected
- * independently of the `LoomBackend` composite (same convention
+ * The ten cross-stack values (cluster/SG/target-group/ECR-KMS/private-
+ * subnets from shared-foundation, the connection-secret ARN + its KMS key
+ * from loom-db, the user pool id from loom-cognito) plus the published image
+ * are genuine CloudFormation `Parameter`s — real Ref()-able declarables
+ * collected independently of the `LoomBackend` composite (same convention
  * `loom-db/params.ts`'s `ecsSecurityGroupId` established), keyed by export
  * name so their logical id in the synthesized template exactly matches the
  * key `../components/loom-backend.component.ts`'s `cfn-deploy` step's
  * `inputs` map uses to resolve them via `stackOutput(...)` at deploy time.
- * Everything else (sizing, app-level knobs) is a plain env-driven composite
- * prop — author-time-known, baked directly into the template at `chant
- * build` time, not deferred to a deploy-time parameter override (same
- * convention `loom-db/params.ts` uses for `dbPassword`/`dbInstanceClass`).
+ * `pPrivateSubnetIds` replaces the old `LOOM_PRIVATE_SUBNET_IDS` env var
+ * (chant#928/loomster#35) — comma-joined (CloudFormation Outputs can't be
+ * lists), split back apart in `./backend.ts`. Everything else (sizing,
+ * app-level knobs) is a plain env-driven composite prop — author-time-known,
+ * baked directly into the template at `chant build` time, not deferred to a
+ * deploy-time parameter override (same convention `loom-db/params.ts` uses
+ * for `dbPassword`/`dbInstanceClass`).
  */
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
@@ -44,21 +47,6 @@ export const namingParams: LoomNamingParams = {
   owner: process.env.LOOM_OWNER ?? "platform",
 };
 
-function splitCsv(value: string | undefined): string[] | undefined {
-  if (!value) return undefined;
-  const parts = value.split(",").map((s) => s.trim()).filter(Boolean);
-  return parts.length > 0 ? parts : undefined;
-}
-
-/**
- * Private subnet ids (with RDS/Cognito reachability) — the same
- * `LOOM_PRIVATE_SUBNET_IDS` baseline `loom-db/params.ts` reads, not a
- * shared-foundation output (chant#886/#887 scope: subnet ids are BYO
- * network, never re-exposed as a stack output — see that file's own
- * comment for why).
- */
-export const privateSubnetIds = splitCsv(process.env.LOOM_PRIVATE_SUBNET_IDS);
-
 // ── Cross-stack Parameters (chant#889) — real CFN Parameter declarables,
 // resolved at deploy time via ../components/loom-backend.component.ts's
 // stackOutput(...) wiring. Named after Loom's own real ecs.yaml parameters
@@ -70,6 +58,7 @@ export const pEcsSecurityGroupId = new Parameter("AWS::EC2::SecurityGroup::Id", 
 export const pTargetGroupArn = new Parameter("String", { description: "Backend ALB target group ARN (shared-foundation oBackendTargetGroupArn)" });
 export const pArtifactBucket = new Parameter("String", { description: "S3 bucket name for agent deployments (shared-foundation oArtifactBucket)" });
 export const pEcrKmsKeyArn = new Parameter("String", { description: "KMS key ARN encrypting ECR repositories (shared-foundation oEcrKmsKeyArn)" });
+export const pPrivateSubnetIds = new Parameter("String", { description: "Comma-separated private subnet ids for the backend ECS service (shared-foundation oPrivateSubnetIds)" });
 export const pDatabaseSecretArn = new Parameter("String", { description: "Secrets Manager ARN containing the DB URL (loom-db oRdsSecretArn)" });
 export const pSecretsKmsKeyArn = new Parameter("String", { description: "KMS key ARN encrypting Secrets Manager secrets (loom-db oSecretsKmsKeyArn)" });
 export const pCognitoUserPoolId = new Parameter("String", { description: "Cognito User Pool id (loom-cognito oCognitoUserPoolId)", defaultValue: "" });
