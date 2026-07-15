@@ -13,7 +13,9 @@
     "synth:downstream-stub": "chant build src/downstream-stub --lexicon aws -o dist/downstream-stub.template.json",
     "synth:loom-db": "chant build src/loom-db --lexicon aws -o dist/loom-db.template.json",
     "synth:loom-cognito": "chant build src/loom-cognito --lexicon aws -o dist/loom-cognito.template.json",
-    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub && npm run synth:loom-db && npm run synth:loom-cognito"
+    "synth:loom-backend": "chant build src/loom-backend --lexicon aws -o dist/loom-backend.template.json",
+    "synth:loom-frontend": "chant build src/loom-frontend --lexicon aws -o dist/loom-frontend.template.json",
+    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub && npm run synth:loom-db && npm run synth:loom-cognito && npm run synth:loom-backend && npm run synth:loom-frontend"
   },
   "dependencies": {
     "@intentius/chant": "file:../chant/packages/core",
