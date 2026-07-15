@@ -1,0 +1,54 @@
+---
+title: loomster
+description: Production deployment of awslabs/loom on chant.
+template: splash
+hero:
+  tagline: Production deployment of awslabs/loom on chant — component-based, tiered (light / production / production-ha), with generated CI and a naming scheme that lets multiple Loom instances coexist in one or many AWS accounts without collision.
+  actions:
+    - text: Read the Tutorial
+      link: /getting-started/tutorial/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/INTENTIUS/loomster
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What this is
+
+Not a demo. This is the deployment a team adopts to run [Loom](https://github.com/awslabs/loom) for real — same bar as any other production stack. Loom's own deploy today is a manual multi-step SAM process behind a `DEPLOYMENT.md`; chant types it, lints it, dedupes the cross-stack glue, orders it, tiers it, and generates the pipeline.
+
+Six components, deployed in dependency order (`shared-foundation`, `loom-cognito`, `loom-db`, `loom-frontend`, `loom-backend`, `loom-agents`), pinned to Loom `v1.6.0`.
+
+## Same philosophy, two layers
+
+Loom's own [launch post](https://aws.amazon.com/blogs/opensource/building-secure-ai-agents-at-scale-introducing-loom-for-aws/) states its deployment model plainly: no code is generated at runtime and deployed into any environment — only configuration changes, and the control plane manages that configuration. That is also chant's pitch, one layer down the stack:
+
+- Loom scans the agent code once, ahead of any deployment. chant lints and type-checks a stack at author time, before anything synthesizes.
+- Loom never generates agent code at runtime. chant never generates infrastructure code at deploy time either — `chant build` emits a CloudFormation template once, and every environment applies that same template.
+- Loom redeploys by changing config, not by hand-editing a running agent. chant redeploys by changing tier, instance, or an adoption seam's mode, not by forking a composite per environment.
+
+Same discipline, applied to the layer underneath the one Loom's own blog post is about.
+
+## Tier and topology, two independent dials
+
+Every physical name and cost-allocation tag traces back to one call — `loomNaming(params, component)` — keyed `{project}-{env}-{instance}-{component}-{resource}`. Two axes matter, and they're independent of each other:
+
+- **Tier** (`light` / `production` / `production-ha`) sizes *one* Loom — HTTP vs. HTTPS+PrivateLink, single-AZ RDS vs. Multi-AZ + RDS Proxy + rotation, one AgentCore agent vs. two.
+- **Instance** is the tenant/boundary segment — the topology axis. Two different instance values are two collision-free Looms in the same account and region.
+
+**Rule of thumb: groups inside a boundary, a new Loom per boundary.** See the [Tutorial](/getting-started/tutorial/)'s "Org topology" section for the full single-boundary vs. multi-boundary decision.
+
+<CardGrid stagger>
+	<Card title="Tutorial" icon="rocket">
+		Light tier on Floci (no AWS account), production/production-ha on real AWS behind a gated apply, tier/topology selection, adoption seams, lifecycle Ops, and an honest positioning section. [Start here](/getting-started/tutorial/).
+	</Card>
+	<Card title="Adoption" icon="puzzle">
+		Every composite exposes a `provision | reference-existing | omit` choice where meaningful — bring your own VPC, KMS key, ACM cert, Route53 zone, ECR repos, agent IAM role, RDS/Postgres endpoint, or Cognito pool. [The full matrix](/guides/adoption/).
+	</Card>
+	<Card title="Naming & Tagging" icon="document">
+		One shared parameter source for every physical resource name and cost-allocation tag — segment order, per-service length/char limits, uniqueness strategy, and lint enforcement. [Read the convention](/reference/naming/).
+	</Card>
+</CardGrid>
