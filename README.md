@@ -71,8 +71,12 @@ strategy) and [`src/lib/naming.ts`](src/lib/naming.ts) for the helper itself.
 A project-local lint rule (`.chant/rules/no-hardcoded-name.ts`) flags a
 hardcoded physical name in a composite.
 
-Every taggable resource across all five composites carries the same five
-keys, straight from `loomNaming(...).tags()` — no per-composite copy:
+Every taggable resource across all six composites carries the same five
+keys, straight from `loomNaming(...).tags()` — no per-composite copy
+(`loom-agents`'s `Runtime`/`RuntimeEndpoint`/`Memory`/`Gateway`/`GatewayTarget`/
+`WorkloadIdentity` are the one exception: chant#882's `AgentCoreAgent`
+composite doesn't tag those AgentCore-native resources today, only the two
+IAM roles it creates — see `src/composites/loom-agents.ts`'s own comment):
 
 | Key | Source | Example |
 |---|---|---|
@@ -132,7 +136,7 @@ existing Cognito pool with zero composite source edits.
 
 ## Components
 
-Five stacks, deployed in dependency order (`chant graph --components`):
+Six stacks, deployed in dependency order (`chant graph --components`):
 
 | Component | Depends on | What it is |
 |---|---|---|
@@ -141,6 +145,7 @@ Five stacks, deployed in dependency order (`chant graph --components`):
 | `loom-db` | `shared-foundation` | RDS Postgres, Secrets Manager, (full tier) RDS Proxy + rotation (`#887`) |
 | `loom-frontend` | `shared-foundation` | The frontend ECS Fargate service (`#889`) |
 | `loom-backend` | `shared-foundation`, `loom-db`, `loom-cognito` | The backend ECS Fargate service (`#889`) |
+| `loom-agents` | `shared-foundation`, `loom-cognito`, `loom-backend` | The Bedrock AgentCore agent set — a low-code Strands agent (every tier) + a no-code AgentCore-harness agent (production/production-ha), via chant#882's `AgentCoreAgent` composite (`#893`) |
 
 `loom-backend`/`loom-frontend` each run **build → publish → apply → verify**
 (`docker-build` → `publish-image` promoted by digest → `cfn-deploy` →
