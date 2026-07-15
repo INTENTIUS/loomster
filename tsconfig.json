@@ -11,6 +11,10 @@
     "resolveJsonModule": true,
     "customConditions": ["development"]
   },
-  "include": ["src", ".chant", "chant.config.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src", "ops", ".chant", "chant.config.ts"],
+  // ops/dist/ is `chant build ops`'s own generated worker code (chant#904) —
+  // nested inside the included "ops" dir, gitignored, and not meant to
+  // typecheck standalone (it imports @temporalio/worker + the compiled
+  // chant.config.js, neither of which this project depends on directly).
+  "exclude": ["node_modules", "ops/dist"]
 }

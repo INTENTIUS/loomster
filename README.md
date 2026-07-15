@@ -73,8 +73,12 @@ strategy) and [`src/lib/naming.ts`](src/lib/naming.ts) for the helper itself.
 A project-local lint rule (`.chant/rules/no-hardcoded-name.ts`) flags a
 hardcoded physical name in a composite.
 
-Every taggable resource across all five composites carries the same five
-keys, straight from `loomNaming(...).tags()` — no per-composite copy:
+Every taggable resource across all six composites carries the same five
+keys, straight from `loomNaming(...).tags()` — no per-composite copy
+(`loom-agents`'s `Runtime`/`RuntimeEndpoint`/`Memory`/`Gateway`/`GatewayTarget`/
+`WorkloadIdentity` are the one exception: chant#882's `AgentCoreAgent`
+composite doesn't tag those AgentCore-native resources today, only the two
+IAM roles it creates — see `src/composites/loom-agents.ts`'s own comment):
 
 | Key | Source | Example |
 |---|---|---|
@@ -134,7 +138,7 @@ existing Cognito pool with zero composite source edits.
 
 ## Components
 
-Five stacks, deployed in dependency order (`chant graph --components`):
+Six stacks, deployed in dependency order (`chant graph --components`):
 
 | Component | Depends on | What it is |
 |---|---|---|
@@ -143,6 +147,7 @@ Five stacks, deployed in dependency order (`chant graph --components`):
 | `loom-db` | `shared-foundation` | RDS Postgres, Secrets Manager, (full tier) RDS Proxy + rotation (`#887`) |
 | `loom-frontend` | `shared-foundation` | The frontend ECS Fargate service (`#889`) |
 | `loom-backend` | `shared-foundation`, `loom-db`, `loom-cognito` | The backend ECS Fargate service (`#889`) |
+| `loom-agents` | `shared-foundation`, `loom-cognito`, `loom-backend` | The Bedrock AgentCore agent set — a low-code Strands agent (every tier) + a no-code AgentCore-harness agent (production/production-ha), via chant#882's `AgentCoreAgent` composite (`#893`) |
 
 `loom-backend`/`loom-frontend` each run **build → publish → apply → verify**
 (`docker-build` → `publish-image` promoted by digest → `cfn-deploy` →
@@ -209,6 +214,111 @@ overridden command — no rebuild, matching promote-by-digest — but the actual
 migration entrypoint depends on Loom's own tooling (only known once
 `vendor/loom` is checked out); override it via `LOOM_MIGRATION_COMMAND`
 (comma-separated argv) — see `ops/lib/upgrade-op.ts`.
+## Lifecycle: observe + reconcile (`chant#904`)
+
+Beyond the initial stand-up, the running deployment is watched for drift and
+kept in sync with source — the two `Ops` under [`ops/`](ops/):
+
+| Op | Position | What it does |
+|---|---|---|
+| `loom-watch` (`ops/loom-watch.op.ts`) | observe | `WatchOp` on a 15-minute cron: `chant lifecycle diff --live` across every stack this build targets (all five components above, since chant's lifecycle commands build the whole project for the current `LOOM_ENV`/`LOOM_TIER`). Drift surfaces as the `Drift` search attribute. Runs on **every** tier. |
+| `loom-reconcile` (`ops/loom-reconcile.op.ts`) | reconcile | `ReconcileOp`, owned-only (`scope: { owned: true }`): when live drifts from source, opens a cloud → code PR that regenerates the affected TypeScript. Never mutates the cloud, never commits to main. |
+
+Both are stateless and retriable, so they run **one-shot on the local
+executor** by default:
+
+```
+npm run watch        # chant run loom-watch
+npm run reconcile     # chant run loom-reconcile
+```
+
+**Per-env dial (`chant#890`).** `light` sits at observe only; `production`/
+`production-ha` additionally get `loom-reconcile` on an hourly schedule —
+`ops/params.ts`'s `reconcilesOnScheduleForTier` decides, and `chant build`
+simply has nothing to discover for the schedule on `light` (an `undefined`
+export). `loom-watch` schedules on every tier.
+
+Search attributes (`OpName`/`Watch`/`Env`/`Drift`/`Reconcile`/`PR`) are
+registered via [`ops/search-attributes.ts`](ops/search-attributes.ts) so the
+first scheduled run's `upsertSearchAttributes()` call succeeds. Ownership
+marking (`chant.config.ts`'s `ownership` field) is what `scope: { owned: true }`
+scopes reconciliation to — a foreign, non-chant resource is never touched.
+
+Synthesize the generated workflow/worker code + `temporal-setup.sh` +
+schedules:
+
+```
+npm run synth:ops    # chant build ops -o dist/temporal-manifest.txt
+```
+
+Out of scope here: emitting these as scheduled CI (`chant#906`, which this
+work blocks) and the durable/gated concerns — upgrade, data-safety, rotation,
+teardown (`chant#905`). See `chant#903` for the lifecycle umbrella and its
+per-operation-backend rule (CI-cron/local for observe+reconcile, Temporal
+only for what needs a durable gate).
+## GitLab CI (chant#892)
+
+`chant build --components --generate gitlab` synthesizes a `.gitlab-ci.yml`
+from the same component declarations `chant graph --components` reads — one
+stage per parallel-safe wave, one thin trigger job per component, `needs:`
+mirroring `dependsOn`, and cross-stack/cross-job outputs threaded as job
+artifacts (`--dump-outputs`/`--seed-outputs`). The generator itself lives in
+chant (`lexicons/gitlab/src/components/generate-pipeline.ts`); this repo only
+validates it against the real Loom component set.
+
+```
+npm run generate:gitlab   # chant build --components --generate gitlab -o .gitlab-ci.yml
+just gitlab-validate      # regenerate + diff against the committed copy (fails on drift)
+```
+
+The committed [`.gitlab-ci.yml`](.gitlab-ci.yml) at the repo root is the
+current shape — 3 waves, 6 jobs, from today's component set:
+
+```
+wave-1  shared-foundation, loom-cognito
+wave-2  downstream-stub, loom-db, loom-frontend
+wave-3  loom-backend
+```
+
+Regenerate it after any `dependsOn` change — `src/gitlab-pipeline.test.ts`
+asserts the committed copy, the live component graph, and the generated
+stage/job/`needs:` structure all agree.
+
+**Wiring it into a real GitLab runner.** Every generated job is a thin
+trigger (`chant run --components <name> --env production`) that assumes
+`chant` and its deps already resolve and `dist/*.template.json` already
+exists — neither is true in a bare checkout (`node_modules` isn't committed;
+`dist/` is gitignored, see Deploy below). Wire this once, project-wide,
+through `generateComponentPipeline`'s `beforeScript`/`image`/`extraScript`
+options rather than per job:
+
+- a custom runner `image` with `chant`, its deps, and `awscli` preinstalled
+  (`cfn-deploy` shells out to the AWS CLI), with `dist/*.template.json` either
+  baked in or produced by an earlier pipeline stage and passed forward as an
+  artifact; or
+- on a stock image, `beforeScript: ["npm ci", "npm run synth"]` plus an
+  `awscli` install step.
+
+### Runtime E2E (optional, on-demand)
+
+`just gitlab-runtime-e2e` (`test/gitlab-runtime-e2e.sh`) proves the generated
+pipeline's wave/`needs:`/artifact mechanics by actually running it —
+`gitlab-ci-local` in Docker, against [Floci](https://floci.io) (a local AWS
+emulator), no real AWS account. It deploys the light tier's 4 `infra`
+components (`shared-foundation`, `loom-cognito`, `loom-db`,
+`downstream-stub`) end to end, including the real cross-stack output
+threading `loom-db`/`downstream-stub` need from `shared-foundation` across a
+`needs:` edge. `loom-backend`/`loom-frontend` are excluded — their `build`
+phase needs the `vendor/loom` Docker context (see Components above), a
+separate, heavier concern than validating the generator's own mechanics.
+
+Needs Docker and a sibling `../chant` checkout (the same dev-link the rest of
+this repo uses); skips cleanly otherwise. Not part of gating CI — mirrors
+chant's own `just gitlab-runtime-e2e` convention.
+
+```
+just gitlab-runtime-e2e   # or: bash test/gitlab-runtime-e2e.sh
+```
 
 ## Deploy
 
@@ -220,7 +330,9 @@ separate CD tool. It's **gated** so it stays inert until you opt in:
    this job needs.
 
 Right now the deploy step is a placeholder — the real `chant run` invocation
-lands once the composites (`#886`-`#889`) and lifecycle Ops (`#903`) exist.
+lands once the composites (`#886`-`#889`) exist alongside the remaining
+lifecycle Ops (`#905`, `#906`); observe + reconcile (`#904`) are covered
+above.
 
 ## Status
 
