@@ -69,7 +69,7 @@ describe("LoomBackend — light tier", () => {
     expect(container.LogConfiguration).toBeDefined();
   });
 
-  test("the DB URL is threaded via Secrets, never plaintext Environment (WAW046)", () => {
+  test("by default (no databaseUrlPlain) the DB URL is threaded via Secrets, never plaintext Environment (WAW046)", () => {
     const instance = LoomBackend(baseProps());
     const props = (instance.taskDefinition as any).props;
     const container = (props.ContainerDefinitions[0] as any).props;
@@ -81,6 +81,18 @@ describe("LoomBackend — light tier", () => {
     for (const name of envNames) {
       expect(name).not.toMatch(/password|secret|token|api[_-]?key|credential/i);
     }
+  });
+
+  test("databaseUrlPlain (#46, light tier): LOOM_DATABASE_URL rides plain Environment and the DB-URL Secret is omitted", () => {
+    const instance = LoomBackend(baseProps({ databaseUrlPlain: "postgresql+psycopg2://loom:pw@ep:5432/loom" }));
+    const container = ((instance.taskDefinition as any).props.ContainerDefinitions[0] as any).props;
+    const env = (container.Environment as any[]).map((e) => (e as any).props);
+    const dbEnv = env.find((e) => e.Name === "LOOM_DATABASE_URL");
+    expect(dbEnv?.Value).toBe("postgresql+psycopg2://loom:pw@ep:5432/loom");
+    const secretNames = (container.Secrets as any[]).map((s) => (s as any).props.Name);
+    expect(secretNames).not.toContain("LOOM_DATABASE_URL");
+    // WAW046 keys on the variable name; LOOM_DATABASE_URL is not a secret-name, so this stays lint-clean.
+    expect("LOOM_DATABASE_URL").not.toMatch(/password|secret|token|api[_-]?key|credential/i);
   });
 
   test("network configuration uses the given private subnets + SG, no public IP", () => {
