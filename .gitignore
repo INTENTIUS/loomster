@@ -7,3 +7,4 @@ dist/
 # loom-backend/loom-frontend. Not vendored into this repo; see
 # src/components/loom-backend.component.ts's docstring.
 vendor/
+.gitlab-ci-local/
