@@ -73,3 +73,10 @@ gitlab-runtime-e2e:
 
 # Everything CI-relevant.
 check: build lint test
+
+# Local run — browsable Loom on a laptop (#49, epic #45). On-demand, needs Docker.
+local-up:
+    bash scripts/local/local-up.sh
+
+local-down:
+    bash scripts/local/local-down.sh
