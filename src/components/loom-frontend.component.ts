@@ -31,6 +31,16 @@ import { namingParams } from "../loom-frontend/params";
  * either, so both stay their Loom-default empty string until a real
  * adopter deploy decides otherwise.
  *
+ * **`dockerfile` is CWD-relative, not context-relative** (chant#928/
+ * loomster#35, found live). `DockerBuildInput.dockerfile`'s own docstring
+ * says "relative to context", but `@intentius/chant`'s `realDocker.build`
+ * (`components/verbs/cloud-executor.ts`) passes it straight through as
+ * `docker build -f <dockerfile> <context>` with no join against `context` —
+ * Docker CLI itself resolves a relative `-f` against the process's current
+ * directory, not the context directory. `chant run` always executes from
+ * the project root, so `dockerfile` here is the full project-root-relative
+ * path (`vendor/loom/frontend/Dockerfile`), not `Dockerfile` alone.
+ *
  * **Preset gap note** — same two gaps `loom-backend.component.ts` documents
  * in full (`sharedAlbStack`'s fixed `ListenerArn`/`ClusterArn`/`Subnets`
  * keys vs. shared-foundation's real output names; `imageRef`'s fixed
@@ -47,7 +57,7 @@ export const loomFrontend: Component = {
   name: "loom-frontend",
   archetype: "service",
   dependsOn: ["shared-foundation"],
-  build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
+  build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "vendor/loom/frontend/Dockerfile", into: "archive" },
   deploy: [
     // `build` above is descriptive metadata only (introspection/CI-YAML
     // generation) — chant's local `interpret` driver (`chant run
@@ -59,7 +69,7 @@ export const loomFrontend: Component = {
     // found live: `docker load -i 'archive'` failed with no such file,
     // since nothing had ever produced it).
     phase("Build", [
-      { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
+      { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "vendor/loom/frontend/Dockerfile", into: "archive" },
     ]),
     phase("Publish", [
       { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oFrontendRepositoryUri") },
