@@ -40,14 +40,19 @@ import { awsSerializer } from "@intentius/chant-lexicon-aws";
 import { SharedFoundation } from "../../composites/shared-foundation";
 import type { LoomNamingParams } from "../../lib/naming";
 
-import { foundation } from "./shared-foundation/foundation";
-import { db } from "./loom-db/db";
-import { cognito } from "./loom-cognito/cognito";
+// Imported modules export `byoXxx` bindings, not the bare composite names
+// (`foundation`/`db`/`cognito`/`backend`/`frontend`), so they don't collide
+// with the real stacks' identically-shaped exports once chant's
+// whole-project discovery walks both trees in one pass (chant#928). Aliased
+// back to the short names here purely for readability within this file.
+import { byoFoundation as foundation } from "./shared-foundation/foundation";
+import { byoDb as db } from "./loom-db/db";
+import { byoCognito as cognito } from "./loom-cognito/cognito";
 import * as cognitoParams from "./loom-cognito/params";
-import { cognito as cognitoSecondInstance } from "./loom-cognito-second-instance/cognito";
+import { byoCognitoSecondInstance as cognitoSecondInstance } from "./loom-cognito-second-instance/cognito";
 import * as cognitoSecondParams from "./loom-cognito-second-instance/params";
-import { backend } from "./loom-backend/backend";
-import { frontend } from "./loom-frontend/frontend";
+import { byoBackend as backend } from "./loom-backend/backend";
+import { byoFrontend as frontend } from "./loom-frontend/frontend";
 
 /** Every `Ref`/`Fn::GetAtt` target in a synthesized template must resolve to a declared Resource or Parameter — otherwise it's a dangling wiring reference (the same failure mode comp002 guards components against, at the composite/template level). */
 function assertNoDanglingRefs(template: Record<string, any>): void {

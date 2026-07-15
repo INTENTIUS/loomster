@@ -368,16 +368,40 @@ chant run signal loom-upgrade-production approve-loom-upgrade-production
 `--temporal` because a durable wait-for-signal and saga-style rollback are
 exactly what a one-shot local run can't give them.
 
-**Known gap, filed as `INTENTIUS/chant#928`.** `npm run watch`/`reconcile`
-call `chant lifecycle diff <env> --live` against the whole project root, and
-that currently fails to build against this repo's actual tree — a stray
-module-level side effect in `test/gitlab-runtime-e2e/build.ts`, plus an
-entity-name collision between the real `src/loom-backend` stack and its
-illustrative twin under `src/examples/byo/loom-backend/`, once both are
-discovered in one unscoped build. Every command in Parts 1 and 2 above (and
-`just gitlab-runtime-e2e`) is unaffected — the gap is specific to that one,
-unscoped whole-project build path. Filed rather than hidden, same as
-`docs/adoption.md`'s own known-gaps list.
+**`INTENTIUS/chant#928` (fixed).** `npm run watch`/`reconcile` call `chant
+lifecycle diff <env> --live` against the whole project root, and that used to
+fail to build against this repo's actual tree: a stray module-level side
+effect in `test/gitlab-runtime-e2e/build.ts` (now guarded behind an
+explicit-invocation check), plus an entity-name collision between the real
+`src/loom-backend` stack and its illustrative twin under
+`src/examples/byo/loom-backend/` (the `src/examples/byo/` modules now export
+`byoFoundation`/`byoDb`/`byoCognito`/`byoCognitoSecondInstance`/`byoBackend`/
+`byoFrontend`, not the bare composite names, so they no longer collide with
+the real stacks' identically-shaped exports once both are discovered in one
+unscoped build).
+
+**Known gap, filed as `INTENTIUS/chant#932`.** Fixing #928 surfaced a third,
+distinct, and more pervasive collision: every independently-deployed real
+stack in this repo (`loom-agents`, `loom-backend`, `loom-frontend`, `loom-db`,
+`downstream-stub`) declares its own local cross-stack `Parameter`s named
+after the AWS-service-conventional value they carry (cluster ARN, security
+group id, target group ARN, image URI, artifact bucket) — for
+`loom-backend`/`loom-frontend`/`loom-agents` specifically, matching Loom's
+own real vendored upstream template's parameter name 1:1. Those names are
+expected to repeat across sibling stacks (each stack is its own
+CloudFormation template, built independently via `chant build <dir>
+--lexicon aws`), but chant's unscoped whole-project discovery still requires
+every export name to be globally unique — so `chant build`/`chant lifecycle
+snapshot|diff` against the whole tree fails one `Duplicate export name` at a
+time (e.g. `pArtifactBucket`, `pEcsSecurityGroupId`, ...) even with #928's two
+causes fixed. Renaming these would break real deploy fidelity to Loom's
+upstream template, so it isn't something loomster's own source can patch
+around — #932 tracks the chant-core-side fix (a per-directory entity
+namespace for unscoped whole-project builds, mirroring how `--components`
+mode already scopes each component to its own stack). Every command in Parts
+1 and 2 above (and `just gitlab-runtime-e2e`) is unaffected — the gap is
+specific to that one, unscoped whole-project build path. Filed rather than
+hidden, same as `docs/adoption.md`'s own known-gaps list.
 
 ## Generated CI
 
@@ -493,7 +517,11 @@ detail, lives in [`docs/adoption.md`](adoption.md)'s "Known gaps" section:
 - No bastion composite — Loom's own upstream template doesn't define one
   either.
 - `chant lifecycle snapshot|diff` against this repo's whole project root
-  currently fails to build (`INTENTIUS/chant#928`, see
+  still fails to build — `INTENTIUS/chant#928`'s two causes (a stray
+  module-level side effect + the BYO-example entity collision) are fixed,
+  but fixing those surfaced a third, more pervasive collision on real
+  stacks' own cross-stack `Parameter` names, tracked separately as
+  `INTENTIUS/chant#932` (see
   [Lifecycle](#lifecycle-observe-reconcile-upgrade-rotate-teardown) above)
   — every per-component and per-component-graph command in this tutorial is
   unaffected.

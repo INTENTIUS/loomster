@@ -13,7 +13,7 @@
 
 import { output, Ref } from "@intentius/chant-lexicon-aws";
 import { literalOutputValue } from "../../../composites/shared-foundation";
-import { foundation } from "./foundation";
+import { byoFoundation as foundation } from "./foundation";
 import * as params from "./params";
 
 // ── Always-provisioned members (unconditional in every mode) ──────────────

@@ -5,12 +5,20 @@
  * `src/shared-foundation/foundation.ts`, just fed reference-existing seams
  * instead of provision defaults. Zero edits to
  * `../../../composites/shared-foundation.ts`.
+ *
+ * Exported as `byoFoundation`, not `foundation` (chant#928): chant's
+ * whole-project discovery walk keys each composite's expanded entities off
+ * the *export identifier*, not the file path or `naming` params, so this
+ * illustrative twin must not share a binding name with the real
+ * `src/shared-foundation/foundation.ts`'s `foundation` export — that
+ * collision is exactly what broke `chant build`/`chant lifecycle
+ * snapshot|diff` against the whole tree.
  */
 
 import { SharedFoundation } from "../../../composites/shared-foundation";
 import * as params from "./params";
 
-export const foundation = SharedFoundation({
+export const byoFoundation = SharedFoundation({
   naming: params.namingParams,
   network: params.network,
   domainName: params.domainName,

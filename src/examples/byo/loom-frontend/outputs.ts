@@ -5,6 +5,6 @@
  */
 
 import { output } from "@intentius/chant-lexicon-aws";
-import { frontend } from "./frontend";
+import { byoFrontend as frontend } from "./frontend";
 
 export const oServiceName = output(frontend.service.Name, "oServiceName");
