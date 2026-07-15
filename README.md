@@ -71,6 +71,18 @@ strategy) and [`src/lib/naming.ts`](src/lib/naming.ts) for the helper itself.
 A project-local lint rule (`.chant/rules/no-hardcoded-name.ts`) flags a
 hardcoded physical name in a composite.
 
+## Adoption
+
+Every composite exposes a `provision | reference-existing | omit` choice
+where meaningful — bring your own VPC, KMS key, ACM cert, Route53 zone, ECR
+repos, agent IAM role, RDS/Postgres endpoint, or Cognito pool (including one
+pool shared across multiple Loom instances), all through parameters, no
+composite forked. See [`docs/adoption.md`](docs/adoption.md) for the full
+matrix (every seam, its default, what replacing it requires) and
+[`src/examples/byo/`](src/examples/byo/) for a runnable example that
+deploys against a pre-existing VPC, pre-existing IAM roles, and a shared
+existing Cognito pool with zero composite source edits.
+
 ## Components
 
 Five stacks, deployed in dependency order (`chant graph --components`):
