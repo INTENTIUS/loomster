@@ -20,6 +20,10 @@
  * the ACM/Route53 custom domain are gated to the `production`/
  * `production-ha` tiers (chant#890) — `light` runs ALB DNS + HTTP only.
  *
+ * The artifact bucket's TLS-only policy (WAW042 — deny any request made over
+ * plaintext) is always-on hardening, unconditional on every tier — unlike
+ * the seams above, it has no `omit`/opt-out.
+ *
  * Style note: each seam's resource creation lives in its own module-level
  * `buildXxx()` helper below, invoked with a ternary at the call site (never
  * an `if` wrapping a resource constructor) — chant's EVL002 requires
@@ -79,6 +83,7 @@ import {
   EcsCluster_CapacityProviderStrategyItem,
   Role,
   Role_Policy,
+  S3BucketPolicy,
   Ref,
   Sub,
   SubIntrinsic,
@@ -457,6 +462,38 @@ function buildPrivateLink(
   return { nlb, nlbTargetGroup, nlbListener, vpcEndpointService };
 }
 
+/**
+ * S3 bucket policy denying any request made over plaintext (WAW042) — always-
+ * on hardening for the artifact bucket, every tier (chant#890). Encryption at
+ * rest is the bucket's own `BucketEncryption` (WAW006); this covers
+ * encryption in transit. `bucketArn` is an AttrRef masquerading as `string`
+ * (same convention as every attribute accessor elsewhere in this file), so
+ * the `/*` object-key suffix goes through `Sub` (chant#918) rather than JS
+ * template-literal concatenation.
+ */
+function buildArtifactBucketPolicy(bucketRef: string, bucketArn: string) {
+  const policyDocument = {
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Sid: "DenyInsecureTransport",
+        Effect: "Deny",
+        Principal: "*",
+        Action: "s3:*",
+        Resource: [bucketArn, Sub`${bucketArn}/*`],
+        Condition: { Bool: { "aws:SecureTransport": "false" } },
+      },
+    ],
+  };
+
+  const artifactBucketPolicy = new S3BucketPolicy({
+    Bucket: bucketRef,
+    PolicyDocument: policyDocument,
+  });
+
+  return { artifactBucketPolicy };
+}
+
 function buildAgentRole(
   naming: LoomNaming,
   tags: TagList,
@@ -527,6 +564,7 @@ export type SharedFoundationResult = {
   httpsListener: InstanceType<typeof Listener>;
   backendListenerRule: InstanceType<typeof ListenerRule>;
   artifactBucket: InstanceType<typeof Bucket>;
+  artifactBucketPolicy: InstanceType<typeof S3BucketPolicy>;
   ecsCluster: InstanceType<typeof EcsCluster>;
 
   // Network — present only when network.mode is "provision" (light tier only).
@@ -801,6 +839,9 @@ export const SharedFoundation = Composite<SharedFoundationProps, SharedFoundatio
     Tags: tags,
   }, defs?.artifactBucket), { DeletionPolicy: "Retain", UpdateReplacePolicy: "Retain" });
 
+  // WAW042, every tier — unconditional, unlike the seam-gated members above.
+  const { artifactBucketPolicy } = buildArtifactBucketPolicy(Ref(artifactBucket) as unknown as string, artifactBucket.Arn as string);
+
   // ── ECS cluster (shared by frontend/backend services) ────────────────
   const ecsCluster = new EcsCluster(mergeDefaults({
     ClusterName: naming.name("cluster"),
@@ -845,6 +886,7 @@ export const SharedFoundation = Composite<SharedFoundationProps, SharedFoundatio
     httpsListener,
     backendListenerRule,
     artifactBucket,
+    artifactBucketPolicy,
     ecsCluster,
     ...(provisionedNetwork ?? {}),
     ...(kms ?? {}),

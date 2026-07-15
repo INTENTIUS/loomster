@@ -390,7 +390,9 @@ function buildProxy(naming: LoomNaming, tags: TagList, core: DbCoreResult): Prox
       VpcSubnetIds: core.subnetIds,
       Auth: [proxyAuth],
       VpcSecurityGroupIds: [core.securityGroupId],
-      RequireTLS: false,
+      // WAW041 — require TLS on every client connection through the proxy;
+      // plaintext is never acceptable, production or production-ha alike.
+      RequireTLS: true,
       IdleClientTimeout: 1800,
       Tags: tags,
     },

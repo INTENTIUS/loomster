@@ -51,7 +51,7 @@ describe("SharedFoundation — base shape (light tier, reference-existing networ
 
     for (const expected of [
       "albSg", "ecsSg", "alb", "frontendTargetGroup", "backendTargetGroup",
-      "httpsListener", "backendListenerRule", "artifactBucket", "ecsCluster",
+      "httpsListener", "backendListenerRule", "artifactBucket", "artifactBucketPolicy", "ecsCluster",
       "kmsKey", "kmsAlias", "frontendRepo", "backendRepo", "agentRole",
     ]) {
       expect(names).toContain(expected);
@@ -337,5 +337,59 @@ describe("SharedFoundation — serializes to valid CloudFormation", () => {
       { "Fn::GetAtt": ["sharedFoundationArtifactBucket", "Arn"] },
       { "Fn::Sub": "${sharedFoundationArtifactBucket.Arn}/*" },
     ]);
+  });
+});
+
+// WAW042 — the artifact bucket needs a companion BucketPolicy denying any
+// request made over plaintext (a Deny statement keyed on
+// `aws:SecureTransport` being false). Always-on hardening, no seam/opt-out —
+// unlike KMS/ACM/Route53/ECR/agentRole above, this has no "omit" and is
+// present on every tier (chant#890's light-tier synth error, fixed here).
+describe("SharedFoundation — artifact bucket TLS-only policy (WAW042, every tier)", () => {
+  test("light tier: artifactBucketPolicy is present", () => {
+    const instance = SharedFoundation(baseLightProps());
+    expect(Object.keys(instance.members)).toContain("artifactBucketPolicy");
+  });
+
+  test("production tier: artifactBucketPolicy is present", () => {
+    const instance = SharedFoundation(baseProdProps());
+    expect(Object.keys(instance.members)).toContain("artifactBucketPolicy");
+  });
+
+  test("production-ha tier: artifactBucketPolicy is present", () => {
+    const instance = SharedFoundation(baseProdProps({ naming: { ...prodNaming, tier: "production-ha" } }));
+    expect(Object.keys(instance.members)).toContain("artifactBucketPolicy");
+  });
+
+  test("denies non-TLS requests on the artifact bucket, scoped to the bucket + its objects", () => {
+    const instance = SharedFoundation(baseLightProps());
+    const policyProps = (instance.artifactBucketPolicy as any).props;
+    expect((policyProps.Bucket as any).target).toBe(instance.artifactBucket);
+
+    const statement = policyProps.PolicyDocument.Statement[0];
+    expect(statement.Effect).toBe("Deny");
+    expect(statement.Principal).toBe("*");
+    expect(statement.Condition).toEqual({ Bool: { "aws:SecureTransport": "false" } });
+  });
+
+  test("serializes to a real CFN BucketPolicy targeting the artifact bucket, satisfying WAW042's own check", () => {
+    const instance = SharedFoundation(baseLightProps());
+    const expanded = expandComposite("sharedFoundation", instance);
+    resolveAttrRefs(expanded);
+    const output = awsSerializer.serialize(expanded) as string;
+    const template = JSON.parse(output);
+
+    const policyResource = template.Resources.sharedFoundationArtifactBucketPolicy;
+    expect(policyResource.Type).toBe("AWS::S3::BucketPolicy");
+    expect(policyResource.Properties.Bucket).toEqual({ Ref: "sharedFoundationArtifactBucket" });
+
+    // Mirrors WAW042's own `statementDeniesInsecureTransport` check (see
+    // lexicons/aws/src/lint/post-synth/waw042.ts) so this test fails the
+    // same way the real post-synth lint pass would if the statement regressed.
+    const statements = policyResource.Properties.PolicyDocument.Statement;
+    const hasTlsDeny = statements.some(
+      (s: any) => s.Effect === "Deny" && s.Condition?.Bool?.["aws:SecureTransport"] === "false",
+    );
+    expect(hasTlsDeny).toBe(true);
   });
 });

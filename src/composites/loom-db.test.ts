@@ -132,6 +132,16 @@ describe("LoomDb — provision, production tier", () => {
     expect((tgProps.DBProxyName as any).target).toBe(instance.rdsProxy);
     expect(tgProps.TargetGroupName).toBe("default");
   });
+
+  // WAW041 — RDS Proxy without RequireTLS: true lets clients connect over
+  // plaintext. Regression guard for the chant#890 tiering pass, which found
+  // this hardcoded false and blocking a green `npm run synth` on both
+  // production and production-ha.
+  test("RDS Proxy requires TLS on every client connection", () => {
+    const instance = LoomDb(prodProps());
+    const proxyProps = (instance.rdsProxy as any).props;
+    expect(proxyProps.RequireTLS).toBe(true);
+  });
 });
 
 describe("LoomDb — provision, production-ha tier", () => {
@@ -156,6 +166,12 @@ describe("LoomDb — provision, production-ha tier", () => {
     const hostedLambdaProps = (rotationProps.HostedRotationLambda as any).props;
     expect(hostedLambdaProps.RotationType).toBe("PostgreSQLSingleUser");
     expect(hostedLambdaProps.VpcSubnetIds).toBe("subnet-priv1,subnet-priv2");
+  });
+
+  test("RDS Proxy requires TLS on every client connection (WAW041)", () => {
+    const instance = LoomDb(prodHaProps());
+    const proxyProps = (instance.rdsProxy as any).props;
+    expect(proxyProps.RequireTLS).toBe(true);
   });
 });
 
@@ -231,6 +247,8 @@ describe("LoomDb — serializes to valid CloudFormation", () => {
 
     const targetGroupProps = template.Resources.loomDbRdsProxyTargetGroup.Properties;
     expect(targetGroupProps.DBProxyName).toEqual({ Ref: "loomDbRdsProxy" });
+
+    expect(template.Resources.loomDbRdsProxy.Properties.RequireTLS).toBe(true);
   });
 
   test("production-ha tier: template includes the rotation schedule", () => {
