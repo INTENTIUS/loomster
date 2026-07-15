@@ -16,6 +16,9 @@ export const oAssistantEndpointArn = output(agents.assistantEndpoint.AgentRuntim
 export const oAssistantMemoryArn = output(agents.assistantMemory.MemoryArn, "oAssistantMemoryArn");
 export const oAssistantWorkloadIdentityArn = output(agents.assistantWorkloadIdentity.WorkloadIdentityArn, "oAssistantWorkloadIdentityArn");
 export const oAssistantGatewayUrl = output(agents.assistantGateway.GatewayUrl, "oAssistantGatewayUrl");
+export const oAssistantCodeInterpreterRoleArn = agents.assistantCodeInterpreterRole
+  ? output(agents.assistantCodeInterpreterRole.Arn, "oAssistantCodeInterpreterRoleArn")
+  : undefined;
 
 export const oHarnessAgentRuntimeArn = agents.harnessAgentRuntime
   ? output(agents.harnessAgentRuntime.AgentRuntimeArn, "oHarnessAgentRuntimeArn")
@@ -28,4 +31,7 @@ export const oHarnessAgentEndpointArn = agents.harnessAgentEndpoint
   : undefined;
 export const oHarnessAgentMemoryArn = agents.harnessAgentMemory
   ? output(agents.harnessAgentMemory.MemoryArn, "oHarnessAgentMemoryArn")
+  : undefined;
+export const oHarnessAgentCodeInterpreterRoleArn = agents.harnessAgentCodeInterpreterRole
+  ? output(agents.harnessAgentCodeInterpreterRole.Arn, "oHarnessAgentCodeInterpreterRoleArn")
   : undefined;
