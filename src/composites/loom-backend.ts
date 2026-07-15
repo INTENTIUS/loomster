@@ -111,6 +111,18 @@ export interface LoomBackendProps {
   ecrKmsKeyArn: string;
   /** loom-db `oRdsSecretArn` (the SQLAlchemy connection-URL secret — matches Loom's own `pDatabaseSecretArn` doc: "from RDS stack output oRdsSecretArn"). */
   databaseSecretArn: string;
+  /**
+   * Light tier only (#46): a pre-built plain `postgresql+psycopg2://` URL. When
+   * set, `LOOM_DATABASE_URL` is emitted as a plain `Environment` var and the
+   * Secrets-Manager DB-URL secret is omitted — Floci's ECS does not inject
+   * `Secrets` into containers, so the light/local tier delivers the URL as
+   * plain env from loom-db's resolved endpoint output (see `../loom-backend/
+   * backend.ts`). When undefined (production/production-ha), the Secrets-Manager
+   * secret is used, unchanged. `LOOM_DATABASE_URL` does not match WAW046's
+   * secret-name pattern, so plain env here is lint-clean; the password-in-env
+   * divergence is a documented light-tier-only shortcut.
+   */
+  databaseUrlPlain?: string;
   /** loom-db `oSecretsKmsKeyArn`. */
   secretsKmsKeyArn: string;
   /** Published image (build-once, promote-by-digest — `"@Publish.uri"`/`"@Publish.digest"` at the component layer). */
@@ -457,14 +469,23 @@ export const LoomBackend = Composite<LoomBackendProps, LoomBackendResult>((props
     new TaskDefinition_KeyValuePair({ Name: "LOOM_LITELLM_PROXY_BASE_URL", Value: props.litellmProxyBaseUrl ?? "" }),
     new TaskDefinition_KeyValuePair({ Name: "LOOM_LITELLM_DISCOVERY_BASE_URL", Value: litellmDiscoveryBaseUrl }),
     new TaskDefinition_KeyValuePair({ Name: "LOG_LEVEL", Value: "info" }),
+    // Light tier (#46): LOOM_DATABASE_URL as plain env when the deployable
+    // stack pre-built it (Floci doesn't inject Secrets). `LOOM_DATABASE_URL`
+    // is not a WAW046 secret-name, so this is lint-clean.
+    ...(props.databaseUrlPlain !== undefined
+      ? [new TaskDefinition_KeyValuePair({ Name: "LOOM_DATABASE_URL", Value: props.databaseUrlPlain })]
+      : []),
   ];
 
-  // Secrets Manager — not plaintext Environment (WAW046). LOOM_DATABASE_URL
-  // pulls just the "url" key out of loom-db's JSON connection secret,
-  // matching Loom's own `!Sub "${pDatabaseSecretArn}:url::"` selector.
+  // Secrets Manager — the default (production) path. LOOM_DATABASE_URL pulls
+  // just the "url" key out of loom-db's JSON connection secret, matching Loom's
+  // own `!Sub "${pDatabaseSecretArn}:url::"` selector. Omitted on light tier,
+  // where the URL is a plain Environment var above (Floci can't inject Secrets).
   const databaseUrlSecretRef = Sub`${props.databaseSecretArn}:url::`;
   const secrets: InstanceType<typeof TaskDefinition_Secret>[] = [
-    new TaskDefinition_Secret({ Name: "LOOM_DATABASE_URL", ValueFrom: databaseUrlSecretRef as unknown as string }),
+    ...(props.databaseUrlPlain === undefined
+      ? [new TaskDefinition_Secret({ Name: "LOOM_DATABASE_URL", ValueFrom: databaseUrlSecretRef as unknown as string })]
+      : []),
     ...(props.litellmProxyApiKeySecretArn
       ? [new TaskDefinition_Secret({ Name: "LOOM_LITELLM_PROXY_API_KEY", ValueFrom: props.litellmProxyApiKeySecretArn })]
       : []),

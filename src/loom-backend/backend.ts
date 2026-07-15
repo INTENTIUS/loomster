@@ -10,13 +10,23 @@
  * `loom-cognito/cognito.ts` use).
  */
 
-import { Ref, Split } from "@intentius/chant-lexicon-aws";
+import { Ref, Split, Sub } from "@intentius/chant-lexicon-aws";
 import { LoomBackend } from "../composites/loom-backend";
 import { SUBNET_LIST_DELIMITER } from "../composites/shared-foundation";
 import * as params from "./params";
 
+// Light tier only (#46): build LOOM_DATABASE_URL as a plain env value from
+// loom-db's resolved endpoint/port (deploy-time Refs) plus the author-time
+// username/password/dbName. `Fn::Sub` over the endpoint/port *parameters*
+// resolves on Floci, unlike the GetAtt inside loom-db's Secrets-Manager
+// secret. Production/production-ha leave this undefined and keep the secret.
+const databaseUrlPlain = params.isLightTier
+  ? (Sub`postgresql+psycopg2://${params.dbUsername}:${params.dbPassword}@${Ref(params.pRdsEndpoint)}:${Ref(params.pRdsPort)}/${params.dbName}` as unknown as string)
+  : undefined;
+
 export const backend = LoomBackend({
   naming: params.namingParams,
+  databaseUrlPlain,
 
   ecsClusterArn: Ref(params.pEcsClusterArn) as unknown as string,
   ecsClusterName: Ref(params.pEcsClusterName) as unknown as string,

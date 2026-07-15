@@ -64,6 +64,24 @@ export const pSecretsKmsKeyArn = new Parameter("String", { description: "KMS key
 export const pCognitoUserPoolId = new Parameter("String", { description: "Cognito User Pool id (loom-cognito oCognitoUserPoolId)", defaultValue: "" });
 export const pImageUri = new Parameter("String", { description: "Published backend image (build-once, promote-by-digest — @Publish.uri)" });
 
+// ── Light-tier plain DB URL (#46) ─────────────────────────────────────────
+// On the light (Floci) tier the backend cannot read its DB URL from Secrets
+// Manager: Floci's ECS does not inject `Secrets` into containers, and does not
+// resolve `Fn::Sub ${LogicalId.Attribute}` GetAtt inside a `SecretString`.
+// So light tier builds `LOOM_DATABASE_URL` as a plain `Environment` var (see
+// ./backend.ts) from loom-db's *already-resolved* endpoint/port outputs —
+// which chant's cfn-deploy resolves to real literals (proven on Floci:
+// oRdsEndpoint=172.17.0.2, oRdsPort=7001) and an `Fn::Sub` over these
+// *parameters* resolves fine, unlike a GetAtt. Production/production-ha keep
+// the Secrets-Manager secret unchanged. The endpoint + port are deploy-time
+// (cross-stack); the username/password/dbName are author-time-known and baked.
+export const pRdsEndpoint = new Parameter("String", { description: "RDS endpoint address (loom-db oRdsEndpoint) — light-tier plain DB URL", defaultValue: "" });
+export const pRdsPort = new Parameter("String", { description: "RDS endpoint port (loom-db oRdsPort) — light-tier plain DB URL", defaultValue: "5432" });
+export const isLightTier = namingParams.tier === "light";
+export const dbUsername = process.env.LOOM_DB_USERNAME ?? "loom";
+export const dbPassword = process.env.LOOM_DB_PASSWORD ?? "";
+export const dbName = process.env.LOOM_DB_NAME ?? "loom";
+
 // ── Sizing (chant#890 tier defaults live in the composite; overrides here) ──
 export const cpu = process.env.LOOM_BACKEND_CPU;
 export const memory = process.env.LOOM_BACKEND_MEMORY;

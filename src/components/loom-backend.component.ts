@@ -128,6 +128,11 @@ export const loomBackend: Component = {
           pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
           pDatabaseSecretArn: stackOutput("loom-db", "oRdsSecretArn"),
           pSecretsKmsKeyArn: stackOutput("loom-db", "oSecretsKmsKeyArn"),
+          // Light-tier plain DB URL (#46): resolved endpoint/port from loom-db.
+          // Harmless (defaulted, unused) on production/production-ha, which keep
+          // the Secrets-Manager DB-URL secret.
+          pRdsEndpoint: stackOutput("loom-db", "oRdsEndpoint"),
+          pRdsPort: stackOutput("loom-db", "oRdsPort"),
           pCognitoUserPoolId: stackOutput("loom-cognito", "oCognitoUserPoolId"),
           pImageUri: "@Publish.uri",
         },
