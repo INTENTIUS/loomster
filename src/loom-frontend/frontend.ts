@@ -8,8 +8,9 @@
  * its own, so none of chant's EVL rules apply to it.
  */
 
-import { Ref } from "@intentius/chant-lexicon-aws";
+import { Ref, Split } from "@intentius/chant-lexicon-aws";
 import { LoomFrontend } from "../composites/loom-frontend";
+import { SUBNET_LIST_DELIMITER } from "../composites/shared-foundation";
 import * as params from "./params";
 
 export const frontend = LoomFrontend({
@@ -20,7 +21,7 @@ export const frontend = LoomFrontend({
   targetGroupArn: Ref(params.pTargetGroupArn) as unknown as string,
   imageUri: Ref(params.pImageUri) as unknown as string,
 
-  publicSubnetIds: params.publicSubnetIds as string[],
+  publicSubnetIds: Split(SUBNET_LIST_DELIMITER, Ref(params.pPublicSubnetIds)) as unknown as string[],
 
   cpu: params.cpu,
   memory: params.memory,

@@ -274,7 +274,13 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
   const missingSubnetsError = new Error(
     "LoomAgents: privateSubnetIds is required on production/production-ha (agents run in VPC network mode)",
   );
-  if (fullTier && !props.privateSubnetIds?.length) {
+  // Presence only (`undefined`), not `.length` — a deploy-time `Fn::Split`
+  // (chant#928/loomster#35's shared-foundation cross-stack wiring, see
+  // ../loom-agents/agents.ts) is a real, present value here but isn't a real
+  // array, so `.length` would be `undefined` and wrongly trip this guard
+  // even though a value genuinely was supplied. CloudFormation itself
+  // rejects an empty subnet list when the runtime actually deploys.
+  if (fullTier && !props.privateSubnetIds) {
     throw missingSubnetsError;
   }
 

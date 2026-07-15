@@ -3,6 +3,11 @@ dist/
 *.log
 .DS_Store
 
+# docker-build's `into: "archive"` build-archive tarball (a real chant run's
+# Build phase writes this to the project root, relative to cwd) — never a
+# source artifact.
+archive
+
 # Upstream awslabs/loom checkout (pinned tag) — the docker-build context for
 # loom-backend/loom-frontend. Not vendored into this repo; see
 # src/components/loom-backend.component.ts's docstring.

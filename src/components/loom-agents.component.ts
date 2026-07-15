@@ -53,6 +53,7 @@ export const loomAgents: Component = {
         inputs: {
           pArtifactBucket: stackOutput("shared-foundation", "oArtifactBucket"),
           pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
+          pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
           pDomainName: stackOutput("shared-foundation", "oDomainName"),
           pCognitoTokenUrl: stackOutput("loom-cognito", "oCognitoTokenUrl"),
           pCognitoDiscoveryUrl: stackOutput("loom-cognito", "oCognitoDiscoveryUrl"),

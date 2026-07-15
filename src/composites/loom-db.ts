@@ -86,8 +86,22 @@ export type DbIngressSeam =
 
 export interface LoomDbProvisionData {
   mode?: "provision";
-  /** Reference-existing only — loom-db never provisions a VPC (owned by chant#886/shared-foundation). Subnet ids need at least 2, across 2 AZs. */
-  network: { vpcId: string; subnetIds: string[] };
+  /**
+   * Reference-existing only — loom-db never provisions a VPC (owned by
+   * chant#886/shared-foundation). Subnet ids need at least 2, across 2 AZs.
+   *
+   * `subnetIdsCsv` is the same subnets already comma-joined, for
+   * `RotationSchedule_HostedRotationLambda.VpcSubnetIds` (a genuine
+   * comma-separated `string`, unlike `DBProxy.VpcSubnetIds`'s real list —
+   * see `buildRotation` below). Optional because it only needs to be passed
+   * explicitly when `subnetIds` is a deploy-time `Fn::Split` this composite
+   * can't `.join(",")` in JS at synth time (chant#928/loomster#35 —
+   * `../loom-db/db.ts`'s shared-foundation cross-stack wiring supplies the
+   * pre-joined string it already has instead); defaults to
+   * `subnetIds.join(",")` when omitted, which is exactly right for every
+   * literal-array caller (every composite unit test included).
+   */
+  network: { vpcId: string; subnetIds: string[]; subnetIdsCsv?: string };
   dbIngress?: DbIngressSeam;
   /** Loom's `pDbName`. Default: "loom". */
   dbName?: string;
@@ -223,6 +237,11 @@ function buildDbCore(naming: LoomNaming, tags: TagList, tier: Tier, data: LoomDb
   const notEnoughSubnetsError = new Error(
     "LoomDb: data.network.subnetIds needs at least 2 subnets (across 2 AZs) for the DB subnet group",
   );
+  // Only a real, synth-time-known array has a meaningful `.length` — a
+  // deploy-time `Fn::Split` (chant#928/loomster#35's cross-stack wiring)
+  // isn't a real array here, so this check harmlessly no-ops for that path
+  // (`undefined < 2` is `false`); CloudFormation itself will reject too few
+  // subnets when the DB subnet group actually deploys.
   if (data.network.subnetIds.length < 2) {
     throw notEnoughSubnetsError;
   }
@@ -331,7 +350,7 @@ function buildDbCore(naming: LoomNaming, tags: TagList, tier: Tier, data: LoomDb
   });
   const credentialsSecretArn = Ref(rdsCredentialsSecret) as unknown as string;
 
-  const subnetIdsCsv = data.network.subnetIds.join(",");
+  const subnetIdsCsv = data.network.subnetIdsCsv ?? data.network.subnetIds.join(",");
 
   return {
     members: { rdsSecurityGroup, rdsSubnetGroup, secretsKmsKey, secretsKmsKeyAlias, rdsMonitoringRole, rdsInstance, rdsCredentialsSecret },

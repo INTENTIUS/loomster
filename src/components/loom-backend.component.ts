@@ -5,10 +5,12 @@ import { namingParams } from "../loom-backend/params";
 /**
  * The `loom-backend` service (chant#889) — build (`docker-build` ->
  * archive) -> publish (`publish-image`, promote by digest) -> apply
- * (`cfn-deploy`) -> verify (`wait-steady-state` + `health-gate`), with a
- * `rollback-previous` compensation phase. The template is what
- * `chant build src/loom-backend --lexicon aws` synthesizes from
- * `../composites/loom-backend.ts`.
+ * (`cfn-deploy`), with a `rollback-previous` compensation phase. The
+ * template is what `chant build src/loom-backend --lexicon aws`
+ * synthesizes from `../composites/loom-backend.ts`. No separate
+ * `ecs-update-service` step, and no Verify phase, unlike the reference
+ * preset this mirrors — see the Apply phase's own comment for why
+ * (chant#928/loomster#35).
  *
  * **Docker build context.** Loom's application source (the `backend/`
  * directory + its `Dockerfile`) is not vendored into this repo — it lives
@@ -33,6 +35,16 @@ import { namingParams } from "../loom-backend/params";
  * uses. Verified by building this exact Dockerfile/context pair with real
  * `docker build` against a real `v1.6.0` checkout while wiring this up
  * (#20) — the image builds clean.
+ *
+ * **`dockerfile` is CWD-relative, not context-relative** (chant#928/
+ * loomster#35, found live). `DockerBuildInput.dockerfile`'s own docstring
+ * says "relative to context", but `@intentius/chant`'s `realDocker.build`
+ * (`components/verbs/cloud-executor.ts`) passes it straight through as
+ * `docker build -f <dockerfile> <context>` with no join against `context` —
+ * Docker CLI itself resolves a relative `-f` against the process's current
+ * directory, not the context directory. `chant run` always executes from
+ * the project root, so `dockerfile` here is the full project-root-relative
+ * path (`vendor/loom/backend/Dockerfile`), not `backend/Dockerfile` alone.
  *
  * **Preset gap note (chant#889 acceptance criterion).** This hand-composes
  * the same Publish -> Apply -> Verify -> Rollback shape
@@ -67,8 +79,19 @@ export const loomBackend: Component = {
   name: "loom-backend",
   archetype: "service",
   dependsOn: ["shared-foundation", "loom-db", "loom-cognito"],
-  build: { kind: "docker-build", context: "vendor/loom", dockerfile: "backend/Dockerfile", into: "archive" },
+  build: { kind: "docker-build", context: "vendor/loom", dockerfile: "vendor/loom/backend/Dockerfile", into: "archive" },
   deploy: [
+    // `build` above is descriptive metadata only (introspection/CI-YAML
+    // generation) — chant's local `interpret` driver (`chant run
+    // --components`) only ever executes `deploy`'s own phases
+    // (`runComponentDeploy` in @intentius/chant's driver.ts iterates
+    // `component.deploy`, never `component.build`), so the actual
+    // `docker-build` step has to be a real phase here too, or "Publish"'s
+    // `from: "archive"` has nothing to load (chant#928/loomster#35 — same
+    // gap found live on `loom-frontend.component.ts`).
+    phase("Build", [
+      { kind: "docker-build", context: "vendor/loom", dockerfile: "vendor/loom/backend/Dockerfile", into: "archive" },
+    ]),
     phase("Publish", [
       { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oBackendRepositoryUri") },
     ]),
@@ -84,18 +107,30 @@ export const loomBackend: Component = {
           pTargetGroupArn: stackOutput("shared-foundation", "oBackendTargetGroupArn"),
           pArtifactBucket: stackOutput("shared-foundation", "oArtifactBucket"),
           pEcrKmsKeyArn: stackOutput("shared-foundation", "oEcrKmsKeyArn"),
+          pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
           pDatabaseSecretArn: stackOutput("loom-db", "oRdsSecretArn"),
           pSecretsKmsKeyArn: stackOutput("loom-db", "oSecretsKmsKeyArn"),
           pCognitoUserPoolId: stackOutput("loom-cognito", "oCognitoUserPoolId"),
           pImageUri: "@Publish.uri",
         },
       },
-      { kind: "ecs-update-service", cluster: clusterArn, service: serviceName },
+      // No separate `ecs-update-service` step — same reasoning as
+      // `loom-frontend.component.ts` (chant#928/loomster#35, found live):
+      // `cfn-deploy` already rolls the new image out via a new
+      // `TaskDefinition` revision on the `EcsService` resource, and
+      // `ecs-update-service`'s real implementation crashes unconditionally
+      // against Floci (`described.service.deployments[0]?.id` throws when
+      // `deployments` is absent from the response, which is what Floci's
+      // `ecs update-service` returns — verified live). Filed upstream.
     ]),
-    phase("Verify", [
-      { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },
-      { kind: "health-gate", path: "/health" },
-    ]),
+    // No Verify phase today (chant#928/loomster#35, found live) — same two
+    // gaps `loom-frontend.component.ts` documents in full: `wait-steady-
+    // state` throws unconditionally against Floci (`svc?.deployments.
+    // length` — Floci's `ecs describe-services` never returns a
+    // `deployments` field), and `health-gate`'s bare `path` (no host field,
+    // no Wiring string-interpolation at the component-authoring layer)
+    // can never compose a real fetchable URL out of `oDomainName`. Both are
+    // real, filed gaps; re-add once fixed.
   ],
   rollback: [phase("Rollback", [{ kind: "rollback-previous", service: serviceName, cluster: clusterArn }])],
 };

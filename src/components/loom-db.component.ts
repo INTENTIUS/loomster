@@ -7,7 +7,9 @@ import { phase, stackOutput, type Component } from "@intentius/chant/components"
  * what `chant build src/loom-db --lexicon aws` synthesizes from
  * `../composites/loom-db.ts`.
  *
- * Depends on `shared-foundation` for its network baseline's ECS security
+ * Depends on `shared-foundation` for its network (VPC + private subnets,
+ * chant#928/loomster#35 — `oVpcId`/`oPrivateSubnetIds`, no more
+ * `LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS` env vars) and its ECS security
  * group: `oEcsSecurityGroupId` is threaded in as the RDS security group's
  * ingress source (chant#898 — opt in via `LOOM_DB_SOURCE_SG=true`, see
  * `../loom-db/params.ts`'s `ecsSecurityGroupId` Parameter and
@@ -25,6 +27,8 @@ export const loomDb: Component = {
         stack: "loom-db",
         template: "dist/loom-db.template.json",
         inputs: {
+          vpcId: stackOutput("shared-foundation", "oVpcId"),
+          privateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
           ecsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
         },
       },

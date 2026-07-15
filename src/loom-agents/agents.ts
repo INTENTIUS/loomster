@@ -10,8 +10,9 @@
  * `../loom-db/db.ts` use).
  */
 
-import { Ref } from "@intentius/chant-lexicon-aws";
+import { Ref, Split } from "@intentius/chant-lexicon-aws";
 import { LoomAgents } from "../composites/loom-agents";
+import { SUBNET_LIST_DELIMITER } from "../composites/shared-foundation";
 import * as params from "./params";
 
 export const agents = LoomAgents({
@@ -26,7 +27,7 @@ export const agents = LoomAgents({
   assistantImageUri: Ref(params.pAssistantImageUri) as unknown as string,
   harnessImageUri: Ref(params.pHarnessAgentImageUri) as unknown as string,
 
-  privateSubnetIds: params.privateSubnetIds as string[],
+  privateSubnetIds: Split(SUBNET_LIST_DELIMITER, Ref(params.pPrivateSubnetIds)) as unknown as string[],
 
   bedrockModelArns: params.bedrockModelArns,
   memoryEventExpiryDays: params.memoryEventExpiryDays,

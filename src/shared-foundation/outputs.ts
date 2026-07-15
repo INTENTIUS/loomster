@@ -6,16 +6,56 @@
  *
  * `oCertificateArn` and `oHostedZoneId` only exist on production/
  * production-ha (chant#890 tiering — ACM/Route53 are absent on light).
+ *
+ * `oVpcId`/`oPublicSubnetIds`/`oPrivateSubnetIds` (chant#928/loomster#35) —
+ * the network this stack owns, either provisioned itself (light tier, no
+ * external network env vars) or threaded straight through from
+ * `network.mode: "reference-existing"` (prod BYO). Every downstream
+ * network-dependent consumer (loom-db, loom-backend, loom-frontend,
+ * loom-agents) reads these instead of its own `LOOM_VPC_ID`/`LOOM_*_SUBNET_IDS`
+ * env vars, so light tier is fully self-contained. CloudFormation Outputs
+ * can't be lists, so the subnet id lists are joined into a single string
+ * here via `joinOutputValues` (`SUBNET_LIST_DELIMITER` — `:`, not `,`; see
+ * that constant's own docstring for why); consumers `Fn::Split` on the same
+ * constant to get the list back.
  */
 
 import { output, Ref } from "@intentius/chant-lexicon-aws";
 import { foundation } from "./foundation";
 import { namingParams, domainName } from "./params";
+import { network } from "./network";
 import { loomNaming } from "../lib/naming";
-import { literalOutputValue } from "../composites/shared-foundation";
+import { literalOutputValue, joinOutputValues } from "../composites/shared-foundation";
 
 const naming = loomNaming(namingParams, "shared-foundation");
 const fullTier = namingParams.tier !== "light";
+
+// ── network (provisioned light-tier VPC, or the given reference-existing one) ──
+export const oVpcId = output(
+  network.mode === "provision" ? foundation.vpc!.VpcId : literalOutputValue(network.vpcId),
+  "oVpcId",
+);
+
+// publicSubnetIds always exists: 2 provisioned public subnets (light,
+// network.mode "provision") or the given ids (reference-existing).
+const publicSubnetIdList: string[] = network.mode === "provision"
+  ? [foundation.publicSubnet1!.SubnetId as string, foundation.publicSubnet2!.SubnetId as string]
+  : network.publicSubnetIds;
+export const oPublicSubnetIds = output(joinOutputValues(publicSubnetIdList), "oPublicSubnetIds");
+
+// privateSubnetIds: the provisioned light-tier network never creates private
+// subnets (2 public subnets only, see buildProvisionedNetwork in
+// ../composites/shared-foundation.ts), and reference-existing may also omit
+// them (only required once PrivateLink is active, full tier). Either way,
+// fall back to the same public subnets the ALB uses — correct for
+// light/local, and harmless for a reference-existing network genuinely
+// without a separate private tier.
+const referenceExistingPrivateSubnetIds = network.mode === "reference-existing" ? network.privateSubnetIds : undefined;
+const privateSubnetIdList: string[] =
+  referenceExistingPrivateSubnetIds && referenceExistingPrivateSubnetIds.length > 0
+    ? referenceExistingPrivateSubnetIds
+    : publicSubnetIdList;
+export const oPrivateSubnetIds = output(joinOutputValues(privateSubnetIdList), "oPrivateSubnetIds");
 
 // ── infra.yaml ────────────────────────────────────────────────────────────
 export const oAlbArn = output(foundation.alb.LoadBalancerArn, "oAlbArn");

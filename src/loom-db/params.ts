@@ -2,13 +2,15 @@
  * Concrete parameter source for the deployable `loom-db` stack (chant#887).
  * Everything here comes from the environment (LOOM001 — nothing hardcoded in
  * this file or the composite), same convention `shared-foundation/params.ts`
- * uses — except `ecsSecurityGroupId`, which is a genuine CloudFormation
- * `Parameter` because it crosses stacks: `../components/loom-db.component.ts`
- * wires it from shared-foundation's `oEcsSecurityGroupId` output at deploy
- * time via `stackOutput("shared-foundation", "oEcsSecurityGroupId")`. Every
- * other input (project/env/instance/tier, VPC id, subnet ids, DB password,
- * ...) is already known outside any stack's outputs, so it's read straight
- * from the environment.
+ * uses — except `vpcId`/`privateSubnetIds`/`ecsSecurityGroupId`, which are
+ * genuine CloudFormation `Parameter`s because they cross stacks:
+ * `../components/loom-db.component.ts` wires them from shared-foundation's
+ * `oVpcId`/`oPrivateSubnetIds`/`oEcsSecurityGroupId` outputs at deploy time
+ * (chant#928/loomster#35 — the RDS instance's own network comes from
+ * shared-foundation, not a `LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS` env var).
+ * Every other input (project/env/instance/tier, DB password, ...) is already
+ * known outside any stack's outputs, so it's read straight from the
+ * environment.
  */
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
@@ -51,22 +53,19 @@ function dataModeFromEnv(): DataMode {
 
 export const dataMode = dataModeFromEnv();
 
-function splitCsv(value: string | undefined): string[] | undefined {
-  if (!value) return undefined;
-  const parts = value.split(",").map((s) => s.trim()).filter(Boolean);
-  return parts.length > 0 ? parts : undefined;
-}
-
 /**
  * BYO network (chant#886/#887 scope: "network/KMS provisioning owned by
  * shared-foundation, referenced here") — loom-db never provisions a VPC.
- * These are the same private-subnet baseline `shared-foundation/network.ts`
- * reads (`LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS`), since the RDS instance
- * belongs in private subnets alongside the ECS tasks, not the ALB's public
- * ones. Only meaningful for `data.mode: "provision"`.
+ * Real CloudFormation `Parameter`s, resolved at deploy time via
+ * `../components/loom-db.component.ts`'s `stackOutput("shared-foundation",
+ * "oVpcId"/"oPrivateSubnetIds")` wiring, since the RDS instance belongs in
+ * private subnets alongside the ECS tasks, not the ALB's public ones.
+ * `privateSubnetIds` is a comma-joined string (CloudFormation Outputs can't
+ * be lists) — split back apart in `./db.ts`. Only meaningful for
+ * `data.mode: "provision"`.
  */
-export const vpcId = process.env.LOOM_VPC_ID;
-export const dbSubnetIds = splitCsv(process.env.LOOM_PRIVATE_SUBNET_IDS);
+export const vpcId = new Parameter("AWS::EC2::VPC::Id", { description: "shared-foundation VPC id (shared-foundation oVpcId)" });
+export const privateSubnetIds = new Parameter("String", { description: "Comma-separated private subnet ids for the RDS subnet group (shared-foundation oPrivateSubnetIds)" });
 
 /** CIDR allowed to reach RDS directly — Loom's own `pAllowedCidr` posture. Ignored once `LOOM_DB_SOURCE_SG_ID` is set (chant#898: reference shared-foundation's ECS security group instead of a CIDR block). */
 export const allowedCidr = process.env.LOOM_DB_ALLOWED_CIDR;

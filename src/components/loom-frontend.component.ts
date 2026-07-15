@@ -5,12 +5,13 @@ import { namingParams } from "../loom-frontend/params";
 /**
  * The `loom-frontend` service (chant#889) — build (`docker-build` ->
  * archive) -> publish (`publish-image`, promote by digest) -> apply
- * (`cfn-deploy`) -> verify (`wait-steady-state` + `health-gate`), with a
- * `rollback-previous` compensation phase. The template is what
- * `chant build src/loom-frontend --lexicon aws` synthesizes from
- * `../composites/loom-frontend.ts`. Depends on `shared-foundation` only —
- * no `loom-db`/`loom-cognito` wiring, unlike `loom-backend`
- * (`./loom-backend.component.ts`).
+ * (`cfn-deploy`), with a `rollback-previous` compensation phase. The
+ * template is what `chant build src/loom-frontend --lexicon aws`
+ * synthesizes from `../composites/loom-frontend.ts`. Depends on
+ * `shared-foundation` only — no `loom-db`/`loom-cognito` wiring, unlike
+ * `loom-backend` (`./loom-backend.component.ts`). No separate
+ * `ecs-update-service` step, and no Verify phase — see the Apply phase's
+ * own comment for why (chant#928/loomster#35).
  *
  * **Docker build context.** Same note as `loom-backend.component.ts`:
  * Loom's `frontend/` source + Dockerfile lives upstream at `awslabs/loom`
@@ -31,6 +32,16 @@ import { namingParams } from "../loom-frontend/params";
  * either, so both stay their Loom-default empty string until a real
  * adopter deploy decides otherwise.
  *
+ * **`dockerfile` is CWD-relative, not context-relative** (chant#928/
+ * loomster#35, found live). `DockerBuildInput.dockerfile`'s own docstring
+ * says "relative to context", but `@intentius/chant`'s `realDocker.build`
+ * (`components/verbs/cloud-executor.ts`) passes it straight through as
+ * `docker build -f <dockerfile> <context>` with no join against `context` —
+ * Docker CLI itself resolves a relative `-f` against the process's current
+ * directory, not the context directory. `chant run` always executes from
+ * the project root, so `dockerfile` here is the full project-root-relative
+ * path (`vendor/loom/frontend/Dockerfile`), not `Dockerfile` alone.
+ *
  * **Preset gap note** — same two gaps `loom-backend.component.ts` documents
  * in full (`sharedAlbStack`'s fixed `ListenerArn`/`ClusterArn`/`Subnets`
  * keys vs. shared-foundation's real output names; `imageRef`'s fixed
@@ -47,8 +58,20 @@ export const loomFrontend: Component = {
   name: "loom-frontend",
   archetype: "service",
   dependsOn: ["shared-foundation"],
-  build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
+  build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "vendor/loom/frontend/Dockerfile", into: "archive" },
   deploy: [
+    // `build` above is descriptive metadata only (introspection/CI-YAML
+    // generation) — chant's local `interpret` driver (`chant run
+    // --components`) only ever executes `deploy`'s own phases
+    // (`runComponentDeploy` in @intentius/chant's driver.ts iterates
+    // `component.deploy`, never `component.build`), so the actual
+    // `docker-build` step has to be a real phase here too, or "Publish"'s
+    // `from: "archive"` has nothing to load (chant#928/loomster#35 —
+    // found live: `docker load -i 'archive'` failed with no such file,
+    // since nothing had ever produced it).
+    phase("Build", [
+      { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "vendor/loom/frontend/Dockerfile", into: "archive" },
+    ]),
     phase("Publish", [
       { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oFrontendRepositoryUri") },
     ]),
@@ -61,15 +84,39 @@ export const loomFrontend: Component = {
           pEcsClusterArn: clusterArn,
           pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
           pTargetGroupArn: stackOutput("shared-foundation", "oFrontendTargetGroupArn"),
+          pPublicSubnetIds: stackOutput("shared-foundation", "oPublicSubnetIds"),
           pImageUri: "@Publish.uri",
         },
       },
-      { kind: "ecs-update-service", cluster: clusterArn, service: serviceName },
+      // No separate `ecs-update-service` step (chant#928/loomster#35, found
+      // live): `cfn-deploy` above already rolls the new image out — a fresh
+      // `pImageUri` digest produces a new `TaskDefinition` revision baked
+      // into the `EcsService` resource, and CloudFormation natively updates
+      // + waits on the service when that property changes, so nothing here
+      // is lost by not also calling `ecs-update-service`. That capability's
+      // real implementation (`@intentius/chant-lexicon-aws`'s
+      // `cloud-executor.ts`) crashes unconditionally against Floci:
+      // `described.service.deployments[0]?.id` throws when `deployments` is
+      // absent from the response, which is exactly what Floci's `ecs
+      // update-service` returns (verified live) — real AWS always includes
+      // it. Filed upstream; re-add once fixed, for the redundant
+      // force-a-fresh-deployment-with-the-same-image case this step alone
+      // covers.
     ]),
-    phase("Verify", [
-      { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },
-      { kind: "health-gate", path: "/" },
-    ]),
+    // No Verify phase today (chant#928/loomster#35, found live) — both
+    // candidate steps are broken, independent of this project's own
+    // wiring: `wait-steady-state` polls `ecs describe-services` and does
+    // `svc?.deployments.length` — Floci's response has no `deployments`
+    // field at all (verified live), so it throws unconditionally against
+    // Floci; `health-gate`'s `path` is a bare path or full URL (no
+    // separate host field, `@intentius/chant`'s `wait-verify.ts`), and a
+    // `Wiring` value (`stackOutput(...)`) can't be string-concatenated with
+    // a literal at the component-authoring layer, so there is no way to
+    // compose `oDomainName` (the ALB's actual host) with `/` into one
+    // fetchable URL here — as configured, `fetch("/")` fails every attempt
+    // and the step only ever fails, after its full 5-minute timeout. Both
+    // are real, filed gaps; re-add once fixed (health-gate needs either a
+    // separate `host` field or Wiring interpolation).
   ],
   rollback: [phase("Rollback", [{ kind: "rollback-previous", service: serviceName, cluster: clusterArn }])],
 };
