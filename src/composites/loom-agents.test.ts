@@ -31,11 +31,13 @@ function baseProps(overrides: Partial<LoomAgentsProps> = {}): LoomAgentsProps {
 const ASSISTANT_ONLY_MEMBERS = [
   "assistantRole", "assistantGatewayRole", "assistantRuntime", "assistantEndpoint",
   "assistantMemory", "assistantWorkloadIdentity", "assistantGateway", "assistantGatewayTarget",
+  "assistantCodeInterpreterRole",
 ];
 
 const HARNESS_AGENT_MEMBERS = [
   "harnessAgentRole", "harnessAgentGatewayRole", "harnessAgentRuntime", "harnessAgentEndpoint",
   "harnessAgentMemory", "harnessAgentWorkloadIdentity", "harnessAgentGateway", "harnessAgentGatewayTarget",
+  "harnessAgentCodeInterpreterRole",
 ];
 
 describe("LoomAgents — light tier", () => {
@@ -123,6 +125,31 @@ describe("LoomAgents — light tier", () => {
       .find((p) => p.PolicyName === "loom-test-a-loom-agents-assistant-bedrock-policy");
     expect((bedrockPolicy.PolicyDocument as any).Statement[0].Resource).toEqual(["arn:aws:bedrock:*::foundation-model/*"]);
   });
+
+  test("provisions a Code Interpreter sandbox execution role for the assistant (Loom's code_interpreter_role.yaml)", () => {
+    const instance = LoomAgents(baseProps());
+    expect(instance.assistantCodeInterpreterRole).toBeDefined();
+    const ciProps = (instance.assistantCodeInterpreterRole as any).props;
+    expect(ciProps.RoleName).toBe("loom-test-a-loom-agents-assistant-ci-role");
+    // Trust: bedrock-agentcore, with the confused-deputy SourceAccount guard.
+    const trust = ciProps.AssumeRolePolicyDocument as any;
+    expect(trust.Statement[0].Principal.Service).toBe("bedrock-agentcore.amazonaws.com");
+    expect(trust.Statement[0].Condition.StringEquals["aws:SourceAccount"]).toBeDefined();
+    // Sandbox permissions: S3 (code-interpreter bucket) + CloudWatch Logs.
+    const policyDoc = ((ciProps.Policies as any[])[0] as any).props.PolicyDocument as any;
+    const actions = policyDoc.Statement.flatMap((s: any) => s.Action);
+    expect(actions).toEqual(
+      expect.arrayContaining(["s3:GetObject", "s3:PutObject", "logs:CreateLogGroup", "logs:PutLogEvents"]),
+    );
+    // The loom:role_type discriminator Loom's own role carries.
+    expect(ciProps.Tags).toContainEqual({ Key: "loom:role_type", Value: "code_interpreter" });
+  });
+
+  test("codeInterpreter: false omits the Code Interpreter role", () => {
+    const instance = LoomAgents(baseProps({ codeInterpreter: false }));
+    expect(instance.assistantCodeInterpreterRole).toBeUndefined();
+    expect(Object.keys(instance.members)).not.toContain("assistantCodeInterpreterRole");
+  });
 });
 
 describe("LoomAgents — production tier", () => {
@@ -165,6 +192,14 @@ describe("LoomAgents — production tier", () => {
   test("memoryEventExpiryDays is overridable", () => {
     const instance = LoomAgents(baseProps({ ...fullTierOverrides, memoryEventExpiryDays: 45 }));
     expect((instance.assistantMemory as any).props.EventExpiryDuration).toBe(45);
+  });
+
+  test("provisions a Code Interpreter role for the harness agent too (per-agent, like Loom)", () => {
+    const instance = LoomAgents(baseProps(fullTierOverrides));
+    expect(instance.harnessAgentCodeInterpreterRole).toBeDefined();
+    expect((instance.harnessAgentCodeInterpreterRole as any).props.RoleName).toBe(
+      "loom-test-a-loom-agents-harness-agent-ci-role",
+    );
   });
 });
 

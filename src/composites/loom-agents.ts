@@ -81,6 +81,7 @@ import {
   AgentCoreAgent,
   type AgentCoreAgentProps,
   type AgentCoreAgentResult,
+  Role,
   Role_Policy,
   Sub,
   AWS,
@@ -113,6 +114,14 @@ export interface LoomAgentsProps {
   /** No-code AgentCore-harness agent's image — config-only, a stock/managed image. Required only on production/production-ha; ignored on light. */
   harnessImageUri?: string;
 
+  /**
+   * Provision an AgentCore Code Interpreter sandbox execution role per agent
+   * (Loom's own `shared/iac/code_interpreter_role.yaml`, v1.6.0). Default:
+   * `true` — Loom ships this role as part of the standard deploy, so agents
+   * that use the code-interpreter tool have an execution role. Set `false` to
+   * omit it (e.g. a deployment whose agents never invoke the sandbox).
+   */
+  codeInterpreter?: boolean;
   /** Bedrock model ARNs this agent set's roles may invoke. Default: `["arn:aws:bedrock:*::foundation-model/*"]` (matches shared-foundation's own `agentRole` default, chant#886). */
   bedrockModelArns?: string[];
   /** AgentCore Memory event retention, in days. Default: tier-driven — the #882 composite's own 30-day default on light, 90 on production/production-ha. CFN bounds: 3-365 (enforced by the #882 composite). */
@@ -145,6 +154,8 @@ export type LoomAgentsResult = {
   assistantWorkloadIdentity: AgentCoreAgentResult["workloadIdentity"];
   assistantGateway: AgentCoreAgentResult["gateway"];
   assistantGatewayTarget: AgentCoreAgentResult["gatewayTarget"];
+  /** AgentCore Code Interpreter sandbox execution role (Loom's `code_interpreter_role.yaml`). Present unless `codeInterpreter: false`. */
+  assistantCodeInterpreterRole?: InstanceType<typeof Role>;
 
   harnessAgentRole?: AgentCoreAgentResult["role"];
   harnessAgentGatewayRole?: AgentCoreAgentResult["gatewayRole"];
@@ -154,6 +165,8 @@ export type LoomAgentsResult = {
   harnessAgentWorkloadIdentity?: AgentCoreAgentResult["workloadIdentity"];
   harnessAgentGateway?: AgentCoreAgentResult["gateway"];
   harnessAgentGatewayTarget?: AgentCoreAgentResult["gatewayTarget"];
+  /** AgentCore Code Interpreter sandbox execution role for the harness agent (production/production-ha, unless `codeInterpreter: false`). */
+  harnessAgentCodeInterpreterRole?: InstanceType<typeof Role>;
 };
 
 type TagList = Array<{ Key: string; Value: string }>;
@@ -261,6 +274,68 @@ function buildAgentExecutionPolicies(
   ];
 }
 
+/**
+ * The AgentCore Code Interpreter sandbox execution role — a standalone IAM
+ * role the Code Interpreter sandbox assumes at runtime, separate from the
+ * agent's own Runtime role (`buildAgentExecutionPolicies` above), modeled on
+ * Loom's own `shared/iac/code_interpreter_role.yaml` (v1.6.0). Scoped to the
+ * AgentCore-managed code-interpreter S3 bucket + its CloudWatch log group,
+ * both under fixed `bedrock-agentcore-*` name patterns AWS owns — narrowed to
+ * this deploy's own account + region (tighter than Loom's own default `*`
+ * region pattern, which loomster doesn't need: one deploy is one region).
+ * Provisioned per agent (Loom scopes it per-agent via `pRoleSuffix`).
+ * Module-level so EVL001/EVL002 see a plain, unconditional `new Role(...)`,
+ * the same convention `buildAgentExecutionPolicies` follows.
+ */
+function buildCodeInterpreterRole(
+  naming: LoomNaming,
+  agentId: string,
+  tags: TagList,
+): InstanceType<typeof Role> {
+  const roleName = naming.name(`${agentId}-ci-role`);
+  const policyName = naming.name(`${agentId}-ci-sandbox-policy`);
+  const sandboxBucketResource = Sub`arn:${AWS.Partition}:s3:::bedrock-agentcore-${AWS.AccountId}-${AWS.Region}-code-interpreter/*`;
+  const sandboxLogsResource = Sub`arn:${AWS.Partition}:logs:${AWS.Region}:${AWS.AccountId}:log-group:/aws/bedrock-agentcore/code-interpreter*`;
+
+  const assumeRolePolicyDocument = {
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Effect: "Allow",
+        Principal: { Service: "bedrock-agentcore.amazonaws.com" },
+        Action: "sts:AssumeRole",
+        // Loom's own confused-deputy guard — only AgentCore acting for this
+        // account may assume the sandbox role.
+        Condition: { StringEquals: { "aws:SourceAccount": AWS.AccountId } },
+      },
+    ],
+  };
+  const policyDocument = {
+    Version: "2012-10-17",
+    Statement: [
+      { Effect: "Allow", Action: ["s3:GetObject", "s3:PutObject"], Resource: sandboxBucketResource },
+      {
+        Effect: "Allow",
+        Action: ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+        Resource: sandboxLogsResource,
+      },
+    ],
+  };
+
+  return new Role({
+    RoleName: roleName,
+    Path: "/",
+    AssumeRolePolicyDocument: assumeRolePolicyDocument as unknown as string,
+    Policies: [new Role_Policy({ PolicyName: policyName, PolicyDocument: policyDocument as unknown as string })],
+    // Pre-merged by the caller (includes the `loom:role_type=code_interpreter`
+    // discriminator Loom's own role carries) — a bare param, the same way
+    // `buildAgentExecutionPolicies` passes `bedrockModelArns` straight through
+    // (merging here would need a spread/`.concat` at the property site, which
+    // chant's EVL004/EVL001 forbid).
+    Tags: tags,
+  });
+}
+
 export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) => {
   const naming = loomNaming(props.naming, "loom-agents");
   const tier: Tier = props.naming.tier;
@@ -358,6 +433,22 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
       } satisfies AgentCoreAgentProps)
     : undefined;
 
+  // ── Code Interpreter sandbox execution roles (Loom's code_interpreter_role.yaml) ──
+  // Per-agent, gated by `codeInterpreter` (default on — Loom ships it). The
+  // ternary only calls a module-level helper (no `new Xxx(...)` lexically
+  // inside the conditional), same EVL002-safe shape as `harnessAgent` above.
+  const codeInterpreter = props.codeInterpreter ?? true;
+  // Merge the `loom:role_type` marker here in the body (a plain statement, not
+  // a resource-constructor property) so the helper passes it straight through
+  // — EVL001/EVL004 only constrain expressions at the property site.
+  const codeInterpreterTags = tags.concat([{ Key: "loom:role_type", Value: "code_interpreter" }]);
+  const assistantCodeInterpreterRole = codeInterpreter
+    ? buildCodeInterpreterRole(naming, "assistant", codeInterpreterTags)
+    : undefined;
+  const harnessAgentCodeInterpreterRole = codeInterpreter && fullTier
+    ? buildCodeInterpreterRole(naming, "harness-agent", codeInterpreterTags)
+    : undefined;
+
   return {
     assistantRole: assistant.role,
     assistantGatewayRole: assistant.gatewayRole,
@@ -367,6 +458,7 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
     assistantWorkloadIdentity: assistant.workloadIdentity,
     assistantGateway: assistant.gateway,
     assistantGatewayTarget: assistant.gatewayTarget,
+    ...(assistantCodeInterpreterRole ? { assistantCodeInterpreterRole } : {}),
 
     ...(harnessAgent
       ? {
@@ -380,5 +472,6 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
           harnessAgentGatewayTarget: harnessAgent.gatewayTarget,
         }
       : {}),
+    ...(harnessAgentCodeInterpreterRole ? { harnessAgentCodeInterpreterRole } : {}),
   };
 }, "LoomAgents");
