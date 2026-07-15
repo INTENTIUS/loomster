@@ -313,4 +313,29 @@ describe("SharedFoundation — serializes to valid CloudFormation", () => {
     const dnsProps = template.Resources.sharedFoundationDnsRecord.Properties;
     expect(dnsProps.HostedZoneId).toEqual({ Ref: "sharedFoundationHostedZone" });
   });
+
+  // chant#918: `buildAgentRole` used JS template-literal concatenation
+  // (`` `${artifactBucketArn}/*` ``) on the artifact bucket's `Arn` AttrRef,
+  // which stringifies to "[object Object]/*" instead of a valid ARN. Fixed
+  // with chant's tagged-template `Sub`, mirroring `loom-backend.ts`'s own
+  // `artifactBucketArnWildcard` convention.
+  test("agent role policy: artifact bucket ARN resources are real CFN intrinsics, never \"[object Object]\" (chant#918)", () => {
+    const instance = SharedFoundation(baseLightProps());
+    const expanded = expandComposite("sharedFoundation", instance);
+    resolveAttrRefs(expanded);
+    const output = awsSerializer.serialize(expanded) as string;
+
+    expect(output).not.toContain("[object Object]");
+
+    const template = JSON.parse(output);
+    const policyDocument = template.Resources.sharedFoundationAgentRole.Properties.Policies[0].PolicyDocument;
+    const s3Statement = policyDocument.Statement.find(
+      (s: any) => Array.isArray(s.Action) && s.Action.includes("s3:GetObject"),
+    );
+
+    expect(s3Statement.Resource).toEqual([
+      { "Fn::GetAtt": ["sharedFoundationArtifactBucket", "Arn"] },
+      { "Fn::Sub": "${sharedFoundationArtifactBucket.Arn}/*" },
+    ]);
+  });
 });
