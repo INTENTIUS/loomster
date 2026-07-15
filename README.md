@@ -71,6 +71,53 @@ strategy) and [`src/lib/naming.ts`](src/lib/naming.ts) for the helper itself.
 A project-local lint rule (`.chant/rules/no-hardcoded-name.ts`) flags a
 hardcoded physical name in a composite.
 
+Every taggable resource across all five composites carries the same five
+keys, straight from `loomNaming(...).tags()` — no per-composite copy:
+
+| Key | Source | Example |
+|---|---|---|
+| `component` | the composite's own name | `loom-db` |
+| `tier` | `naming.tier` | `production-ha` |
+| `env` | `naming.env` | `prod` |
+| `owner` | `naming.owner` | `platform` |
+| `instance` | `naming.instance` | `a` |
+
+`loom-cognito`'s `UserPool` additionally carries three ABAC tags
+(`loom:application`/`loom:group`/`loom:owner`) used for resource-scoped
+access control (chant#888) — a different mechanism from the cost-allocation
+keys above, on the same resource.
+
+## Cost estimate (optional)
+
+The tags above tell you whose spend a resource is; they don't say how much.
+[`scripts/estimate-cost.sh`](scripts/estimate-cost.sh) is an opt-in hook
+that shells out to [Infracost](https://www.infracost.io) against the
+already-synthesized templates in `dist/` and relays a per-component monthly
+estimate. chant carries no pricing data or pricing logic of its own — this
+script is plumbing, nothing more.
+
+```
+npm run synth          # produce dist/*.template.json
+npm run estimate-cost  # per-component Infracost estimate (or `just estimate-cost`)
+```
+
+No hard dependency: if `infracost` isn't installed, isn't authenticated, or
+can't price a given template, the script prints a notice per component and
+exits `0` — it never fails the build or CI. Where Infracost does succeed,
+its raw JSON output lands in `dist/cost-estimates/<component>.json`.
+
+**CloudFormation caveat.** As of this writing, Infracost's CloudFormation
+support is Cloud-first — CLI/IDE support for CloudFormation templates is on
+Infracost's own 2026 roadmap ([announcement](https://www.infracost.io/blog/cloudformation-support-is-here/)).
+Until that ships, a real `infracost` install may report no supported files
+for these templates; the script treats that the same as "not installed" — a
+skip per component, not a build failure. Once CLI support lands, this hook
+starts producing real numbers with no changes needed here.
+
+**Not covered:** Loom's own per-invocation LLM token cost (Bedrock/AgentCore
+inference spend) is application runtime, not infrastructure — out of scope
+for chant and this hook entirely.
+
 ## Adoption
 
 Every composite exposes a `provision | reference-existing | omit` choice
