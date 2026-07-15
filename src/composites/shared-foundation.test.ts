@@ -265,12 +265,57 @@ describe("SharedFoundation — naming and tags", () => {
     expect(clusterProps.ClusterName).toBe("loom-test-a-shared-foundation-cluster");
   });
 
-  test("every taggable resource carries the naming helper's tag set", () => {
+  // chant#896 — the cost-allocation tag set is component/tier/env/owner/
+  // instance, always all five, sourced from the one `naming.tags()` call.
+  // Checked on a representative resource per always-present member group
+  // (network SG, KMS, ECR, ALB/target-group, S3, ECS, IAM) plus the
+  // production/production-ha-only members (Route53/ACM/PrivateLink), across
+  // every tier so `tier` itself is proven to flow through, not just the
+  // fixed keys.
+  test("every taggable resource carries the full component/tier/env/owner/instance tag set (light tier)", () => {
     const instance = SharedFoundation(baseLightProps());
+    const expectedTags = [
+      { Key: "component", Value: "shared-foundation" },
+      { Key: "tier", Value: "light" },
+      { Key: "env", Value: "test" },
+      { Key: "owner", Value: "platform" },
+      { Key: "instance", Value: "a" },
+    ];
+    for (const member of [instance.albSg, instance.ecsSg, instance.alb, instance.frontendTargetGroup, instance.backendTargetGroup, instance.artifactBucket, instance.ecsCluster, instance.kmsKey, instance.frontendRepo, instance.backendRepo, instance.agentRole]) {
+      const props = (member as any).props;
+      for (const tag of expectedTags) {
+        expect(props.Tags).toContainEqual(tag);
+      }
+    }
+  });
+
+  test("every taggable resource carries the full tag set on production tier, including Route53/ACM/PrivateLink members", () => {
+    const instance = SharedFoundation(baseProdProps());
+    const expectedTags = [
+      { Key: "component", Value: "shared-foundation" },
+      { Key: "tier", Value: "production" },
+      { Key: "env", Value: "test" },
+      { Key: "owner", Value: "platform" },
+      { Key: "instance", Value: "a" },
+    ];
+    for (const member of [instance.alb, instance.certificate, instance.nlb, instance.nlbTargetGroup, instance.vpcEndpointService]) {
+      const props = (member as any).props;
+      for (const tag of expectedTags) {
+        expect(props.Tags).toContainEqual(tag);
+      }
+    }
+    // Route53 HostedZone tags land on `HostedZoneTags`, not `Tags`.
+    const hostedZoneProps = (instance.hostedZone as any).props;
+    for (const tag of expectedTags) {
+      expect(hostedZoneProps.HostedZoneTags).toContainEqual(tag);
+    }
+  });
+
+  test("production-ha tier: tag's tier value is production-ha, not the instance or any other axis", () => {
+    const instance = SharedFoundation(baseProdProps({ naming: { ...prodNaming, tier: "production-ha" } }));
     const albProps = (instance.alb as any).props;
-    expect(albProps.Tags).toContainEqual({ Key: "component", Value: "shared-foundation" });
-    expect(albProps.Tags).toContainEqual({ Key: "env", Value: "test" });
-    expect(albProps.Tags).toContainEqual({ Key: "instance", Value: "a" });
+    expect(albProps.Tags).toContainEqual({ Key: "tier", Value: "production-ha" });
+    expect(albProps.Tags).toContainEqual({ Key: "owner", Value: "platform" });
   });
 });
 

@@ -161,12 +161,33 @@ describe("LoomBackend — naming and tags", () => {
     expect(serviceProps.ServiceName).toBe("loom-test-a-loom-backend-backend-svc");
   });
 
-  test("every taggable resource carries the naming helper's tag set", () => {
+  // chant#896 — component/tier/env/owner/instance, always all five, sourced
+  // from the one `naming.tags()` call. Checked on every always-present
+  // member (KMS, execution/task roles, task definition, service) plus the
+  // production/production-ha-only autoscaling members, across tiers so
+  // `tier` itself is proven to flow through.
+  test("every taggable resource carries the full tag set (light tier)", () => {
     const instance = LoomBackend(baseProps());
-    const props = (instance.taskDefinition as any).props;
-    expect(props.Tags).toContainEqual({ Key: "component", Value: "loom-backend" });
-    expect(props.Tags).toContainEqual({ Key: "env", Value: "test" });
-    expect(props.Tags).toContainEqual({ Key: "instance", Value: "a" });
+    const expectedTags = [
+      { Key: "component", Value: "loom-backend" },
+      { Key: "tier", Value: "light" },
+      { Key: "env", Value: "test" },
+      { Key: "owner", Value: "platform" },
+      { Key: "instance", Value: "a" },
+    ];
+    for (const member of [instance.logsKmsKey, instance.logGroup, instance.executionRole, instance.taskRole, instance.taskDefinition, instance.service]) {
+      const props = (member as any).props;
+      for (const tag of expectedTags) {
+        expect(props.Tags).toContainEqual(tag);
+      }
+    }
+  });
+
+  test("production-ha tier: tag's tier value is production-ha on the service", () => {
+    const instance = LoomBackend(baseProps({ naming: prodHaNaming }));
+    const serviceProps = (instance.service as any).props;
+    expect(serviceProps.Tags).toContainEqual({ Key: "tier", Value: "production-ha" });
+    expect(serviceProps.Tags).toContainEqual({ Key: "owner", Value: "platform" });
   });
 });
 

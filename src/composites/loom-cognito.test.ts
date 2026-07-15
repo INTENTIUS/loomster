@@ -244,16 +244,34 @@ describe("LoomCognito — naming, tags, and ABAC", () => {
     expect(domainProps.Domain.length).toBeLessThanOrEqual(63);
   });
 
-  test("UserPoolTags carries both cost-allocation tags and the loom:* ABAC tags", () => {
+  // chant#896 — component/tier/env/owner/instance, always all five, plus
+  // the loom:* ABAC extras, all sourced from the one `naming.tags()` call
+  // (UserPool is the only Cognito resource CFN lets carry tags at all — see
+  // the file header's note on `GroupName`/`ClientName`/etc. having none).
+  test("UserPoolTags carries the full cost-allocation tag set and the loom:* ABAC tags", () => {
     const instance = LoomCognito(baseProvisionProps());
     const poolProps = (instance.userPool as any).props;
     expect(poolProps.UserPoolTags).toMatchObject({
       component: "loom-cognito",
+      tier: "light",
       env: "test",
+      owner: "platform",
       instance: "a",
       "loom:application": "loom",
       "loom:group": "a",
       "loom:owner": "platform",
+    });
+  });
+
+  test("production-ha tier: UserPoolTags.tier is production-ha, not the instance or any other axis", () => {
+    const instance = LoomCognito({ naming: prodHaNaming, identity: { mode: "provision" } });
+    const poolProps = (instance.userPool as any).props;
+    expect(poolProps.UserPoolTags).toMatchObject({
+      component: "loom-cognito",
+      tier: "production-ha",
+      env: "test",
+      owner: "platform",
+      instance: "a",
     });
   });
 

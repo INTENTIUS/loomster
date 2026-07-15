@@ -199,12 +199,45 @@ describe("LoomDb — naming and tags", () => {
     expect(subnetGroupProps.DBSubnetGroupName).toBe("loom-test-a-loom-db-subnet-group");
   });
 
-  test("every taggable resource carries the naming helper's tag set", () => {
+  // chant#896 — component/tier/env/owner/instance, always all five, sourced
+  // from the one `naming.tags()` call. Checked on the always-present core
+  // members (light tier) plus the production/production-ha-only RDS Proxy,
+  // across tiers so `tier` itself is proven to flow through.
+  test("every taggable resource carries the full tag set (light tier, core members)", () => {
     const instance = LoomDb(baseProvisionProps());
-    const props = (instance.rdsInstance as any).props;
-    expect(props.Tags).toContainEqual({ Key: "component", Value: "loom-db" });
-    expect(props.Tags).toContainEqual({ Key: "env", Value: "test" });
-    expect(props.Tags).toContainEqual({ Key: "instance", Value: "a" });
+    const expectedTags = [
+      { Key: "component", Value: "loom-db" },
+      { Key: "tier", Value: "light" },
+      { Key: "env", Value: "test" },
+      { Key: "owner", Value: "platform" },
+      { Key: "instance", Value: "a" },
+    ];
+    for (const member of [instance.rdsSecurityGroup, instance.rdsSubnetGroup, instance.secretsKmsKey, instance.rdsMonitoringRole, instance.rdsInstance, instance.rdsCredentialsSecret, instance.rdsConnectionSecret]) {
+      const props = (member as any).props;
+      for (const tag of expectedTags) {
+        expect(props.Tags).toContainEqual(tag);
+      }
+    }
+  });
+
+  test("production tier: RDS Proxy carries the full tag set, tier value is production", () => {
+    const instance = LoomDb({ naming: prodNaming, data: { mode: "provision", network, dbPassword: "s3cret-not-real" } });
+    const proxyProps = (instance.rdsProxy as any).props;
+    expect(proxyProps.Tags).toContainEqual({ Key: "component", Value: "loom-db" });
+    expect(proxyProps.Tags).toContainEqual({ Key: "tier", Value: "production" });
+    expect(proxyProps.Tags).toContainEqual({ Key: "env", Value: "test" });
+    expect(proxyProps.Tags).toContainEqual({ Key: "owner", Value: "platform" });
+    expect(proxyProps.Tags).toContainEqual({ Key: "instance", Value: "a" });
+
+    const proxyRoleProps = (instance.rdsProxyRole as any).props;
+    expect(proxyRoleProps.Tags).toContainEqual({ Key: "tier", Value: "production" });
+  });
+
+  test("production-ha tier: tag's tier value is production-ha", () => {
+    const instance = LoomDb({ naming: prodHaNaming, data: { mode: "provision", network, dbPassword: "s3cret-not-real" } });
+    const instanceProps = (instance.rdsInstance as any).props;
+    expect(instanceProps.Tags).toContainEqual({ Key: "tier", Value: "production-ha" });
+    expect(instanceProps.Tags).toContainEqual({ Key: "owner", Value: "platform" });
   });
 });
 
