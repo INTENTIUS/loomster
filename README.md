@@ -506,7 +506,6 @@ outputs, container env — see `INTENTIUS/loomster#23`).
   export-name collision (`INTENTIUS/chant#932`); every per-component and
   per-component-graph command works.
 - Adoption seams still to add: `reference-existing` for the ECS execution/task
-  IAM roles, an independent PrivateLink `omit` (`#29`), and the AgentCore
-  code-interpreter execution role (`#39`).
+  IAM roles.
 
 Tracked against epic `INTENTIUS/chant#885` and the tracker `INTENTIUS/loomster#31`.
