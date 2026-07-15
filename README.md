@@ -209,6 +209,69 @@ work blocks) and the durable/gated concerns — upgrade, data-safety, rotation,
 teardown (`chant#905`). See `chant#903` for the lifecycle umbrella and its
 per-operation-backend rule (CI-cron/local for observe+reconcile, Temporal
 only for what needs a durable gate).
+## GitLab CI (chant#892)
+
+`chant build --components --generate gitlab` synthesizes a `.gitlab-ci.yml`
+from the same component declarations `chant graph --components` reads — one
+stage per parallel-safe wave, one thin trigger job per component, `needs:`
+mirroring `dependsOn`, and cross-stack/cross-job outputs threaded as job
+artifacts (`--dump-outputs`/`--seed-outputs`). The generator itself lives in
+chant (`lexicons/gitlab/src/components/generate-pipeline.ts`); this repo only
+validates it against the real Loom component set.
+
+```
+npm run generate:gitlab   # chant build --components --generate gitlab -o .gitlab-ci.yml
+just gitlab-validate      # regenerate + diff against the committed copy (fails on drift)
+```
+
+The committed [`.gitlab-ci.yml`](.gitlab-ci.yml) at the repo root is the
+current shape — 3 waves, 6 jobs, from today's component set:
+
+```
+wave-1  shared-foundation, loom-cognito
+wave-2  downstream-stub, loom-db, loom-frontend
+wave-3  loom-backend
+```
+
+Regenerate it after any `dependsOn` change — `src/gitlab-pipeline.test.ts`
+asserts the committed copy, the live component graph, and the generated
+stage/job/`needs:` structure all agree.
+
+**Wiring it into a real GitLab runner.** Every generated job is a thin
+trigger (`chant run --components <name> --env production`) that assumes
+`chant` and its deps already resolve and `dist/*.template.json` already
+exists — neither is true in a bare checkout (`node_modules` isn't committed;
+`dist/` is gitignored, see Deploy below). Wire this once, project-wide,
+through `generateComponentPipeline`'s `beforeScript`/`image`/`extraScript`
+options rather than per job:
+
+- a custom runner `image` with `chant`, its deps, and `awscli` preinstalled
+  (`cfn-deploy` shells out to the AWS CLI), with `dist/*.template.json` either
+  baked in or produced by an earlier pipeline stage and passed forward as an
+  artifact; or
+- on a stock image, `beforeScript: ["npm ci", "npm run synth"]` plus an
+  `awscli` install step.
+
+### Runtime E2E (optional, on-demand)
+
+`just gitlab-runtime-e2e` (`test/gitlab-runtime-e2e.sh`) proves the generated
+pipeline's wave/`needs:`/artifact mechanics by actually running it —
+`gitlab-ci-local` in Docker, against [Floci](https://floci.io) (a local AWS
+emulator), no real AWS account. It deploys the light tier's 4 `infra`
+components (`shared-foundation`, `loom-cognito`, `loom-db`,
+`downstream-stub`) end to end, including the real cross-stack output
+threading `loom-db`/`downstream-stub` need from `shared-foundation` across a
+`needs:` edge. `loom-backend`/`loom-frontend` are excluded — their `build`
+phase needs the `vendor/loom` Docker context (see Components above), a
+separate, heavier concern than validating the generator's own mechanics.
+
+Needs Docker and a sibling `../chant` checkout (the same dev-link the rest of
+this repo uses); skips cleanly otherwise. Not part of gating CI — mirrors
+chant's own `just gitlab-runtime-e2e` convention.
+
+```
+just gitlab-runtime-e2e   # or: bash test/gitlab-runtime-e2e.sh
+```
 
 ## Deploy
 
