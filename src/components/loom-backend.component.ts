@@ -12,11 +12,27 @@ import { namingParams } from "../loom-backend/params";
  *
  * **Docker build context.** Loom's application source (the `backend/`
  * directory + its `Dockerfile`) is not vendored into this repo — it lives
- * upstream at `awslabs/loom` (pinned `v1.6.0`, see the repo README). Check
- * that repo out at `vendor/loom` (gitignored) before running a real deploy;
- * `context` below assumes that layout. None of this component's gates
- * (typecheck/lint/test/synth/`chant graph --components`) touch the
- * filesystem at this path — only an actual `chant run` does.
+ * upstream at `awslabs/loom` (pinned `v1.6.0`). `npm run vendor`
+ * (`scripts/vendor-loom.sh`) fetches it into `vendor/loom` (gitignored)
+ * before running a real deploy; `context`/`dockerfile` below assume that
+ * layout. None of this component's gates (typecheck/lint/test/synth/`chant
+ * graph --components`) touch the filesystem at this path — only an actual
+ * `chant run` does.
+ *
+ * **Context is the vendor root, not `vendor/loom/backend`.** Loom's own
+ * `backend/Dockerfile` `COPY`s two things from *outside* `backend/`:
+ * `agents/strands_agent/src/` and its `requirements.txt` (the comment inline
+ * in that Dockerfile — "Agent source for build_agent_artifact
+ * (deployment.py resolves via parents[3] -> /)" — is Loom's own backend
+ * bundling its low-code agent's source into the same image so it can build
+ * that agent's deploy artifact at runtime). A context scoped to
+ * `vendor/loom/backend` alone can't see those paths and the build fails;
+ * `vendor/loom` (the repo root) plus `dockerfile: "backend/Dockerfile"` is
+ * the layout Loom's own `shared/makefile`
+ * (`podman build -f ../backend/Dockerfile ..`, run from `shared/`) actually
+ * uses. Verified by building this exact Dockerfile/context pair with real
+ * `docker build` against a real `v1.6.0` checkout while wiring this up
+ * (#20) — the image builds clean.
  *
  * **Preset gap note (chant#889 acceptance criterion).** This hand-composes
  * the same Publish -> Apply -> Verify -> Rollback shape
@@ -51,7 +67,7 @@ export const loomBackend: Component = {
   name: "loom-backend",
   archetype: "service",
   dependsOn: ["shared-foundation", "loom-db", "loom-cognito"],
-  build: { kind: "docker-build", context: "vendor/loom/backend", into: "archive" },
+  build: { kind: "docker-build", context: "vendor/loom", dockerfile: "backend/Dockerfile", into: "archive" },
   deploy: [
     phase("Publish", [
       { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oBackendRepositoryUri") },

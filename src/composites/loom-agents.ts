@@ -13,13 +13,19 @@
  *
  * **Two agent flavors** (chant#893 blog-refinement comment):
  * - **low-code** — a Strands Python agent (Loom's own
- *   `agents/strands_agent`). One per deployment, every tier. Its container
- *   image is built/published out-of-band: this repo has no agent-specific
- *   ECR repo to publish into (shared-foundation, chant#886, only provisions
+ *   `agents/strands_agent`). One per deployment, every tier. Its image is
+ *   built/published out-of-band: this repo has no agent-specific ECR repo
+ *   to publish into (shared-foundation, chant#886, only provisions
  *   frontend/backend repos), so `assistantImageUri` is a plain "already
  *   exists in ECR" value — the same boundary the sibling
  *   `examples/bedrock-agentcore-agent` (chant#882) draws around
- *   `containerUri`.
+ *   `containerUri`. Turns out this isn't only an ECR-repo gap: vendoring
+ *   real Loom v1.6.0 source (#20) found `agents/strands_agent/` has no
+ *   `Dockerfile` upstream at all — Loom's own backend builds this agent as a
+ *   zip code artifact at runtime (`build_agent_artifact()` in
+ *   `backend/app/services/deployment.py`) and deploys it via Bedrock
+ *   AgentCore Runtime's `codeConfiguration`, never a container image. See
+ *   `../components/loom-agents.component.ts`'s own docstring for the detail.
  * - **no-code** — a config-only AgentCore-managed-harness agent: no custom
  *   code, a stock/managed image supplied via `harnessImageUri`. Present only
  *   on production/production-ha (the "full" agent set, chant#890).

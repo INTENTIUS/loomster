@@ -14,9 +14,22 @@ import { namingParams } from "../loom-frontend/params";
  *
  * **Docker build context.** Same note as `loom-backend.component.ts`:
  * Loom's `frontend/` source + Dockerfile lives upstream at `awslabs/loom`
- * (pinned `v1.6.0`), checked out at `vendor/loom` (gitignored) before a real
- * deploy — not required for this component's typecheck/lint/test/synth
- * gates, only for an actual `chant run`.
+ * (pinned `v1.6.0`), fetched via `npm run vendor` (`scripts/vendor-loom.sh`)
+ * into `vendor/loom` (gitignored) before a real deploy — not required for
+ * this component's typecheck/lint/test/synth gates, only for an actual
+ * `chant run`. Unlike `loom-backend`, the frontend's `Dockerfile` only
+ * `COPY`s paths from inside `frontend/` itself (`package*.json`, then `.`),
+ * so its context is `vendor/loom/frontend` directly — no repo-root context
+ * needed here. Matches Loom's own `frontend/makefile`
+ * (`podman build ... ../frontend`, no `-f`, so Dockerfile resolves to
+ * `frontend/Dockerfile` by the default). Verified by building this
+ * Dockerfile/context pair with real `docker build` while wiring this up
+ * (#20) — the image builds clean and serves `/` over nginx. The Dockerfile's
+ * two build args (`VITE_API_BASE_URL`, `VITE_COGNITO_USER_CLIENT_ID`) both
+ * default to `""`, matching Loom's own `podman.build.frontend` target, which
+ * only ever overrides the Cognito one — not wired through `buildArgs` here
+ * either, so both stay their Loom-default empty string until a real
+ * adopter deploy decides otherwise.
  *
  * **Preset gap note** — same two gaps `loom-backend.component.ts` documents
  * in full (`sharedAlbStack`'s fixed `ListenerArn`/`ClusterArn`/`Subnets`
@@ -34,7 +47,7 @@ export const loomFrontend: Component = {
   name: "loom-frontend",
   archetype: "service",
   dependsOn: ["shared-foundation"],
-  build: { kind: "docker-build", context: "vendor/loom/frontend", into: "archive" },
+  build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
   deploy: [
     phase("Publish", [
       { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oFrontendRepositoryUri") },
