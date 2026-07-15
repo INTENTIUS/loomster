@@ -19,12 +19,14 @@
     "synth:ops": "chant build ops -o dist/temporal-manifest.txt",
     "watch": "chant run loom-watch",
     "reconcile": "chant run loom-reconcile",
-    "estimate-cost": "bash scripts/estimate-cost.sh"
+    "estimate-cost": "bash scripts/estimate-cost.sh",
+    "generate:gitlab": "chant build --components --generate gitlab -o .gitlab-ci.yml"
   },
   "dependencies": {
     "@intentius/chant": "file:../chant/packages/core",
     "@intentius/chant-lexicon-aws": "file:../chant/lexicons/aws",
-    "@intentius/chant-lexicon-temporal": "file:../chant/lexicons/temporal"
+    "@intentius/chant-lexicon-temporal": "file:../chant/lexicons/temporal",
+    "@intentius/chant-lexicon-gitlab": "file:../chant/lexicons/gitlab"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
