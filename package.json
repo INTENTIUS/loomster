@@ -21,7 +21,8 @@
     "watch": "chant run loom-watch",
     "reconcile": "chant run loom-reconcile",
     "estimate-cost": "bash scripts/estimate-cost.sh",
-    "generate:gitlab": "chant build --components --generate gitlab -o .gitlab-ci.yml"
+    "generate:gitlab": "chant build --components --generate gitlab -o .gitlab-ci.yml",
+    "ops:build": "chant build ops"
   },
   "dependencies": {
     "@intentius/chant": "file:../chant/packages/core",

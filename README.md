@@ -26,19 +26,21 @@ production-adoptable and track chant on its own release cadence.
 
 ### chant dependency: dev-linked now, published at release
 
-`package.json` currently points `@intentius/chant` and
-`@intentius/chant-lexicon-aws` at `file:../chant/packages/core` and
-`file:../chant/lexicons/aws` — a sibling checkout of the `chant` monorepo.
-This is intentional while the Loom composites are built against chant's
-current `main`, ahead of whatever chant release ships the primitives they
-need.
+`package.json` currently points `@intentius/chant`,
+`@intentius/chant-lexicon-aws`, and `@intentius/chant-lexicon-temporal` at
+`file:../chant/packages/core`, `file:../chant/lexicons/aws`, and
+`file:../chant/lexicons/temporal` — a sibling checkout of the `chant`
+monorepo. This is intentional while the Loom composites/Ops are built against
+chant's current `main`, ahead of whatever chant release ships the primitives
+they need.
 
-**Before this repo's first real release, swap those two entries to published
-version ranges** (e.g. `"@intentius/chant": "^0.18.0"`,
-`"@intentius/chant-lexicon-aws": "^0.18.0"`) and drop the sibling-checkout
-step from CI. Until then, `chant` must be checked out as a sibling directory
-(`../chant` relative to this repo) for `file:` resolution to work — CI does
-this explicitly (see `.github/workflows/ci.yml`).
+**Before this repo's first real release, swap those three entries to
+published version ranges** (e.g. `"@intentius/chant": "^0.18.0"`,
+`"@intentius/chant-lexicon-aws": "^0.18.0"`,
+`"@intentius/chant-lexicon-temporal": "^0.18.0"`) and drop the
+sibling-checkout step from CI. Until then, `chant` must be checked out as a
+sibling directory (`../chant` relative to this repo) for `file:` resolution
+to work — CI does this explicitly (see `.github/workflows/ci.yml`).
 
 A **fresh** sibling `chant` checkout isn't usable as-is — `file:` linking only
 symlinks the package itself, not its own dependencies or generated code:
@@ -172,6 +174,46 @@ git clone --branch v1.6.0 https://github.com/awslabs/loom vendor/loom
 Not required for typecheck/lint/test/synth — those never touch the
 filesystem at `vendor/loom`, only an actual deploy does.
 
+## Lifecycle Ops (chant#905)
+
+Beyond the one-shot component deploys above, `ops/` holds the durable,
+gated concerns for a *running* Loom deployment — upgrade/release, RDS data
+safety, credential rotation, and teardown. These need an approval gate,
+crash-resume, and saga rollback that the local executor cannot give them, so
+they run as [chant Ops](https://intentius.io/chant/guide/ops/) on
+[Temporal](https://temporal.io), built on `@intentius/chant-lexicon-temporal`
+(dev-linked the same way as `@intentius/chant`/`@intentius/chant-lexicon-aws`
+— see above).
+
+| Op | What it does | Gate? |
+|---|---|---|
+| `loom-upgrade-light` | Snapshot RDS → run migrations → promote-by-digest through `loom-backend`/`loom-frontend` | No — additive, local executor |
+| `loom-upgrade-production` / `loom-upgrade-production-ha` | Same, plus an approval gate before the apply and an RDS-restore rollback on failure | Yes — needs `--temporal` |
+| `loom-rotate-production` / `loom-rotate-production-ha` | Rotate the Cognito M2M app-client (blue/green — Cognito has no in-place secret regeneration), the RDS master credential, and (custom-domain tiers) the ALB's ACM certificate | Yes — every phase gates before the disruptive half |
+| `loom-teardown` | Decommission whichever tier is live: gated, owned-only, marker-scoped stack deletes, no foreign deletes | Yes |
+
+```
+chant build ops                                   # compile to dist/ops/<name>/{workflow,activities,worker}.ts
+chant run loom-upgrade-light                       # local executor, no Temporal server needed
+chant run loom-upgrade-production --temporal       # pauses at "Approve"
+chant run signal loom-upgrade-production approve-loom-upgrade-production
+```
+
+`ops/lib/` holds the shared, unit-tested pieces: `stack-refs.ts` derives every
+physical identifier an Op needs from the same `loomNaming(...)` helper the
+composites use (no `stackOutput`-style wiring exists at the Op layer — see
+its docstring), `rds-safety.ts`/`rotation.ts`/`teardown-plan.ts` are pure AWS
+CLI script builders (the same pattern
+`lexicons/temporal/src/op/activities/apply.ts` uses upstream), and
+`upgrade-op.ts`/`rotate-op.ts` are the factories the tier-specific `*.op.ts`
+files call — one phase shape defined once, the chant#890 tier dial expressed
+as config rather than three (or more) hand-copied Op bodies.
+
+Migrations run against the backend's own task-definition family with an
+overridden command — no rebuild, matching promote-by-digest — but the actual
+migration entrypoint depends on Loom's own tooling (only known once
+`vendor/loom` is checked out); override it via `LOOM_MIGRATION_COMMAND`
+(comma-separated argv) — see `ops/lib/upgrade-op.ts`.
 ## Lifecycle: observe + reconcile (`chant#904`)
 
 Beyond the initial stand-up, the running deployment is watched for drift and

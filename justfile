@@ -31,6 +31,13 @@ synth:
 estimate-cost:
     npm run estimate-cost
 
+# Compile the lifecycle Ops (chant#905) to generated Temporal worker code
+# under ops/dist/ops/ — workflow.ts/activities.ts/worker.ts per Op. Needs
+# `--temporal` at `chant run` time only for the gated Ops (loom-upgrade-
+# production[-ha], loom-rotate-*, loom-teardown); loom-upgrade-light runs on
+# the local executor with no build step required.
+ops-build:
+    npm run ops:build
 # Observe: one-shot `chant lifecycle diff --live` across every stack this
 # build targets (chant#904). Scheduled form needs Temporal — see ops/loom-watch.op.ts.
 watch:
