@@ -71,6 +71,43 @@ strategy) and [`src/lib/naming.ts`](src/lib/naming.ts) for the helper itself.
 A project-local lint rule (`.chant/rules/no-hardcoded-name.ts`) flags a
 hardcoded physical name in a composite.
 
+## Components
+
+Five stacks, deployed in dependency order (`chant graph --components`):
+
+| Component | Depends on | What it is |
+|---|---|---|
+| `shared-foundation` | — | ALB, ECS cluster, ECR, KMS, S3 artifact bucket, DNS, agent IAM role (`#886`) |
+| `loom-cognito` | — | Cognito UserPool, hosted-UI domain, resource server, clients (`#888`) |
+| `loom-db` | `shared-foundation` | RDS Postgres, Secrets Manager, (full tier) RDS Proxy + rotation (`#887`) |
+| `loom-frontend` | `shared-foundation` | The frontend ECS Fargate service (`#889`) |
+| `loom-backend` | `shared-foundation`, `loom-db`, `loom-cognito` | The backend ECS Fargate service (`#889`) |
+
+`loom-backend`/`loom-frontend` each run **build → publish → apply → verify**
+(`docker-build` → `publish-image` promoted by digest → `cfn-deploy` →
+`ecs-update-service` → `wait-steady-state` + `health-gate`), with a
+`rollback-previous` compensation phase. Cross-stack inputs (cluster ARN,
+security group, target group, the DB connection secret, the Cognito user
+pool, ...) resolve via `stackOutput(...)` — see
+`src/components/loom-backend.component.ts`'s docstring for the two spots
+where the shipped `EcsFargateComponent` preset's fixed-key conveniences
+(`sharedAlbStack`, `imageRef`) don't fit Loom's real parameter names, and how
+that's covered instead.
+
+**Docker build context.** `loom-backend`/`loom-frontend` build Loom's actual
+application images, but Loom's source (the `backend/`/`frontend/`
+directories + their Dockerfiles) is not vendored into this repo — it lives
+upstream at [`awslabs/loom`](https://github.com/awslabs/loom) (pinned
+`v1.6.0`). Check that repo out at `vendor/loom` (gitignored) before running
+a real `chant run` deploy:
+
+```
+git clone --branch v1.6.0 https://github.com/awslabs/loom vendor/loom
+```
+
+Not required for typecheck/lint/test/synth — those never touch the
+filesystem at `vendor/loom`, only an actual deploy does.
+
 ## Deploy
 
 Deployment is via **GitHub Actions** (`.github/workflows/deploy.yml`), not a
