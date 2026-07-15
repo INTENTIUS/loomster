@@ -17,48 +17,22 @@ env:
 
 jobs:
   # Fast gate: typecheck, chant lint (core + project-local .chant/rules/),
-  # unit tests. chant is dev-linked via file:../chant — checked out as a
-  # sibling here so the file: deps resolve the same way they do locally.
+  # unit tests, and lifecycle-Op codegen. chant + lexicons are published npm
+  # deps (@intentius/chant*), so no sibling checkout or codegen step is needed.
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          path: loom-on-chant
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          repository: INTENTIUS/chant
-          path: chant
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      # The sibling chant checkout needs its own workspace deps (zod, tsx,
-      # typescript, etc. — file: linking only symlinks the package itself)
-      # plus the aws lexicon's codegen output (gitignored `src/generated/`,
-      # produced from the CloudFormation resource spec).
       - run: npm install
-        working-directory: chant
-      - run: npm run generate
-        working-directory: chant/lexicons/aws
-      - run: npm run generate
-        working-directory: chant/lexicons/gitlab
-      - run: npm run generate
-        working-directory: chant/lexicons/github
-      - run: npm install
-        working-directory: loom-on-chant
       - name: typecheck
         run: npm run tsc
-        working-directory: loom-on-chant
       - name: lint
         run: npm run lint
-        working-directory: loom-on-chant
       - name: test
         run: npm test
-        working-directory: loom-on-chant
-      # Compiles every lifecycle Op (chant#905) to generated Temporal worker
-      # code — pure codegen, no AWS credentials or env vars needed (every
-      # naming param has a safe default; see ops/lib/naming-env.ts).
       - name: build ops
         run: npm run ops:build
-        working-directory: loom-on-chant

@@ -8,8 +8,7 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "customConditions": ["development"]
+    "resolveJsonModule": true
   },
   "include": ["src", "ops", "scripts", ".chant", "chant.config.ts"],
   // ops/dist/ is `chant build ops`'s own generated worker code (chant#904) —

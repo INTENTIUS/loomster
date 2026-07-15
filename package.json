@@ -28,11 +28,11 @@
     "export-bundle": "bash scripts/export-bundle.sh"
   },
   "dependencies": {
-    "@intentius/chant": "file:../chant/packages/core",
-    "@intentius/chant-lexicon-aws": "file:../chant/lexicons/aws",
-    "@intentius/chant-lexicon-temporal": "file:../chant/lexicons/temporal",
-    "@intentius/chant-lexicon-gitlab": "file:../chant/lexicons/gitlab",
-    "@intentius/chant-lexicon-github": "file:../chant/lexicons/github"
+    "@intentius/chant": "^0.18.15",
+    "@intentius/chant-lexicon-aws": "^0.18.15",
+    "@intentius/chant-lexicon-temporal": "^0.18.15",
+    "@intentius/chant-lexicon-gitlab": "^0.18.15",
+    "@intentius/chant-lexicon-github": "^0.18.15"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
