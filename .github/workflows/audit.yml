@@ -1,0 +1,55 @@
+name: audit
+
+# Scheduled CI-cron trigger for the supply-chain audit concern (chant#906).
+# A thin trigger only: this job's one real step is `npm run audit` (`chant
+# run loom-audit` -> WorkflowAuditOp, reusing the pattern documented at
+# lexicons/temporal/src/composites/workflow-audit-op.ts). Resolves every
+# pinned `uses:` ref under .github/workflows/ (including this repo's own
+# generated workflows) against live upstream truth — report mode only, see
+# ops/loom-audit.op.ts for why.
+#
+# Inert until a team opts in — see README.md's "Scheduled CI" section.
+on:
+  # Daily.
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: ${{ vars.SCHEDULED_AUDIT == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          path: loom-on-chant
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: INTENTIUS/chant
+          path: chant
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      # See ci.yml: the sibling chant checkout needs its own deps installed
+      # plus the aws lexicon's generated (gitignored) codegen output.
+      - run: npm install
+        working-directory: chant
+      - run: npm run generate
+        working-directory: chant/lexicons/aws
+      - run: npm install
+        working-directory: loom-on-chant
+      # workflowSupplyChainAudit's live resolver reads GITHUB_TOKEN to raise
+      # its GitHub API rate limit — read-only, no write scope needed.
+      - name: audit
+        working-directory: loom-on-chant
+        run: npm run audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

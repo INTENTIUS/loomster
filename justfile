@@ -47,6 +47,13 @@ watch:
 # source (chant#904). Never commits to main — see ops/loom-reconcile.op.ts.
 reconcile:
     npm run reconcile
+
+# Supply-chain audit of this repo's own emitted GitHub Actions workflows
+# (chant#906) — live resolution against upstream truth, report mode. See
+# ops/loom-audit.op.ts.
+audit:
+    npm run audit
+
 # Regenerate .gitlab-ci.yml from the discovered components (chant#892) and
 # diff it against the committed copy — fails if they've drifted.
 gitlab-validate:
