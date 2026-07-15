@@ -35,6 +35,8 @@
 
 import { Composite, mergeDefaults } from "@intentius/chant";
 import type { Declarable } from "@intentius/chant/declarable";
+import { AttrRef } from "@intentius/chant/attrref";
+import { INTRINSIC_MARKER, type Intrinsic } from "@intentius/chant/intrinsic";
 import {
   Vpc,
   Subnet,
@@ -226,27 +228,72 @@ export function literalOutputValue(value: string): SubIntrinsic {
 }
 
 /**
+ * A `LexiconOutput` value produced by any `Intrinsic` other than a bare
+ * `AttrRef` skips the whole-tree walk that resolves an `AttrRef` to a proper
+ * `Fn::GetAtt` everywhere else (a resource's `Properties`, notably) —
+ * `@intentius/chant-lexicon-aws`'s serializer only special-cases a
+ * `LexiconOutput` built from a bare `AttrRef` (see `output()`'s own
+ * docstring); anything else's `toJSON()` is written to the template's
+ * `Outputs` section unwalked, so an `AttrRef` nested inside (e.g. the aws
+ * lexicon's own `Join(...)`) leaks as an internal `{__attrRef: ...}`
+ * envelope instead of `Fn::GetAtt` — invalid CloudFormation JSON
+ * (chant#928/loomster#35).
+ *
+ * `Fn::Sub`'s own interpolation resolves an embedded `AttrRef` correctly at
+ * the JSON level (`defaultInterpolationSerializer` in chant core reads
+ * `AttrRef.getLogicalName()` directly, sidestepping the gap above) — but
+ * verified live against Floci, Floci's `Fn::Sub` doesn't evaluate a
+ * `${LogicalId.Attribute}`-style placeholder at all; it leaks the literal
+ * placeholder text into the resolved Output value instead of the real
+ * attribute. `Fn::Join` + `Fn::GetAtt` round-trips correctly there.
+ *
+ * So: build the `Fn::Join`/`Fn::GetAtt` JSON by hand, resolving each
+ * `AttrRef`'s logical name ourselves at `toJSON()` time (after chant's build
+ * has assigned every entity its logical name, same timing every other
+ * intrinsic's `toJSON()` runs at) — correct chant-side *and* Floci-provable,
+ * unlike either single-mechanism alternative above.
+ */
+class JoinedAttrOutputValue implements Intrinsic {
+  readonly [INTRINSIC_MARKER] = true as const;
+
+  constructor(
+    private readonly delimiter: string,
+    private readonly values: string[],
+  ) {}
+
+  toJSON(): { "Fn::Join": [string, unknown[]] } {
+    // Construct unconditionally, throw conditionally — same convention this
+    // file's own composite factory uses for its EVL002-exempt errors (e.g.
+    // `notEnoughSubnetsError` above): chant's lint rules scan every `.ts`
+    // file it discovers, not just `Composite()` factory bodies, so a plain
+    // `new Error(...)` inside an `if` here trips EVL002 exactly the same way.
+    const unresolvedAttrRefError = new Error(
+      "joinOutputValues: an AttrRef's logical name was not set by toJSON() time — this should never happen once chant's build has assigned every entity a name",
+    );
+    const resolved = this.values.map((value) => {
+      const maybeAttrRef: unknown = value;
+      const isUnresolvedAttrRef = maybeAttrRef instanceof AttrRef && !maybeAttrRef.getLogicalName();
+      if (isUnresolvedAttrRef) {
+        throw unresolvedAttrRefError;
+      }
+      if (maybeAttrRef instanceof AttrRef) {
+        return { "Fn::GetAtt": [maybeAttrRef.getLogicalName() as string, maybeAttrRef.attribute] };
+      }
+      return value;
+    });
+    return { "Fn::Join": [this.delimiter, resolved] };
+  }
+}
+
+/**
  * Comma-join 2+ values (each a plain string or an `AttrRef`/`Ref`
  * masquerading as `string`, same convention as everywhere else in this
- * file) into a single output-safe value — deliberately built as an
- * `Fn::Sub`, not `Fn::Join` (chant#928/loomster#35). `@intentius/chant-
- * lexicon-aws`'s serializer resolves a `LexiconOutput`'s value correctly
- * when it's a bare `AttrRef` (a dedicated fast path), but a value wrapped in
- * any other `Intrinsic` — `Join` included — is written to the template's
- * `Outputs` section as-is, without the same whole-tree walk `Properties`
- * get; any `AttrRef` nested inside that `Join` (e.g. two provisioned
- * subnets' `.SubnetId`s) then leaks into the CloudFormation template as an
- * unresolved internal `{__attrRef: ...}` envelope instead of a proper
- * `Fn::GetAtt` — invalid CFN JSON. `Sub`'s own interpolation resolves each
- * `AttrRef` directly (see `defaultInterpolationSerializer` in chant core),
- * sidestepping that gap entirely, so joining through `Sub` here is the
- * actual fix, not just a style choice. (Filed upstream as a chant serializer
- * bug — this workaround stays even after that lands, since `output()`
- * callers shouldn't have to know which lexicon-internal path is safe.)
+ * file) into a single value safe to hand to the aws lexicon's `output(ref,
+ * name)` helper — see `JoinedAttrOutputValue`'s docstring for why this
+ * can't just be the aws lexicon's own `Join(...)`.
  */
-export function joinOutputValues(values: string[]): SubIntrinsic {
-  const parts = ["", ...Array(Math.max(values.length - 1, 0)).fill(","), ""];
-  return new SubIntrinsic(parts, values);
+export function joinOutputValues(values: string[]): Intrinsic {
+  return new JoinedAttrOutputValue(",", values);
 }
 
 /** Loom's ECR lifecycle policy (keep the last 10 images) — identical for both repos. Hoisted to a module-level constant so `buildEcrRepos` only ever references it by name (EVL001: resource constructor properties must be statically evaluable). */
