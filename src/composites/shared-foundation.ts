@@ -481,7 +481,12 @@ function buildAgentRole(
     {
       Effect: "Allow",
       Action: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
-      Resource: [artifactBucketArn, `${artifactBucketArn}/*`],
+      // artifactBucketArn is an AttrRef (Bucket.Arn) masquerading as `string`
+      // (same convention as every attribute accessor elsewhere in this file)
+      // — plain template-literal concatenation would silently stringify it to
+      // "[object Object]/*" instead of a valid ARN, so the `/*` suffix goes
+      // through chant's tagged-template `Sub` (chant#918).
+      Resource: [artifactBucketArn, Sub`${artifactBucketArn}/*`],
     },
   ];
   if (ecrKmsKeyArn) {

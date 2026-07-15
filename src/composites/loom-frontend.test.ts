@@ -118,6 +118,12 @@ describe("LoomFrontend — serializes to valid CloudFormation", () => {
     const expanded = expandComposite("loomFrontend", instance);
     resolveAttrRefs(expanded);
     const output = awsSerializer.serialize(expanded) as string;
+
+    // Guards against chant#918-style bugs: template-literal concatenation on
+    // a Ref/AttrRef intrinsic silently stringifies to "[object Object]"
+    // instead of a valid CFN intrinsic.
+    expect(output).not.toContain("[object Object]");
+
     const template = JSON.parse(output);
 
     expect(template.AWSTemplateFormatVersion).toBe("2010-09-09");
