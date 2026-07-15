@@ -15,12 +15,16 @@
     "synth:loom-cognito": "chant build src/loom-cognito --lexicon aws -o dist/loom-cognito.template.json",
     "synth:loom-backend": "chant build src/loom-backend --lexicon aws -o dist/loom-backend.template.json",
     "synth:loom-frontend": "chant build src/loom-frontend --lexicon aws -o dist/loom-frontend.template.json",
-    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub && npm run synth:loom-db && npm run synth:loom-cognito && npm run synth:loom-backend && npm run synth:loom-frontend",
+    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub && npm run synth:loom-db && npm run synth:loom-cognito && npm run synth:loom-backend && npm run synth:loom-frontend && npm run synth:ops",
+    "synth:ops": "chant build ops -o dist/temporal-manifest.txt",
+    "watch": "chant run loom-watch",
+    "reconcile": "chant run loom-reconcile",
     "estimate-cost": "bash scripts/estimate-cost.sh"
   },
   "dependencies": {
     "@intentius/chant": "file:../chant/packages/core",
-    "@intentius/chant-lexicon-aws": "file:../chant/lexicons/aws"
+    "@intentius/chant-lexicon-aws": "file:../chant/lexicons/aws",
+    "@intentius/chant-lexicon-temporal": "file:../chant/lexicons/temporal"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
