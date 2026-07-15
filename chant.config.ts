@@ -36,6 +36,21 @@ export default {
         files: ["src/lib/**", ".chant/rules/**", "ops/**"],
         rules: { EVL003: "off", EVL004: "off" },
       },
+      {
+        // scripts/** (chant#901's export-bundle tooling) is the same class
+        // of plain runtime/tooling code as ops/** above — it drives chant's
+        // programmatic build API and assembles/validates a Build Archive
+        // manifest, never a composite property expression. EVL002 in
+        // particular has no way to distinguish `new SomeError(...)` (a
+        // plain thrown error, conditionally constructed as ordinary control
+        // flow) from a genuine Declarable resource constructor, so a
+        // tier/component loop that throws a validation error per iteration
+        // trips it the same way EVL003's dynamic property access does for
+        // `Record<string, ...>` lookups keyed by a loop variable (component
+        // name, tier name) — again, not a composite prop expression.
+        files: ["scripts/**"],
+        rules: { EVL002: "off", EVL003: "off", EVL004: "off" },
+      },
     ],
   },
 } satisfies ChantConfig;
