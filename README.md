@@ -16,6 +16,13 @@ changes expected upstream between versions).
 
 Tracking: `INTENTIUS/chant#885` (epic) and its child issues.
 
+**Start here:** [`docs/tutorial.md`](docs/tutorial.md) walks a team through
+light tier on Floci (no AWS account), production/production-ha on real AWS
+behind a gated apply, tier/topology selection, the adoption seams, the
+lifecycle Ops, and an honest positioning section (real wins vs. what's
+parity with Loom's own SAM deploy, not a win). Everything below is
+reference detail the tutorial links back into.
+
 ## Repo shape
 
 Standalone repo, modeled on `INTENTIUS/blacklight` — own `package.json`,
