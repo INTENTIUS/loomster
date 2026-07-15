@@ -28,11 +28,14 @@ describe("chant build --components --generate gitlab — Loom component set", ()
 
     // The dependency spine the epic describes: shared-foundation and
     // loom-cognito have no deps; loom-db/loom-frontend/downstream-stub only
-    // depend on shared-foundation; loom-backend is the only 3-wide consumer.
-    expect(graph.waves.length).toBe(3);
+    // depend on shared-foundation; loom-backend is the 3-wide consumer that
+    // closes wave 3; loom-agents (chant#893) then depends on loom-backend
+    // (plus shared-foundation + loom-cognito), so it lands alone in wave 4.
+    expect(graph.waves.length).toBe(4);
     expect(new Set(graph.waves[0])).toEqual(new Set(["shared-foundation", "loom-cognito"]));
     expect(new Set(graph.waves[1])).toEqual(new Set(["loom-db", "loom-frontend", "downstream-stub"]));
     expect(graph.waves[2]).toEqual(["loom-backend"]);
+    expect(graph.waves[3]).toEqual(["loom-agents"]);
 
     const edgeSet = new Set(graph.edges.map((e) => `${e.from}->${e.to}`));
     expect(edgeSet.has("loom-db->shared-foundation")).toBe(true);
@@ -41,6 +44,9 @@ describe("chant build --components --generate gitlab — Loom component set", ()
     expect(edgeSet.has("loom-backend->shared-foundation")).toBe(true);
     expect(edgeSet.has("loom-backend->loom-db")).toBe(true);
     expect(edgeSet.has("loom-backend->loom-cognito")).toBe(true);
+    expect(edgeSet.has("loom-agents->shared-foundation")).toBe(true);
+    expect(edgeSet.has("loom-agents->loom-cognito")).toBe(true);
+    expect(edgeSet.has("loom-agents->loom-backend")).toBe(true);
   });
 
   test("generates a pipeline whose stages/jobs/needs match the component dependsOn graph exactly", async () => {
@@ -85,11 +91,17 @@ describe("chant build --components --generate gitlab — Loom component set", ()
   });
 
   test("produces structurally valid YAML with output-artifact threading across needs: edges", async () => {
+    const graph = await computeComponentGraph(".");
+    expect(graph.success).toBe(true);
+
     const result = await generateComponentsPipeline(".", "gitlab", { env: "production" });
     expect(result.success).toBe(true);
 
     const parsed = parseYAML(result.yaml!);
-    expect(parsed.stages).toEqual(["wave-1", "wave-2", "wave-3"]);
+    // Derive the expected stage list from the live wave graph, so it tracks
+    // the real component set (4 waves once loom-agents is in, chant#893)
+    // rather than a hardcoded count.
+    expect(parsed.stages).toEqual(graph.waves.map((_, i) => `wave-${i + 1}`));
 
     // shared-foundation is depended on by 4 components — it must dump its
     // outputs as a job artifact for downstream jobs to seed from.
