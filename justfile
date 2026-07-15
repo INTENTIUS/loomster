@@ -20,6 +20,12 @@ lint:
 test:
     npx vitest run
 
+# Fetch awslabs/loom's application source (pinned v1.6.0) into vendor/loom/
+# (gitignored) — the docker-build context loom-backend/loom-frontend need for
+# a real `chant run` deploy. Not required for build/lint/test/synth.
+vendor:
+    npm run vendor
+
 # Synthesize the CFN templates (dist/*.template.json) + the lifecycle Ops'
 # worker code + temporal-setup.sh (dist/temporal-manifest.txt, dist/schedules/).
 synth:
