@@ -29,11 +29,11 @@
     "vendor": "bash scripts/vendor-loom.sh"
   },
   "dependencies": {
-    "@intentius/chant": "^0.18.15",
-    "@intentius/chant-lexicon-aws": "^0.18.15",
-    "@intentius/chant-lexicon-temporal": "^0.18.15",
-    "@intentius/chant-lexicon-gitlab": "^0.18.15",
-    "@intentius/chant-lexicon-github": "^0.18.15"
+    "@intentius/chant": "^0.18.17",
+    "@intentius/chant-lexicon-aws": "^0.18.17",
+    "@intentius/chant-lexicon-temporal": "^0.18.17",
+    "@intentius/chant-lexicon-gitlab": "^0.18.17",
+    "@intentius/chant-lexicon-github": "^0.18.17"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

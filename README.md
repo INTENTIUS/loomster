@@ -157,9 +157,15 @@ Six stacks, deployed in dependency order (`chant graph --components`):
 | `loom-agents` | `shared-foundation`, `loom-cognito`, `loom-backend` | The Bedrock AgentCore agent set — a low-code Strands agent (every tier) + a no-code AgentCore-harness agent (production/production-ha), via chant#882's `AgentCoreAgent` composite (`#893`) |
 
 `loom-backend`/`loom-frontend` each run **build → publish → apply → verify**
-(`docker-build` → `publish-image` promoted by digest → `cfn-deploy` →
-`ecs-update-service` → `wait-steady-state` + `health-gate`), with a
-`rollback-previous` compensation phase. Cross-stack inputs (cluster ARN,
+(`docker-build` → `publish-image` promoted by digest → `cfn-deploy`, then —
+against real AWS only — `wait-steady-state` + `health-gate`), with a
+`rollback-previous` compensation phase. The runtime Verify checks are skipped
+against a local emulator (Floci), which provisions the control plane and takes
+every stack to `CREATE_COMPLETE` but does not run the app workload — the
+backend task needs a reachable RDS/Cognito to start, and the ALB does not serve
+the ALB→ECS HTTP data path (see the component docstrings). No standalone
+`ecs-update-service` step: `cfn-deploy` already rolls the image out via a new
+`TaskDefinition` revision. Cross-stack inputs (cluster ARN,
 security group, target group, the DB connection secret, the Cognito user
 pool, ...) resolve via `stackOutput(...)` — see
 `src/components/loom-backend.component.ts`'s docstring for the two spots
