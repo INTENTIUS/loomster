@@ -1,0 +1,33 @@
+/**
+ * The deployable `loom-agents` stack (chant#893) — the Bedrock AgentCore
+ * agent set: a low-code Strands agent on every tier, plus a no-code
+ * AgentCore-harness agent on production/production-ha. One `LoomAgents(...)`
+ * call; every cross-stack input is `Ref(...)`-wrapped from `./params.ts`'s
+ * CFN `Parameter`s, resolved at deploy time by
+ * `../components/loom-agents.component.ts`'s `cfn-deploy` step's `inputs`
+ * map — this file has zero resource constructors of its own, so none of
+ * chant's EVL rules apply to it (same convention `../loom-backend/backend.ts`/
+ * `../loom-db/db.ts` use).
+ */
+
+import { Ref } from "@intentius/chant-lexicon-aws";
+import { LoomAgents } from "../composites/loom-agents";
+import * as params from "./params";
+
+export const agents = LoomAgents({
+  naming: params.namingParams,
+
+  artifactBucket: Ref(params.pArtifactBucket) as unknown as string,
+  ecsSecurityGroupId: Ref(params.pEcsSecurityGroupId) as unknown as string,
+  backendBaseUrl: Ref(params.pDomainName) as unknown as string,
+  cognitoTokenUrl: Ref(params.pCognitoTokenUrl) as unknown as string,
+  cognitoDiscoveryUrl: Ref(params.pCognitoDiscoveryUrl) as unknown as string,
+
+  assistantImageUri: Ref(params.pAssistantImageUri) as unknown as string,
+  harnessImageUri: Ref(params.pHarnessAgentImageUri) as unknown as string,
+
+  privateSubnetIds: params.privateSubnetIds as string[],
+
+  bedrockModelArns: params.bedrockModelArns,
+  memoryEventExpiryDays: params.memoryEventExpiryDays,
+});

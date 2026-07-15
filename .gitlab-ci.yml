@@ -2,6 +2,7 @@ stages:
   - wave-1
   - wave-2
   - wave-3
+  - wave-4
 
 loom-cognito:
   stage: wave-1
@@ -52,8 +53,21 @@ loom-backend:
   stage: wave-3
   image: node:22-slim
   script:
-    - chant run --components loom-backend --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-db.outputs.json --seed-outputs loom-cognito.outputs.json
+    - chant run --components loom-backend --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-db.outputs.json --seed-outputs loom-cognito.outputs.json --dump-outputs loom-backend.outputs.json
   needs:
     - loom-cognito
     - loom-db
+    - shared-foundation
+  artifacts:
+    paths:
+      - loom-backend.outputs.json
+
+loom-agents:
+  stage: wave-4
+  image: node:22-slim
+  script:
+    - chant run --components loom-agents --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-cognito.outputs.json --seed-outputs loom-backend.outputs.json
+  needs:
+    - loom-backend
+    - loom-cognito
     - shared-foundation
