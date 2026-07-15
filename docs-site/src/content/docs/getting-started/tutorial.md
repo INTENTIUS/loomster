@@ -512,8 +512,6 @@ detail, lives in [Adoption](/loomster/guides/adoption/)'s "Known gaps" section:
 
 - `loom-backend`/`loom-frontend` always provision their own ECS
   execution/task IAM roles — no `reference-existing` seam for those yet.
-- PrivateLink is tier-gated only, with no independent `omit` on
-  `production`/`production-ha`.
 - No bastion composite — Loom's own upstream template doesn't define one
   either.
 - `chant lifecycle snapshot|diff` against this repo's whole project root

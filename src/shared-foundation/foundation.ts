@@ -6,7 +6,7 @@
  */
 
 import { SharedFoundation } from "../composites/shared-foundation";
-import { namingParams, domainName, albIngressCidr, loggingBucketName } from "./params";
+import { namingParams, domainName, albIngressCidr, loggingBucketName, privateLinkMode } from "./params";
 import { network } from "./network";
 
 export const foundation = SharedFoundation({
@@ -15,4 +15,7 @@ export const foundation = SharedFoundation({
   domainName,
   albIngressCidr,
   loggingBucketName,
+  // Only pass the seam when explicitly set (LOOM_PRIVATELINK); unset leaves the
+  // composite's tier-based default (#29).
+  privateLink: privateLinkMode ? { mode: privateLinkMode } : undefined,
 });

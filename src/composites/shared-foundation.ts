@@ -178,12 +178,21 @@ export interface SharedFoundationProps {
   agentRole?: AgentRoleSeam;
 
   /**
-   * PrivateLink (Loom's `privatelink.yaml`) — production/production-ha only.
+   * PrivateLink (Loom's `privatelink.yaml`) — an NLB + VPCEndpointService that
+   * lets private consumers reach Loom without crossing the public internet.
    * Needs private subnets to place the NLB in; when network is provisioned,
    * the composite's own private subnets are used automatically. When network
    * is reference-existing, pass `network.privateSubnetIds` (used here too).
+   *
+   * `mode` is independent of tier: it defaults to `provision` on
+   * production/production-ha and `omit` on light, but either can be set
+   * explicitly — a production deployment whose consumers reach Loom another
+   * way can `omit` it, and a caller who supplies private subnets can
+   * `provision` it on any tier.
    */
   privateLink?: {
+    /** `provision` | `omit`. Default: provision on production/production-ha, omit on light. */
+    mode?: "provision" | "omit";
     /** Port the AgentCore Runtime (or equivalent) listens on behind the NLB. Default: 443. */
     agentRuntimePort?: number;
   };
@@ -981,14 +990,20 @@ export const SharedFoundation = Composite<SharedFoundationProps, SharedFoundatio
     Tags: tags,
   }, defs?.ecsCluster));
 
-  // ── PrivateLink (full tier only): NLB + VPCEndpointService ───────────
+  // ── PrivateLink: NLB + VPCEndpointService ────────────────────────────
+  // Independent `provision | omit` seam (#29). Defaults follow the tier
+  // (provision on full, omit on light), but either is overridable — so a
+  // production deployment can omit PrivateLink, or any tier that supplies
+  // private subnets can provision it.
+  const privateLinkMode = props.privateLink?.mode ?? (fullTier ? "provision" : "omit");
+  const wantPrivateLink = privateLinkMode === "provision";
   const privateLinkNeedsSubnetsError = new Error(
-    "SharedFoundation: privateSubnetIds are required on production/production-ha tiers for PrivateLink's NLB",
+    "SharedFoundation: privateSubnetIds are required when PrivateLink is provisioned (privateLink.mode: \"provision\") — for the NLB",
   );
-  if (fullTier && (!privateSubnetIds || privateSubnetIds.length === 0)) {
+  if (wantPrivateLink && (!privateSubnetIds || privateSubnetIds.length === 0)) {
     throw privateLinkNeedsSubnetsError;
   }
-  const privateLinkResult = fullTier
+  const privateLinkResult = wantPrivateLink
     ? buildPrivateLink(naming, tags, vpcId, privateSubnetIds as string[], props.privateLink?.agentRuntimePort ?? 443, props.loggingBucketName)
     : undefined;
 

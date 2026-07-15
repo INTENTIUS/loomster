@@ -61,7 +61,7 @@ greenfield boundary.
 | `shared-foundation` | `acm` | `provision` \| `reference-existing` \| `omit` | `provision` (production/production-ha only) | `certificateArn`, already DNS-validated against the referenced zone |
 | `shared-foundation` | `agentRole` | `provision` \| `reference-existing` \| `omit` | `provision` | `agentRoleArn` — the least-privilege AgentCore execution role a security team already built |
 | `shared-foundation` | `loggingBucketName` | reference-existing \| unset | unset (no access logging) | An existing S3 bucket for ALB/NLB + artifact-bucket access logs — Loom never creates this bucket itself |
-| `shared-foundation` | PrivateLink | tier-gated only — **no independent seam** | present on production/production-ha, absent on light | Nothing to pass; see "Known gaps" |
+| `shared-foundation` | `privateLink` | `provision` \| `omit` | `provision` on production/production-ha, `omit` on light (both overridable) | `privateLink.mode` — `omit` drops the NLB + VPCEndpointService on production; `provision` (with private subnets supplied) adds it on any tier |
 | `loom-db` (`#887`) | `data` | `provision` \| `reference-existing` \| `omit` | `provision` | `endpoint`, `credentialsSecretArn`, optionally `connectionSecretArn`/`port`/`dbName` — an externally-managed Postgres endpoint (RDS, Aurora, or otherwise) |
 | `loom-db` | `dbIngress` (provision mode only) | `cidr` \| `security-group` | `cidr` (Loom's own `10.0.0.0/8`) | `sourceSecurityGroupId` — typically `shared-foundation`'s own ECS task SG |
 | `loom-cognito` (`#888`) | `identity` | `provision` \| `reference-existing` \| `omit` | `provision` | `userPoolId`, `domain`, `resourceServerIdentifier`, `m2mClientId`; optionally `userPoolArn`/`userClientId`/`issuer`/`discoveryUrl`/`tokenUrl` (derived when omitted) |
@@ -101,15 +101,6 @@ knows exactly where the edges are.
   needs pre-existing task/execution roles cannot get them through params
   today; this would need a seam added to those two composites, matching the
   shape `shared-foundation`'s `agentRole` already establishes.
-- **PrivateLink has no independent `omit`.** `shared-foundation` builds it
-  whenever `naming.tier` is `production`/`production-ha`
-  (`fullTier ? buildPrivateLink(...) : undefined` in
-  `src/composites/shared-foundation.ts`) — there's no `privateLink.mode`
-  parameter the way `kms`/`ecr`/`acm`/`route53`/`agentRole` each have one.
-  Today the only lever is tier itself: choose `light` to get no PrivateLink
-  at all, or accept it as part of the full tier. A team on production that
-  wants PrivateLink omitted independently of tier would need a seam added
-  here too.
 - **No bastion composite.** Nothing in this codebase models a bastion host,
   and Loom's own upstream template doesn't define one either — there is
   nothing to reference or omit, and this page does not invent one to check

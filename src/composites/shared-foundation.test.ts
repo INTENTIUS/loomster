@@ -105,6 +105,18 @@ describe("SharedFoundation — production tier", () => {
     }
   });
 
+  test("privateLink omit: drops the NLB + VPCEndpointService on production, independent of tier (#29)", () => {
+    const instance = SharedFoundation(baseProdProps({ privateLink: { mode: "omit" } }));
+    const names = Object.keys(instance.members);
+    for (const absent of ["nlb", "nlbTargetGroup", "nlbListener", "vpcEndpointService"]) {
+      expect(names).not.toContain(absent);
+    }
+    // Everything else about production is unaffected.
+    expect(names).toContain("alb");
+    expect(names).toContain("httpsListener");
+    expect(names).toContain("certificate");
+  });
+
   test("ALB listens on HTTPS:443 with the provisioned certificate", () => {
     const instance = SharedFoundation(baseProdProps());
     const listenerProps = (instance.httpsListener as any).props;

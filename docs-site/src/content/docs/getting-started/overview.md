@@ -63,8 +63,6 @@ Documented here rather than papered over, so a team adopting this today knows ex
 
 - **Real-AWS end-to-end is not yet run.** The full stack deploys 7/7 on the Floci emulator (light tier), but the `production` / `production-ha` tiers have only been synthesized and fidelity-audited, not applied against a live AWS account (`INTENTIUS/loomster#22`). Floci proves the control plane (stacks reach `CREATE_COMPLETE`) but does not run the app workload, so the runtime Verify checks (`wait-steady-state`, `health-gate`) are gated to real AWS.
 - `loom-backend`/`loom-frontend` always provision their own ECS execution/task IAM roles — no `reference-existing` seam for those yet.
-- PrivateLink is tier-gated only, with no independent `omit` on `production`/`production-ha` (`INTENTIUS/loomster#29`).
-- `loom-agents` does not yet synthesize the AgentCore code-interpreter execution role Loom ships in `code_interpreter_role.yaml` (`INTENTIUS/loomster#39`).
 - No bastion composite — Loom's own upstream template doesn't define one either.
 - `chant lifecycle snapshot|diff` against this repo's whole project root still fails to build on one remaining, more pervasive export-name collision (`INTENTIUS/chant#932`) — every per-component and per-component-graph command in the Tutorial is unaffected.
 

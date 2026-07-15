@@ -36,3 +36,16 @@ export const albIngressCidr = process.env.LOOM_ALB_INGRESS_CIDR;
 
 /** Pre-existing S3 bucket for ALB/NLB/artifact-bucket access logs. Always reference-existing (Loom never creates it). */
 export const loggingBucketName = process.env.LOOM_LOGGING_BUCKET_NAME;
+
+/**
+ * PrivateLink seam (#29), independent of tier. `LOOM_PRIVATELINK=omit` drops
+ * the NLB + VPCEndpointService on production; `provision` adds it on any tier
+ * (needs private subnets). Unset → the composite's tier-based default
+ * (provision on production/production-ha, omit on light).
+ */
+export const privateLinkMode: "provision" | "omit" | undefined =
+  process.env.LOOM_PRIVATELINK === "omit"
+    ? "omit"
+    : process.env.LOOM_PRIVATELINK === "provision"
+      ? "provision"
+      : undefined;
