@@ -378,6 +378,48 @@ chant's own `just gitlab-runtime-e2e` convention.
 just gitlab-runtime-e2e   # or: bash test/gitlab-runtime-e2e.sh
 ```
 
+## Exportable artifact bundle (chant#901)
+
+A third adoption on-ramp, beyond "run chant" and "adopt this repo": **consume
+the output, skip the tool.** A team grabs the pre-synthesized CloudFormation
+templates + generated CI and deploys with plain `aws cloudformation deploy`
+— chant does not need to be installed at deploy time.
+
+```
+npm run export-bundle   # or: bash scripts/export-bundle.sh
+```
+
+writes `dist/bundle/loom-v1.6.0/{light,production,production-ha}/` — each
+tier a self-contained directory: a synthesized, valid CloudFormation
+template per real Loom component (`templates/`), the generated GitHub
+Actions + GitLab CI pipelines (`ci/`), and this tier's own `manifest.json`.
+See the bundle's own generated `README.md` (bundle root) for the deploy
+order and the full CloudFormation parameter reference — it's regenerated
+fresh from each run's own templates, so it can't drift from what's actually
+in the bundle.
+
+**Reuses chant's shipped mechanism, invents no new packaging.** Per
+chant#901's settled decision, every template is folded into a chant Build
+Archive manifest (`@intentius/chant/components/verbs/build-archive`,
+chant#613's `template`-kind entry) via `addArchiveTemplate` — the same
+content-addressed structure `docker-build`/`generate-sbom` already
+accumulate for image builds. `EXPORT_PERSIST_LEDGER=true npm run
+export-bundle` additionally persists each tier's manifest to this repo's
+own `chant/lifecycle` orphan branch (chant's Build Ledger, chant#609) —
+local git plumbing only, off by default so a plain export never mutates
+git state as a side effect; add `EXPORT_PUSH_LEDGER=true` to also push it.
+
+This script hand-rolls the manifest read/materialize step itself (no first-class
+`chant` CLI does this yet) — `INTENTIUS/chant#929` proposes a `chant
+components export` core command for exactly that, so a project like this
+one wouldn't need its own `export-bundle.ts` at all.
+
+See `scripts/export-bundle.ts`'s module doc for the full design, including
+a documented, pre-existing chant-core limitation this export step surfaces
+rather than silently patches: a handful of auto-detected cross-lexicon
+`Outputs` entries on `shared-foundation` carry a dotted logical id that
+isn't valid CloudFormation — tracked upstream as `INTENTIUS/chant#930`.
+
 ## Deploy
 
 Deployment is via **GitHub Actions** (`.github/workflows/deploy.yml`), not a
