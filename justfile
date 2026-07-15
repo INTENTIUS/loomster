@@ -24,5 +24,11 @@ test:
 synth:
     npm run synth
 
+# Optional: per-component monthly cost estimate via Infracost, run against
+# dist/*.template.json (chant#896). Opt-in — no-op (exit 0 + notice) if
+# infracost isn't installed. Run `just synth` first.
+estimate-cost:
+    npm run estimate-cost
+
 # Everything CI-relevant.
 check: build lint test
