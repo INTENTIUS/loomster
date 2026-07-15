@@ -25,7 +25,8 @@
     "generate:gitlab": "chant build --components --generate gitlab -o .gitlab-ci.yml",
     "generate:github": "chant build --components --generate github -o .github/workflows/components.yml",
     "ops:build": "chant build ops",
-    "export-bundle": "bash scripts/export-bundle.sh"
+    "export-bundle": "bash scripts/export-bundle.sh",
+    "vendor": "bash scripts/vendor-loom.sh"
   },
   "dependencies": {
     "@intentius/chant": "^0.18.15",

@@ -171,15 +171,68 @@ that's covered instead.
 application images, but Loom's source (the `backend/`/`frontend/`
 directories + their Dockerfiles) is not vendored into this repo — it lives
 upstream at [`awslabs/loom`](https://github.com/awslabs/loom) (pinned
-`v1.6.0`). Check that repo out at `vendor/loom` (gitignored) before running
-a real `chant run` deploy:
+`v1.6.0`). Fetch it before running a real `chant run` deploy:
 
 ```
-git clone --branch v1.6.0 https://github.com/awslabs/loom vendor/loom
+npm run vendor   # or: bash scripts/vendor-loom.sh, or: just vendor
 ```
 
-Not required for typecheck/lint/test/synth — those never touch the
-filesystem at `vendor/loom`, only an actual deploy does.
+[`scripts/vendor-loom.sh`](scripts/vendor-loom.sh) resolves `refs/tags/v1.6.0`
+on `awslabs/loom`, checks the commit it resolves to against a sha pinned in
+the script (a tag is a mutable ref — this fails loudly rather than silently
+vendoring different content if it's ever force-moved upstream), then a
+sparse checkout of just `backend/`, `frontend/`, and `agents/` into
+`vendor/loom` (gitignored) — not Loom's full tree.
+
+Not required for typecheck/test/synth, which never touch `vendor/loom` even
+when it exists (`tsconfig.json`'s `include` is an explicit allow-list that
+never reaches it). **Run this right before a real deploy or a manual `docker
+build`, not before `chant lint .`** — unlike `tsc`, `chant lint .` (and any
+whole-project `chant build`/`chant lifecycle` invocation without `--src`
+scoping) walks every `.ts` file under the given path with no gitignore-
+awareness, so if `vendor/loom` exists on disk when it runs, it lints Loom's
+own vendored frontend source as if it were project code. This repo's CI
+never runs `npm run vendor`, so the gating `lint` job is unaffected; locally,
+`rm -rf vendor/loom` before `just check` if you've vendored.
+
+Two components wire a `docker-build` build phase against that checkout —
+note that `loom-backend`'s context is the vendor root, not
+`vendor/loom/backend` (see below for why):
+
+| Component | `context` | `dockerfile` |
+|---|---|---|
+| `loom-backend` | `vendor/loom` | `backend/Dockerfile` |
+| `loom-frontend` | `vendor/loom/frontend` | `Dockerfile` (default) |
+
+`loom-backend`'s own `backend/Dockerfile` `COPY`s `agents/strands_agent/src/`
+and its `requirements.txt` from *outside* `backend/` (Loom's own backend
+bundles its low-code agent's source so it can build that agent's deploy
+artifact at runtime) — a context scoped to just `backend/` can't see those
+paths, so the build context has to be the vendor root, with `dockerfile`
+pointing at `backend/Dockerfile` inside it. This is the same context/
+Dockerfile pair Loom's own `shared/makefile` uses
+(`podman build -f ../backend/Dockerfile ..`, run from `shared/`).
+`loom-frontend`'s `Dockerfile` only `COPY`s paths from inside `frontend/`
+itself, so its context is `vendor/loom/frontend` directly.
+
+Both Dockerfiles were verified with a real `docker build` against a real
+`v1.6.0` checkout while wiring this up (#20): `loom-backend`'s image builds
+clean (and the container starts — it exits on no configured database, which
+is expected without real `pDatabaseSecretArn`-equivalent config, not a build
+defect); `loom-frontend`'s image builds clean and serves `/` over nginx with
+no further configuration needed (its two `ARG`s, `VITE_API_BASE_URL` and
+`VITE_COGNITO_USER_CLIENT_ID`, both default to `""`, matching Loom's own
+`podman.build.frontend` target).
+
+**`loom-agents` has no `docker-build` phase, and it's not just a modeling
+choice.** `agents/strands_agent/` ships no `Dockerfile` upstream at all —
+Loom's own backend builds this agent's deploy artifact as a Python zip
+(`build_agent_artifact()` in `backend/app/services/deployment.py`) and
+deploys it to Bedrock AgentCore Runtime via `codeConfiguration`, never a
+container image. So `loom-agents.component.ts`'s `assistantImageUri`
+staying an "already exists, supplied out-of-band" parameter isn't a gap this
+vendoring step could close — see
+`src/components/loom-agents.component.ts`'s docstring for the detail.
 
 ## Lifecycle Ops (chant#905)
 

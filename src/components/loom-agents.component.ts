@@ -20,6 +20,25 @@ import { phase, stackOutput, type Component } from "@intentius/chant/components"
  * The `agentcore-deploy` version-promotion capability that would repoint
  * each agent's `RuntimeEndpoint` at a new `Runtime` version is deferred —
  * see chant#882 (GA-gated on Bedrock AgentCore Runtime, not on this stack).
+ *
+ * **No `docker-build` here, and not just a modeling choice (#20).** Vendoring
+ * real `awslabs/loom` v1.6.0 source to wire `loom-backend`/`loom-frontend`'s
+ * `docker-build` context (#20) turned up the reason this stack has never had
+ * one: `agents/strands_agent/` ships no `Dockerfile` at all. Loom's own
+ * backend builds this agent's deploy artifact at runtime
+ * (`backend/app/services/deployment.py`'s `build_agent_artifact()` — pip-
+ * installs the agent's `requirements.txt` and zips `agents/strands_agent/
+ * src/` into an S3 object) and deploys it to Bedrock AgentCore Runtime via
+ * `agentRuntimeArtifact.codeConfiguration` (a Python zip/code artifact,
+ * `entryPoint: ["opentelemetry-instrument", "src/handler.py"]`) — never
+ * `containerConfiguration`. So `assistantImageUri` staying an "already
+ * exists, supplied out-of-band" `Parameter` (see
+ * `../loom-agents/params.ts`) isn't a gap this repo could close by vendoring
+ * a Dockerfile that doesn't exist upstream; it would need a different
+ * capability (build a zip artifact, publish to S3, most likely a new
+ * `agent-artifact-build`-shaped verb) to genuinely close, which is out of
+ * #20's scope. `harnessImageUri`'s "stock/managed image" is unaffected
+ * either way — it was never Loom source to vendor in the first place.
  */
 export const loomAgents: Component = {
   name: "loom-agents",
