@@ -52,3 +52,9 @@ jobs:
       - name: test
         run: npm test
         working-directory: loom-on-chant
+      # Compiles every lifecycle Op (chant#905) to generated Temporal worker
+      # code — pure codegen, no AWS credentials or env vars needed (every
+      # naming param has a safe default; see ops/lib/naming-env.ts).
+      - name: build ops
+        run: npm run ops:build
+        working-directory: loom-on-chant
