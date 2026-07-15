@@ -23,13 +23,16 @@
     "audit": "chant run loom-audit",
     "estimate-cost": "bash scripts/estimate-cost.sh",
     "generate:gitlab": "chant build --components --generate gitlab -o .gitlab-ci.yml",
-    "ops:build": "chant build ops"
+    "generate:github": "chant build --components --generate github -o .github/workflows/components.yml",
+    "ops:build": "chant build ops",
+    "export-bundle": "bash scripts/export-bundle.sh"
   },
   "dependencies": {
     "@intentius/chant": "file:../chant/packages/core",
     "@intentius/chant-lexicon-aws": "file:../chant/lexicons/aws",
     "@intentius/chant-lexicon-temporal": "file:../chant/lexicons/temporal",
-    "@intentius/chant-lexicon-gitlab": "file:../chant/lexicons/gitlab"
+    "@intentius/chant-lexicon-gitlab": "file:../chant/lexicons/gitlab",
+    "@intentius/chant-lexicon-github": "file:../chant/lexicons/github"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
