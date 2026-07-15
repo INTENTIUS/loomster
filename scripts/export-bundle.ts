@@ -61,9 +61,10 @@
  * "byte-identical to what `chant build` produced"). Filed upstream as
  * `INTENTIUS/chant#930`. None of Loom's own
  * meaningful named outputs (`oAlbArn`, `oArtifactBucket`, ...) are affected
- * — only these extra, auto-detected entries are — and `assertValidCfn`
- * below still catches anything that would leave a template genuinely
- * broken (a dangling `Ref`/`Fn::GetAtt`, a resource with no `Type`).
+ * — only these extra, auto-detected entries are — and
+ * `assertValidSelfContainedCfn` below still catches anything that would
+ * leave a template genuinely broken (a dangling `Ref`/`Fn::GetAtt`, a
+ * resource with no `Type`).
  */
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
