@@ -49,6 +49,18 @@ export const loomFrontend: Component = {
   dependsOn: ["shared-foundation"],
   build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
   deploy: [
+    // `build` above is descriptive metadata only (introspection/CI-YAML
+    // generation) — chant's local `interpret` driver (`chant run
+    // --components`) only ever executes `deploy`'s own phases
+    // (`runComponentDeploy` in @intentius/chant's driver.ts iterates
+    // `component.deploy`, never `component.build`), so the actual
+    // `docker-build` step has to be a real phase here too, or "Publish"'s
+    // `from: "archive"` has nothing to load (chant#928/loomster#35 —
+    // found live: `docker load -i 'archive'` failed with no such file,
+    // since nothing had ever produced it).
+    phase("Build", [
+      { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
+    ]),
     phase("Publish", [
       { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oFrontendRepositoryUri") },
     ]),
