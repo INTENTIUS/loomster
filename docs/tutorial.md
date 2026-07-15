@@ -58,9 +58,9 @@ that comparison holds and where it doesn't.
 - The AWS CLI on `PATH` — `cfn-deploy` shells out to it (against Floci or
   real AWS, same binary either way).
 - For a real deploy of `loom-backend`/`loom-frontend` (not required for the
-  light-tier infra walkthrough below): `awslabs/loom` checked out at
-  `vendor/loom` (gitignored), pinned `v1.6.0` — see the root README's
-  "Components" section.
+  light-tier infra walkthrough below): `npm run vendor`
+  (`scripts/vendor-loom.sh`) fetches `awslabs/loom`, pinned `v1.6.0`, into
+  `vendor/loom` (gitignored) — see the root README's "Components" section.
 
 ```
 git clone https://github.com/INTENTIUS/loomster
