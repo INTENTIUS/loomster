@@ -5,12 +5,12 @@ import { namingParams } from "../loom-backend/params";
 /**
  * The `loom-backend` service (chant#889) — build (`docker-build` ->
  * archive) -> publish (`publish-image`, promote by digest) -> apply
- * (`cfn-deploy`) -> verify (`wait-steady-state` + `health-gate`), with a
- * `rollback-previous` compensation phase. The template is what
- * `chant build src/loom-backend --lexicon aws` synthesizes from
- * `../composites/loom-backend.ts`. No separate `ecs-update-service` step
- * between Apply and Verify (unlike the reference preset this mirrors — see
- * the Apply phase's own comment for why, chant#928/loomster#35).
+ * (`cfn-deploy`), with a `rollback-previous` compensation phase. The
+ * template is what `chant build src/loom-backend --lexicon aws`
+ * synthesizes from `../composites/loom-backend.ts`. No separate
+ * `ecs-update-service` step, and no Verify phase, unlike the reference
+ * preset this mirrors — see the Apply phase's own comment for why
+ * (chant#928/loomster#35).
  *
  * **Docker build context.** Loom's application source (the `backend/`
  * directory + its `Dockerfile`) is not vendored into this repo — it lives
@@ -123,10 +123,14 @@ export const loomBackend: Component = {
       // `deployments` is absent from the response, which is what Floci's
       // `ecs update-service` returns — verified live). Filed upstream.
     ]),
-    phase("Verify", [
-      { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },
-      { kind: "health-gate", path: "/health" },
-    ]),
+    // No Verify phase today (chant#928/loomster#35, found live) — same two
+    // gaps `loom-frontend.component.ts` documents in full: `wait-steady-
+    // state` throws unconditionally against Floci (`svc?.deployments.
+    // length` — Floci's `ecs describe-services` never returns a
+    // `deployments` field), and `health-gate`'s bare `path` (no host field,
+    // no Wiring string-interpolation at the component-authoring layer)
+    // can never compose a real fetchable URL out of `oDomainName`. Both are
+    // real, filed gaps; re-add once fixed.
   ],
   rollback: [phase("Rollback", [{ kind: "rollback-previous", service: serviceName, cluster: clusterArn }])],
 };

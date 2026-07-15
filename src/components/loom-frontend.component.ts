@@ -5,14 +5,13 @@ import { namingParams } from "../loom-frontend/params";
 /**
  * The `loom-frontend` service (chant#889) — build (`docker-build` ->
  * archive) -> publish (`publish-image`, promote by digest) -> apply
- * (`cfn-deploy`) -> verify (`wait-steady-state` + `health-gate`), with a
- * `rollback-previous` compensation phase. The template is what
- * `chant build src/loom-frontend --lexicon aws` synthesizes from
- * `../composites/loom-frontend.ts`. Depends on `shared-foundation` only —
- * no `loom-db`/`loom-cognito` wiring, unlike `loom-backend`
- * (`./loom-backend.component.ts`). No separate `ecs-update-service` step
- * between Apply and Verify — see the Apply phase's own comment for why
- * (chant#928/loomster#35).
+ * (`cfn-deploy`), with a `rollback-previous` compensation phase. The
+ * template is what `chant build src/loom-frontend --lexicon aws`
+ * synthesizes from `../composites/loom-frontend.ts`. Depends on
+ * `shared-foundation` only — no `loom-db`/`loom-cognito` wiring, unlike
+ * `loom-backend` (`./loom-backend.component.ts`). No separate
+ * `ecs-update-service` step, and no Verify phase — see the Apply phase's
+ * own comment for why (chant#928/loomster#35).
  *
  * **Docker build context.** Same note as `loom-backend.component.ts`:
  * Loom's `frontend/` source + Dockerfile lives upstream at `awslabs/loom`
@@ -104,10 +103,20 @@ export const loomFrontend: Component = {
       // force-a-fresh-deployment-with-the-same-image case this step alone
       // covers.
     ]),
-    phase("Verify", [
-      { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },
-      { kind: "health-gate", path: "/" },
-    ]),
+    // No Verify phase today (chant#928/loomster#35, found live) — both
+    // candidate steps are broken, independent of this project's own
+    // wiring: `wait-steady-state` polls `ecs describe-services` and does
+    // `svc?.deployments.length` — Floci's response has no `deployments`
+    // field at all (verified live), so it throws unconditionally against
+    // Floci; `health-gate`'s `path` is a bare path or full URL (no
+    // separate host field, `@intentius/chant`'s `wait-verify.ts`), and a
+    // `Wiring` value (`stackOutput(...)`) can't be string-concatenated with
+    // a literal at the component-authoring layer, so there is no way to
+    // compose `oDomainName` (the ALB's actual host) with `/` into one
+    // fetchable URL here — as configured, `fetch("/")` fails every attempt
+    // and the step only ever fails, after its full 5-minute timeout. Both
+    // are real, filed gaps; re-add once fixed (health-gate needs either a
+    // separate `host` field or Wiring interpolation).
   ],
   rollback: [phase("Rollback", [{ kind: "rollback-previous", service: serviceName, cluster: clusterArn }])],
 };
