@@ -10,7 +10,9 @@ import { namingParams } from "../loom-frontend/params";
  * `chant build src/loom-frontend --lexicon aws` synthesizes from
  * `../composites/loom-frontend.ts`. Depends on `shared-foundation` only —
  * no `loom-db`/`loom-cognito` wiring, unlike `loom-backend`
- * (`./loom-backend.component.ts`).
+ * (`./loom-backend.component.ts`). No separate `ecs-update-service` step
+ * between Apply and Verify — see the Apply phase's own comment for why
+ * (chant#928/loomster#35).
  *
  * **Docker build context.** Same note as `loom-backend.component.ts`:
  * Loom's `frontend/` source + Dockerfile lives upstream at `awslabs/loom`
@@ -87,7 +89,20 @@ export const loomFrontend: Component = {
           pImageUri: "@Publish.uri",
         },
       },
-      { kind: "ecs-update-service", cluster: clusterArn, service: serviceName },
+      // No separate `ecs-update-service` step (chant#928/loomster#35, found
+      // live): `cfn-deploy` above already rolls the new image out — a fresh
+      // `pImageUri` digest produces a new `TaskDefinition` revision baked
+      // into the `EcsService` resource, and CloudFormation natively updates
+      // + waits on the service when that property changes, so nothing here
+      // is lost by not also calling `ecs-update-service`. That capability's
+      // real implementation (`@intentius/chant-lexicon-aws`'s
+      // `cloud-executor.ts`) crashes unconditionally against Floci:
+      // `described.service.deployments[0]?.id` throws when `deployments` is
+      // absent from the response, which is exactly what Floci's `ecs
+      // update-service` returns (verified live) — real AWS always includes
+      // it. Filed upstream; re-add once fixed, for the redundant
+      // force-a-fresh-deployment-with-the-same-image case this step alone
+      // covers.
     ]),
     phase("Verify", [
       { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },

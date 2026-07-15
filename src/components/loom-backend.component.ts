@@ -8,7 +8,9 @@ import { namingParams } from "../loom-backend/params";
  * (`cfn-deploy`) -> verify (`wait-steady-state` + `health-gate`), with a
  * `rollback-previous` compensation phase. The template is what
  * `chant build src/loom-backend --lexicon aws` synthesizes from
- * `../composites/loom-backend.ts`.
+ * `../composites/loom-backend.ts`. No separate `ecs-update-service` step
+ * between Apply and Verify (unlike the reference preset this mirrors — see
+ * the Apply phase's own comment for why, chant#928/loomster#35).
  *
  * **Docker build context.** Loom's application source (the `backend/`
  * directory + its `Dockerfile`) is not vendored into this repo — it lives
@@ -112,7 +114,14 @@ export const loomBackend: Component = {
           pImageUri: "@Publish.uri",
         },
       },
-      { kind: "ecs-update-service", cluster: clusterArn, service: serviceName },
+      // No separate `ecs-update-service` step — same reasoning as
+      // `loom-frontend.component.ts` (chant#928/loomster#35, found live):
+      // `cfn-deploy` already rolls the new image out via a new
+      // `TaskDefinition` revision on the `EcsService` resource, and
+      // `ecs-update-service`'s real implementation crashes unconditionally
+      // against Floci (`described.service.deployments[0]?.id` throws when
+      // `deployments` is absent from the response, which is what Floci's
+      // `ecs update-service` returns — verified live). Filed upstream.
     ]),
     phase("Verify", [
       { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },
