@@ -9,6 +9,7 @@
 
 import { Ref, Split } from "@intentius/chant-lexicon-aws";
 import { LoomDb, type DataSeam } from "../composites/loom-db";
+import { SUBNET_LIST_DELIMITER, toCommaList } from "../composites/shared-foundation";
 import * as params from "./params";
 
 function buildData(): DataSeam {
@@ -31,14 +32,17 @@ function buildData(): DataSeam {
     mode: "provision",
     network: {
       vpcId: Ref(params.vpcId) as unknown as string,
-      // `pPrivateSubnetIds`'s Ref is already the comma-joined string
-      // shared-foundation's `oPrivateSubnetIds` output produced — split it
-      // for the DBProxy's real-list `VpcSubnetIds`, but also hand the
-      // already-joined string straight through as `subnetIdsCsv` so
-      // `buildDbCore` never needs to `.join(",")` a value it can't see
-      // until deploy time (see ../composites/loom-db.ts).
-      subnetIds: Split(",", Ref(params.privateSubnetIds)) as unknown as string[],
-      subnetIdsCsv: Ref(params.privateSubnetIds) as unknown as string,
+      // `pPrivateSubnetIds`'s Ref is shared-foundation's `oPrivateSubnetIds`
+      // output, joined with `SUBNET_LIST_DELIMITER` (":", not ",") — see
+      // that constant's docstring for why. Split it for the DBProxy's
+      // real-list `VpcSubnetIds`; `subnetIdsCsv` needs an actual
+      // comma-separated string (RotationSchedule_HostedRotationLambda's own
+      // real AWS field contract, unrelated to our own wire delimiter), so
+      // re-join with "," after splitting — this round-trip is a template-
+      // level Fn::Split/Fn::Join, not a JS `.join(",")` on a value
+      // `buildDbCore` can't see until deploy time (see ../composites/loom-db.ts).
+      subnetIds: Split(SUBNET_LIST_DELIMITER, Ref(params.privateSubnetIds)) as unknown as string[],
+      subnetIdsCsv: toCommaList(Split(SUBNET_LIST_DELIMITER, Ref(params.privateSubnetIds))) as unknown as string,
     },
     dbIngress: params.useSourceSecurityGroup
       ? { mode: "security-group", sourceSecurityGroupId: Ref(params.ecsSecurityGroupId) as unknown as string }

@@ -286,14 +286,69 @@ class JoinedAttrOutputValue implements Intrinsic {
 }
 
 /**
- * Comma-join 2+ values (each a plain string or an `AttrRef`/`Ref`
- * masquerading as `string`, same convention as everywhere else in this
- * file) into a single value safe to hand to the aws lexicon's `output(ref,
- * name)` helper — see `JoinedAttrOutputValue`'s docstring for why this
- * can't just be the aws lexicon's own `Join(...)`.
+ * Delimiter for every subnet-id-list output `joinOutputValues` below
+ * produces — `:`, not `,` (chant#928/loomster#35). The value crosses one
+ * more boundary after the CloudFormation template: `chant run`'s `cfn-deploy`
+ * capability threads a `stackOutput(...)`-resolved value into the *next*
+ * stack's `aws cloudformation create-change-set --parameters
+ * ParameterKey=<k>,ParameterValue=<v>` shorthand CLI argument, unescaped
+ * (`@intentius/chant-lexicon-aws`'s `cloud-executor.ts`). AWS CLI's own
+ * shorthand parser for `--parameters` splits on `,` to find `Key`/`Value`
+ * pairs, so a comma inside `<v>` itself — this list's whole reason for
+ * being — turns one `ParameterValue` into two, and CloudFormation rejects
+ * the list where it expects a string. Verified live against Floci: the
+ * comma-joined value failed with exactly that error; re-joining with `:`
+ * (inert to both AWS CLI's shorthand grammar and the unescaped shell `exec`
+ * call underneath it) round-trips correctly. Every consumer's `Fn::Split`
+ * uses this same constant, not a hardcoded `":"`, so the two ends can't
+ * silently drift.
+ */
+export const SUBNET_LIST_DELIMITER = ":";
+
+/**
+ * Re-delimit a `SUBNET_LIST_DELIMITER`-joined value (e.g. `Split(
+ * SUBNET_LIST_DELIMITER, Ref(...))`, itself resolving a `Ref` to
+ * shared-foundation's `oPrivateSubnetIds`) into a genuine comma-separated
+ * string — for the rare downstream AWS field whose own real contract is a
+ * literal comma list, unrelated to this project's own wire delimiter
+ * (`loom-db`'s `RotationSchedule_HostedRotationLambda.VpcSubnetIds` is the
+ * one example today: AWS's own rotation Lambda parses that field by
+ * splitting on `,` itself, so it needs the genuine character, not
+ * `SUBNET_LIST_DELIMITER`).
+ *
+ * `Fn::Join` nested directly around `Fn::Split` — no JSON array wrapper
+ * around the `Fn::Split` call — is standard CloudFormation re-delimiting
+ * (`Fn::Join`'s second argument may itself be any intrinsic that resolves
+ * to a list). The aws lexicon's own `Join(...)` helper expects a real JS
+ * array to iterate, so it can't be handed a single `SplitIntrinsic`
+ * directly; this builds the nested-intrinsic JSON by hand instead.
+ */
+class RedelimitedList implements Intrinsic {
+  readonly [INTRINSIC_MARKER] = true as const;
+
+  constructor(
+    private readonly toDelimiter: string,
+    private readonly source: Intrinsic,
+  ) {}
+
+  toJSON(): { "Fn::Join": [string, unknown] } {
+    return { "Fn::Join": [this.toDelimiter, this.source.toJSON()] };
+  }
+}
+
+export function toCommaList(source: Intrinsic): Intrinsic {
+  return new RedelimitedList(",", source);
+}
+
+/**
+ * Join 2+ values (each a plain string or an `AttrRef`/`Ref` masquerading as
+ * `string`, same convention as everywhere else in this file) with
+ * `SUBNET_LIST_DELIMITER` into a single value safe to hand to the aws
+ * lexicon's `output(ref, name)` helper — see `JoinedAttrOutputValue`'s
+ * docstring for why this can't just be the aws lexicon's own `Join(...)`.
  */
 export function joinOutputValues(values: string[]): Intrinsic {
-  return new JoinedAttrOutputValue(",", values);
+  return new JoinedAttrOutputValue(SUBNET_LIST_DELIMITER, values);
 }
 
 /** Loom's ECR lifecycle policy (keep the last 10 images) — identical for both repos. Hoisted to a module-level constant so `buildEcrRepos` only ever references it by name (EVL001: resource constructor properties must be statically evaluable). */

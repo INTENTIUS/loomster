@@ -14,10 +14,10 @@
  * network-dependent consumer (loom-db, loom-backend, loom-frontend,
  * loom-agents) reads these instead of its own `LOOM_VPC_ID`/`LOOM_*_SUBNET_IDS`
  * env vars, so light tier is fully self-contained. CloudFormation Outputs
- * can't be lists, so the subnet id lists are comma-joined into a single
- * string here via `joinOutputValues` (an `Fn::Sub`, not `Fn::Join` — see
- * that helper's own docstring for why); consumers `Fn::Split` them back
- * apart.
+ * can't be lists, so the subnet id lists are joined into a single string
+ * here via `joinOutputValues` (`SUBNET_LIST_DELIMITER` — `:`, not `,`; see
+ * that constant's own docstring for why); consumers `Fn::Split` on the same
+ * constant to get the list back.
  */
 
 import { output, Ref } from "@intentius/chant-lexicon-aws";

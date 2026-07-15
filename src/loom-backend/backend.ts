@@ -12,6 +12,7 @@
 
 import { Ref, Split } from "@intentius/chant-lexicon-aws";
 import { LoomBackend } from "../composites/loom-backend";
+import { SUBNET_LIST_DELIMITER } from "../composites/shared-foundation";
 import * as params from "./params";
 
 export const backend = LoomBackend({
@@ -28,7 +29,7 @@ export const backend = LoomBackend({
   cognitoUserPoolId: Ref(params.pCognitoUserPoolId) as unknown as string,
   imageUri: Ref(params.pImageUri) as unknown as string,
 
-  privateSubnetIds: Split(",", Ref(params.pPrivateSubnetIds)) as unknown as string[],
+  privateSubnetIds: Split(SUBNET_LIST_DELIMITER, Ref(params.pPrivateSubnetIds)) as unknown as string[],
 
   cognitoRegion: params.cognitoRegion,
   allowedOrigins: params.allowedOrigins,
