@@ -1,15 +1,24 @@
 # loom-on-chant
 
-Production deployment of [awslabs/loom](https://github.com/awslabs/loom) on
-[chant](https://intentius.io/chant) — component-based, tiered
+Typed, tiered infrastructure-as-code for [awslabs/loom](https://github.com/awslabs/loom)
+on [chant](https://intentius.io/chant) — component-based, tiered
 (`light` / `production` / `production-ha`), with generated CI and a
 parameterization/naming scheme that lets multiple Loom instances coexist in
 one or many AWS accounts without collision.
 
-Not a demo. This is the deployment a team adopts to run Loom for real — same
-bar as any other production stack. Loom's own deploy today is a manual
-multi-step SAM process behind a `DEPLOYMENT.md`; chant types it, lints it,
-dedupes the cross-stack glue, orders it, tiers it, and generates the pipeline.
+Loom's own deploy today is a manual multi-step SAM process behind a
+`DEPLOYMENT.md`; chant types it, lints it, dedupes the cross-stack glue,
+orders it, tiers it, and generates the pipeline.
+
+**What's proven today:** the full six-component stack builds Loom `v1.6.0`'s
+real backend/frontend/agent images and deploys end to end on a local emulator
+([Floci](https://floci.io), light tier) — 7/7 stacks `CREATE_COMPLETE`. The
+synthesized CloudFormation has been fidelity-audited against Loom's own
+`v1.6.0` templates (resources, params, outputs, container env) and matches.
+**Not yet proven:** a real-AWS end-to-end run. The `production` / `production-ha`
+tiers synthesize and pass the fidelity audit but have not been deployed against
+a live account yet. So this is the path toward a production Loom deployment, not
+a production deployment a team has run for real — see [Status](#status) below.
 
 Pinned to **Loom `v1.6.0`** (a moving `as-is` AWS Labs sample — breaking
 changes expected upstream between versions).
@@ -31,35 +40,17 @@ Standalone repo, modeled on `INTENTIUS/blacklight` — own `package.json`,
 resolves unpublished workspace versions, whereas this must be
 production-adoptable and track chant on its own release cadence.
 
-### chant dependency: dev-linked now, published at release
+### chant dependency: published npm packages
 
-`package.json` currently points `@intentius/chant`,
-`@intentius/chant-lexicon-aws`, and `@intentius/chant-lexicon-temporal` at
-`file:../chant/packages/core`, `file:../chant/lexicons/aws`, and
-`file:../chant/lexicons/temporal` — a sibling checkout of the `chant`
-monorepo. This is intentional while the Loom composites/Ops are built against
-chant's current `main`, ahead of whatever chant release ships the primitives
-they need.
+`package.json` consumes published chant packages — `@intentius/chant`,
+`@intentius/chant-lexicon-{aws,temporal,gitlab,github}` at a version range
+(currently `^0.18.17`). `npm install` resolves everything from the npm
+registry; no sibling `chant` checkout, no codegen step, no `file:` links. A
+fresh clone installs and builds on its own, which is exactly what CI does on
+every run.
 
-**Before this repo's first real release, swap those three entries to
-published version ranges** (e.g. `"@intentius/chant": "^0.18.0"`,
-`"@intentius/chant-lexicon-aws": "^0.18.0"`,
-`"@intentius/chant-lexicon-temporal": "^0.18.0"`) and drop the
-sibling-checkout step from CI. Until then, `chant` must be checked out as a
-sibling directory (`../chant` relative to this repo) for `file:` resolution
-to work — CI does this explicitly (see `.github/workflows/ci.yml`).
-
-A **fresh** sibling `chant` checkout isn't usable as-is — `file:` linking only
-symlinks the package itself, not its own dependencies or generated code:
-
-```
-cd ../chant && npm install               # chant's own deps (zod, tsx, typescript, ...)
-cd ../chant/lexicons/aws && npm run generate   # codegen (gitignored src/generated/)
-```
-
-If you already have a `chant` checkout you've worked in before, it likely
-already has both — this only bites a genuinely fresh clone (which is exactly
-what CI does on every run).
+To move to a newer chant, bump the range in `package.json` and re-run the
+gate (`just check`).
 
 ## Develop
 
@@ -247,9 +238,8 @@ gated concerns for a *running* Loom deployment — upgrade/release, RDS data
 safety, credential rotation, and teardown. These need an approval gate,
 crash-resume, and saga rollback that the local executor cannot give them, so
 they run as [chant Ops](https://intentius.io/chant/guide/ops/) on
-[Temporal](https://temporal.io), built on `@intentius/chant-lexicon-temporal`
-(dev-linked the same way as `@intentius/chant`/`@intentius/chant-lexicon-aws`
-— see above).
+[Temporal](https://temporal.io), built on the published
+`@intentius/chant-lexicon-temporal`.
 
 | Op | What it does | Gate? |
 |---|---|---|
@@ -436,8 +426,7 @@ threading `loom-db`/`downstream-stub` need from `shared-foundation` across a
 phase needs the `vendor/loom` Docker context (see Components above), a
 separate, heavier concern than validating the generator's own mechanics.
 
-Needs Docker and a sibling `../chant` checkout (the same dev-link the rest of
-this repo uses); skips cleanly otherwise. Not part of gating CI — mirrors
+Needs Docker; skips cleanly otherwise. Not part of gating CI — mirrors
 chant's own `just gitlab-runtime-e2e` convention.
 
 ```
@@ -495,13 +484,29 @@ separate CD tool. It's **gated** so it stays inert until you opt in:
 2. A GitHub **environment** named `production` holding the AWS credentials
    this job needs.
 
-Right now the deploy step is a placeholder — wiring the real `chant run`
-invocation is its own follow-up. The composites (`#886`-`#889`) and every
-lifecycle Op it would sit alongside (`#904`-`#906`) are already in place;
-see the sections above.
+The deploy job vendors Loom's source, configures AWS credentials + ECR login,
+and runs `chant run --components all --env "$LOOM_ENV"` — the same dependency-
+ordered orchestrator the tutorial uses locally. It derives the wave order from
+each component's `dependsOn`, builds and publishes the images by digest, and
+applies each stack.
 
 ## Status
 
-Early build-out, tracked against epic `#885`. See open issues under
-`INTENTIUS/chant` labeled for the Loom-on-chant work for what's shipped vs.
-pending.
+The full six-component stack builds Loom `v1.6.0`'s real images and deploys
+end to end on the [Floci](https://floci.io) emulator (light tier) — 7/7 stacks
+`CREATE_COMPLETE`, chant exit 0. The synthesized CloudFormation is fidelity-
+audited against Loom's own `v1.6.0` templates and matches (resources, params,
+outputs, container env — see `INTENTIUS/loomster#23`).
+
+**Remaining before "a team runs this in production":**
+
+- Real-AWS end-to-end run (`#22`) — `production` / `production-ha` synthesize
+  and pass the fidelity audit but have not been deployed against a live account.
+- `chant lifecycle snapshot|diff` against the whole project root fails on one
+  export-name collision (`INTENTIUS/chant#932`); every per-component and
+  per-component-graph command works.
+- Adoption seams still to add: `reference-existing` for the ECS execution/task
+  IAM roles, an independent PrivateLink `omit` (`#29`), and the AgentCore
+  code-interpreter execution role (`#39`).
+
+Tracked against epic `INTENTIUS/chant#885` and the tracker `INTENTIUS/loomster#31`.

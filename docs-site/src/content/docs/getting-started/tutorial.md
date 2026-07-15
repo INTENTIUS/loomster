@@ -50,11 +50,8 @@ that comparison holds and where it doesn't.
 ## Prerequisites
 
 - Node.js 22+, npm.
-- A sibling `../chant` checkout — this repo dev-links `@intentius/chant`
-  and its lexicons via `file:` (see the root [README](https://github.com/INTENTIUS/loomster/blob/main/README.md)'s
-  "chant dependency" section) ahead of a published release. Needs its own
-  `npm install` plus `npm run generate` in `lexicons/aws` (and
-  `lexicons/gitlab`/`lexicons/github` if you also touch CI generation).
+- `npm install` — this repo consumes published `@intentius/chant` and its
+  lexicons from npm; no sibling checkout, no codegen step, no `file:` links.
 - Docker, for the light-tier walkthrough (runs [Floci](https://floci.io)
   locally) — not needed for `npm run synth`, `npm run tsc`, `npm run lint`,
   or `npm test`.
@@ -98,7 +95,7 @@ for this tutorial and they're independent of each other:
 - **`tier`** (`light` / `production` / `production-ha`, env var `LOOM_TIER`)
   — sizes *one* Loom: HTTP vs. HTTPS+PrivateLink, single-AZ RDS vs.
   Multi-AZ + RDS Proxy + rotation, one AgentCore agent vs. two. See
-  [Naming & Tagging](/reference/naming/).
+  [Naming & Tagging](/loomster/reference/naming/).
 - **`instance`** (env var `LOOM_INSTANCE`) — the tenant/boundary segment.
   Two different `instance` values are two collision-free Looms in the same
   account and region. This is the topology axis — see
@@ -122,7 +119,7 @@ light tier is exactly what's below.
 `LOOM_TIER=light` plus a throwaway VPC/subnet pair and a DB password before
 running it: `loom-db` needs a VPC/subnet pair regardless of tier (RDS
 belongs in private subnets it doesn't provision itself — see
-[`docs/adoption.md`](/guides/adoption/)), and unlike `shared-foundation`'s network seam it
+[`docs/adoption.md`](/loomster/guides/adoption/)), and unlike `shared-foundation`'s network seam it
 doesn't validate a missing one with a clean error — it's an unhandled
 exception partway through the chain today. Real ids aren't needed yet, so
 any placeholder string works for this step:
@@ -269,15 +266,15 @@ stays inert until a team opts in:
 2. Provision a GitHub **environment** named `production` holding the AWS
    credentials the job assumes.
 
-Today `deploy.yml`'s own apply step is a placeholder (`echo "TODO: npx chant
-run --components all --env prod"`) — wiring the real invocation through is
-tracked as its own follow-up, and this tutorial isn't going to claim
-otherwise. What *is* real and already shipped is everything the deploy step
-would call: every component above, and the gated Ops below it. Run the
-same `npx chant run --components <name> --env production` sequence from
-Part 1 by hand (behind your own change-management process) until that
-wiring lands, or wire it into `deploy.yml` yourself — nothing about the
-components needs to change either way.
+`deploy.yml`'s apply step runs the real orchestrator — it vendors Loom's
+source, configures AWS credentials + ECR login, and runs
+`chant run --components all --env "$LOOM_ENV"`, the same dependency-ordered
+sequence Part 1 runs locally. One honest caveat: that wiring has been
+exercised end to end against the Floci emulator, not yet against a live AWS
+account (`INTENTIUS/loomster#22`). For the first real-account apply, run the
+`npx chant run --components <name> --env production` sequence from Part 1 by
+hand behind your own change-management process, then let the pipeline take
+over — nothing about the components changes either way.
 
 Beyond the initial stand-up, `production`/`production-ha` get durable,
 gated Ops for the concerns a one-shot `chant run` doesn't cover — upgrade,
@@ -308,7 +305,7 @@ default** — not a fallback:
 None of this forks a composite. [`src/examples/byo/`](https://github.com/INTENTIUS/loomster/tree/main/src/examples/byo/)
 is a runnable proof: every seam across all five composites set to
 `reference-existing`, against one illustrative set of platform-team-owned
-resources, zero edits under `src/composites/`. [`docs/adoption.md`](/guides/adoption/) is the
+resources, zero edits under `src/composites/`. [`docs/adoption.md`](/loomster/guides/adoption/) is the
 full matrix — every seam, its default, what replacing it requires, and the
 gaps that exist today (documented there rather than hidden — see
 [Known gaps](#known-gaps) below).
@@ -404,7 +401,7 @@ namespace for unscoped whole-project builds, mirroring how `--components`
 mode already scopes each component to its own stack). Every command in Parts
 1 and 2 above (and `just gitlab-runtime-e2e`) is unaffected — the gap is
 specific to that one, unscoped whole-project build path. Filed rather than
-hidden, same as [`docs/adoption.md`](/guides/adoption/)'s own known-gaps list.
+hidden, same as [`docs/adoption.md`](/loomster/guides/adoption/)'s own known-gaps list.
 
 ## Generated CI
 
@@ -511,7 +508,7 @@ section says which is which rather than rounding everything up.
 
 Documented here rather than papered over, so a team adopting this today
 knows exactly where the edges are. The full list, including seam-by-seam
-detail, lives in [Adoption](/guides/adoption/)'s "Known gaps" section:
+detail, lives in [Adoption](/loomster/guides/adoption/)'s "Known gaps" section:
 
 - `loom-backend`/`loom-frontend` always provision their own ECS
   execution/task IAM roles — no `reference-existing` seam for those yet.
@@ -528,13 +525,14 @@ detail, lives in [Adoption](/guides/adoption/)'s "Known gaps" section:
   [Lifecycle](#lifecycle-observe-reconcile-upgrade-rotate-teardown) above)
   — every per-component and per-component-graph command in this tutorial is
   unaffected.
-- `deploy.yml`'s real `chant run` invocation is still a placeholder — see
+- The deploy pipeline runs the real orchestrator but has only been exercised
+  against Floci, not a live AWS account (`INTENTIUS/loomster#22`) — see
   [Part 2](#part-2--production--production-ha-against-real-aws) above.
 
 ## Where to go next
 
-- [Adoption](/guides/adoption/) — the full seam-by-seam adoption matrix.
-- [Naming & Tagging](/reference/naming/) — the naming/tagging convention in full.
+- [Adoption](/loomster/guides/adoption/) — the full seam-by-seam adoption matrix.
+- [Naming & Tagging](/loomster/reference/naming/) — the naming/tagging convention in full.
 - [`src/examples/byo/`](https://github.com/INTENTIUS/loomster/tree/main/src/examples/byo/) — the runnable
   bring-your-own-everything example.
 - The root [README](https://github.com/INTENTIUS/loomster/blob/main/README.md) — components, lifecycle Ops, scheduled
