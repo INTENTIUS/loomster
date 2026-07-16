@@ -33,6 +33,10 @@ the naming scheme, and always-on secret encryption (no opt-out). Adoption seams
 deploy can reference an existing VPC, a `production` deploy can provision one. See
 [Adoption](/loomster/guides/adoption/).
 
+Each tier also comes with seeded application defaults so a fresh deploy is usable
+out of the box: `light` defaults to a `demo` seed profile, the production tiers to
+`foundation` (config only). See [Seeded defaults](/loomster/reference/seeding/).
+
 ## Targets
 
 | Target | Selected by | What runs | Verify |
