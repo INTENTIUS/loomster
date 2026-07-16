@@ -178,9 +178,11 @@ npm run generate:gitlab   # writes .gitlab/components.yml
 just gitlab-validate      # regenerate + diff against the committed copy (fails on drift)
 ```
 
-GitHub gets the same treatment via `npm run generate:github` (committed
-`.github/workflows/components.yml`, `just github-validate`, `just
-github-runtime-e2e` via `act`). See
+GitHub and Forgejo get the same treatment: `npm run generate:github` /
+`generate:forgejo` (committed `.github/workflows/components.yml` and
+`.forgejo/workflows/components.yml`), `just github-validate` / `forgejo-validate`,
+and `just github-runtime-e2e` / `forgejo-runtime-e2e` via `act`. All three also
+carry a gated deploy and scheduled lifecycle workflows. See
 [CI providers](https://intentius.io/loomster/guides/ci/) for how GitHub, GitLab,
 and Forgejo compare.
 

@@ -1,0 +1,35 @@
+name: cost-report
+
+# Scheduled Forgejo Actions trigger for the per-component cost estimate — the
+# Forgejo counterpart to .github/workflows/cost-report.yml. Inert until
+# SCHEDULED_COST_REPORT=true. Never touches AWS; real numbers need `infracost`
+# installed plus an INFRACOST_API_KEY secret (without them it prints a
+# per-component skip and never fails). The synth step needs the adopter-supplied
+# LOOM_* parameters a real deploy uses.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  cost-report:
+    if: ${{ vars.SCHEDULED_COST_REPORT == 'true' }}
+    runs-on: docker
+    container: node:22
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - run: npm install
+      - name: cost-report
+        run: |
+          npm run synth
+          npm run estimate-cost
+        env:
+          LOOM_ENV: ${{ vars.LOOM_ENV }}
+          LOOM_TIER: ${{ vars.LOOM_TIER }}
+          LOOM_INSTANCE: ${{ vars.LOOM_INSTANCE }}
+          LOOM_VPC_ID: ${{ vars.LOOM_VPC_ID }}
+          LOOM_PUBLIC_SUBNET_IDS: ${{ vars.LOOM_PUBLIC_SUBNET_IDS }}
+          LOOM_PRIVATE_SUBNET_IDS: ${{ vars.LOOM_PRIVATE_SUBNET_IDS }}
+          LOOM_DB_PASSWORD: ${{ secrets.LOOM_DB_PASSWORD }}
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}

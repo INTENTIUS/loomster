@@ -1,0 +1,25 @@
+name: audit
+
+# Scheduled Forgejo Actions trigger for loom-audit (supply-chain audit of this
+# repo's emitted workflows) — the Forgejo counterpart to
+# .github/workflows/audit.yml. Inert until SCHEDULED_AUDIT=true. Report mode;
+# never touches AWS.
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    if: ${{ vars.SCHEDULED_AUDIT == 'true' }}
+    runs-on: docker
+    container: node:22
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - run: npm install
+      - name: audit
+        run: npm run audit
+        env:
+          LOOM_ENV: ${{ vars.LOOM_ENV }}
+          LOOM_TIER: ${{ vars.LOOM_TIER }}

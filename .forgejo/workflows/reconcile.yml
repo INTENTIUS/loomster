@@ -1,0 +1,34 @@
+name: reconcile
+
+# Scheduled Forgejo Actions trigger for loom-reconcile (cloud → code PR on
+# drift) — the Forgejo counterpart to .github/workflows/reconcile.yml. Inert
+# until SCHEDULED_RECONCILE=true, and tier-gated to production/production-ha
+# (chant#890's dial — light observes only). Needs AWS credentials.
+#
+# Note: opening the reconcile PR against a Forgejo/Codeberg host relies on
+# chant's ReconcileOp using the Forgejo API rather than `gh`; on a Forgejo
+# runner, provide a token the Op can use. The drift detection itself works
+# regardless.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    if: ${{ vars.SCHEDULED_RECONCILE == 'true' && (vars.LOOM_TIER == 'production' || vars.LOOM_TIER == 'production-ha') }}
+    runs-on: docker
+    container: node:22
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - run: apt-get update -qq && apt-get install -y -qq awscli git >/dev/null 2>&1
+      - run: npm install
+      - name: reconcile
+        run: npm run reconcile
+        env:
+          LOOM_ENV: ${{ vars.LOOM_ENV }}
+          LOOM_TIER: ${{ vars.LOOM_TIER }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
