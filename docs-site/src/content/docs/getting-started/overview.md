@@ -119,11 +119,12 @@ Written down rather than papered over:
 - **`production` / `production-ha` aren't yet applied to a live account.** They
   synthesize and pass the fidelity audit; the light tier is the one that's been
   deployed to real AWS end to end.
-- **Agents don't run locally, and need Bedrock AgentCore on real AWS.** No Floci
-  emulation; agent definitions are manageable everywhere, but deploy and invoke
-  need AgentCore enabled in the account. Everything else in the app runs locally.
-  See [Run Loom on your laptop](/loomster/guides/local/) and
-  [Local caveats](/loomster/reference/local-caveats/).
+- **Agents deploy locally; only real agent execution needs AWS.** The
+  AgentCore-enabled Floci image emulates the control plane, so the agents wave
+  reaches `CREATE_COMPLETE` locally and definitions are manageable everywhere.
+  Invoking an agent returns a canned stub, not real reasoning — that needs
+  AgentCore on a live account. See [Run Loom on your laptop](/loomster/guides/local/)
+  and [Local caveats](/loomster/reference/local-caveats/).
 - No bastion composite, and Loom's own upstream template doesn't define one either.
 
 The full seam-by-seam detail is in [Adoption](/loomster/guides/adoption/).

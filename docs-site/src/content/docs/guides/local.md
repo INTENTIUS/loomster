@@ -8,8 +8,9 @@ AWS account. [Floci](https://floci.io), a local AWS emulator, provides the
 managed pieces (RDS, Cognito, S3, ECR); the app tier (frontend, backend, and a
 reverse proxy standing in for the ALB) runs from a chant-generated
 `docker-compose.yml`, wired to Floci. You get the full web app. Real Postgres,
-real API, logged in as an admin `local-dev` user. The one thing you can't do
-locally is *run an agent* (Bedrock AgentCore has no local emulator).
+real API, logged in as an admin `local-dev` user. Agents now **deploy** locally
+too — the Floci image emulates Bedrock AgentCore's control plane — though
+invoking one returns a canned stub, not real agent reasoning (see below).
 
 ## Prerequisites
 
@@ -49,7 +50,8 @@ just local-down    # tear down the app stack and Floci
 | S3 / ECR / KMS / ECS | Real — bucket, image registry, cluster all provisioned by chant on Floci |
 | Auth / login | Dev shortcut — Loom's built-in bypass (see below), not a real login |
 | The "ALB" | Proxy stand-in — path routing only (`/api/*` and `/health` to the backend, everything else to the frontend); no TLS or WAF |
-| Agents (deploy / invoke) | Unavailable — Bedrock AgentCore has no Floci emulator |
+| Agents (deploy) | Real — the Floci image emulates AgentCore's control plane (runtimes, endpoints, gateways, memory, workload identity) |
+| Agents (invoke) | Stub — `invoke-agent-runtime` returns a canned response, not real agent reasoning |
 | IAM enforcement, KMS crypto, CloudWatch/OTel | Not real — see [Local caveats](/loomster/reference/local-caveats/) |
 
 ## Auth is a dev bypass
@@ -63,15 +65,21 @@ groups and all scopes. This is Loom's sanctioned local-dev path. It exercises
 the real auth code and short-circuits only the identity check. Production uses
 the real Cognito pool and real JWT validation.
 
-## Agents don't run locally
+## Agents deploy locally; invoke is a stub
 
-Bedrock AgentCore, the runtime Loom deploys and invokes agents on, has no Floci
-emulator. chant still synthesizes the AgentCore resources (they're valid
-CloudFormation), but there's no runtime behind them. The app degrades gracefully:
-the agents catalog lists and manages agent *definitions* from Postgres like
-everything else, but deploying or invoking an agent returns an error rather than
-crashing the app. Everything non-agent stays fully usable. To run agents, deploy
-the `production` / `production-ha` tier against real AWS.
+The AgentCore-enabled Floci image (`ghcr.io/lex00/floci:agentcore`, loomster#98)
+emulates Bedrock AgentCore's **control plane** with full state — the resources
+chant synthesizes (Runtime, RuntimeEndpoint, Memory, Gateway, WorkloadIdentity)
+actually deploy and are queryable, so the `loom-agents` wave reaches
+`CREATE_COMPLETE` on Floci, not just as CloudFormation bookkeeping.
+
+What's still a stand-in is the **data plane**: `invoke-agent-runtime` returns a
+canned response (`{"output":"yes"}` by default, tunable via
+`FLOCI_SERVICES_BEDROCK_AGENT_CORE_INVOKE_RESPONSE`), not a real agent run. The
+app stays fully usable — the agents catalog lists and manages definitions from
+Postgres, and deploys resolve — but an invoked agent replies with the stub rather
+than genuine reasoning. For real agent execution, deploy the `production` /
+`production-ha` tier against real AWS.
 
 ## How it's wired
 

@@ -44,8 +44,11 @@ cleanup() {
 trap cleanup EXIT
 
 echo "=== Starting Floci ==="
+# AgentCore-enabled Floci fork (loomster#98) — emulates Bedrock AgentCore so the
+# agents wave is exercisable locally. Multiarch image (amd64 + arm64): runs
+# natively on CI runners and Apple Silicon alike.
 docker run -d --rm -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock \
-  --name "$FLOCI_NAME" floci/floci:1.5.30 >/dev/null
+  --name "$FLOCI_NAME" ghcr.io/lex00/floci:agentcore >/dev/null
 
 for _ in $(seq 1 30); do
   curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break

@@ -19,7 +19,10 @@ aws() { command aws --endpoint-url "$ENDPOINT" --region "$REGION" "$@"; }
 
 echo "==> [1/7] Floci up"
 if ! docker ps --filter name=^floci$ --format '{{.Names}}' | grep -q floci; then
-  docker run -d --rm -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock --name floci floci/floci:1.5.30 >/dev/null
+  # AgentCore-enabled Floci fork (loomster#98) — emulates Bedrock AgentCore so the
+  # agents wave runs locally. Multiarch image (amd64 + arm64): runs natively on CI
+  # runners and Apple Silicon alike.
+  docker run -d --rm -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock --name floci ghcr.io/lex00/floci:agentcore >/dev/null
   sleep 8
 fi
 

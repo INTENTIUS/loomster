@@ -53,11 +53,12 @@ There is no CloudWatch, X-Ray, or OTel pipeline locally. Cost, usage, and trace
 features degrade to empty. The data those views need is produced by real AWS
 telemetry.
 
-## Agents don't run
+## Agent invoke is a stub
 
-Bedrock AgentCore has no Floci emulator. Agent *definitions* are manageable
-(Postgres), but deploy and invoke are unavailable locally. See the
-[local guide](/loomster/guides/local/#agents-dont-run-locally).
+The AgentCore-enabled Floci image emulates the control plane, so agents deploy
+locally and definitions are manageable (Postgres). What's a stand-in is the data
+plane: `invoke-agent-runtime` returns a canned response, not real agent reasoning.
+See the [local guide](/loomster/guides/local/#agents-deploy-locally-invoke-is-a-stub).
 
 ## Floci is not a fidelity oracle
 
