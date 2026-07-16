@@ -111,18 +111,26 @@ describe("LoomBackend — light tier", () => {
     expect(container.Secrets).toEqual([]);
   });
 
-  test("network configuration uses the given private subnets + SG, no public IP", () => {
+  test("network config: light-tier task gets a public IP so it can reach ECR (loomster#22)", () => {
     const instance = LoomBackend(baseProps());
     const props = (instance.service as any).props;
     const netConfig = (props.NetworkConfiguration as any).props;
     const vpcConfig = (netConfig.AwsvpcConfiguration as any).props;
     expect(vpcConfig.Subnets).toEqual(["subnet-priv1", "subnet-priv2"]);
     expect(vpcConfig.SecurityGroups).toEqual(["sg-ecs-123"]);
-    expect(vpcConfig.AssignPublicIp).toBe("DISABLED");
+    // light's self-provisioned network is public subnets only (no NAT/endpoints),
+    // so a task with no public IP can't pull its image from ECR.
+    expect(vpcConfig.AssignPublicIp).toBe("ENABLED");
   });
 });
 
 describe("LoomBackend — production tier", () => {
+  test("task runs private (no public IP) — relies on the BYO network's NAT/endpoints", () => {
+    const instance = LoomBackend(baseProps({ naming: prodNaming }));
+    const vpcConfig = ((((instance.service as any).props.NetworkConfiguration as any).props.AwsvpcConfiguration) as any).props;
+    expect(vpcConfig.AssignPublicIp).toBe("DISABLED");
+  });
+
   test("adds ScalableTarget + ScalingPolicy, min capacity 1", () => {
     const instance = LoomBackend(baseProps({ naming: prodNaming }));
     const names = Object.keys(instance.members);
