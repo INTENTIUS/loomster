@@ -26,6 +26,7 @@ lists them with the guardrails.
 | `loom-restore` | Restore the DB (snapshot or PITR) to a new instance, then cut the backend over to it. | Yes — cutover is destructive |
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes. No foreign deletes. | Yes |
 | `loom-audit` | Security-audit the generated CI YAML. | No |
+| `loom-dns-setup` | Create + delegate the Route53 zone for a custom domain, then wait for the delegation to resolve. Human-in-the-loop, local. | No |
 
 ## Running them
 
@@ -53,8 +54,18 @@ trigger hosts, and a team can use any mix:
   `cost-report.yml`. CI-cron is one trigger host among several — run it instead of,
   or alongside, a Temporal schedule.
 
+A note on human-in-the-loop locally: a durable approval `gate()` needs the Temporal
+backend (`--temporal`) — the local executor rejects gates. Where the wait has an
+observable completion condition, an Op waits for that instead, which stays
+local-runnable. `loom-dns-setup` does this: it prints the NS records, then polls
+public DNS until you've added the delegation at your provider, rather than asking for
+a blind approval.
+
 ## In depth
 
+- **[Production on real AWS](/loomster/operations/production-live-e2e/)** — the
+  real-account runbook: custom-domain delegation, bring-your-own network, the live
+  deploy, authenticated validation, teardown.
 - **[Backup & restore](/loomster/operations/backup-restore/)** — what holds state,
   what protects it, the restore runbook, the restore drill, and recovery targets per
   tier.

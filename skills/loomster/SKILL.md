@@ -39,6 +39,7 @@ Pick the cheapest one that answers the question in front of you.
 | Run the full app locally | `just local-up` / `just local-down` | Floci, no AWS account |
 | Synthesize a stack | `npm run synth` | writes `dist/*.template.json` |
 | Typecheck / lint / test | `just check` | run before every deploy |
+| Set up a custom domain | `LOOM_DOMAIN_NAME=<domain> npm run dns-setup` | creates + waits for Route53 delegation; do the NS step at your provider |
 | Deploy a component | `chant run <op>` or the component pipeline | tier via `LOOM_TIER` |
 | Seed the app | `npm run seed` | **via Loom's API, never the DB** — see Guardrails |
 | Prove it's usable | `npm run validate` | walks every screen; the deploy gate |

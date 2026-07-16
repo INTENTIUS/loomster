@@ -31,6 +31,7 @@ export default defineConfig({
 					label: 'Operations',
 					items: [
 						{ label: 'Overview', slug: 'operations/overview' },
+						{ label: 'Production on real AWS', slug: 'operations/production-live-e2e' },
 						{ label: 'Backup & restore', slug: 'operations/backup-restore' },
 						{ label: 'CI providers', slug: 'operations/ci' },
 					],
