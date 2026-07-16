@@ -66,6 +66,29 @@ loom-db's connection secret and endpoint at the restored instance, redeploy the
 backend so it picks up the new endpoint, confirm the app is healthy, then
 decommission the old instance as a separate, confirmed step.
 
+## Recovery targets per tier
+
+All three tiers share the same 7-day automated backups and point-in-time-recovery
+window, so the recovery point for data loss is roughly 5 minutes (RDS PITR
+granularity) anywhere inside that window. What differs is how an infrastructure
+failure is handled, and both restore paths are manual today until the restore Op
+(#80) and the DR copy (#79) land.
+
+| Tier | AZ / instance failure | Data loss (corruption, bad delete) | Regional loss |
+|---|---|---|---|
+| `light` | single-AZ — manual restore + cutover | PITR or snapshot restore, manual cutover | not survivable (no DR copy) |
+| `production` | single-AZ — manual restore + cutover | PITR or snapshot restore, manual cutover | not survivable (no DR copy) |
+| `production-ha` | Multi-AZ automatic failover (RTO ~1–2 min, RPO ≈0) | PITR or snapshot restore, manual cutover | not survivable (no DR copy) |
+
+- **RPO** is ≈5 minutes within the 7-day window for data-loss events, and ≈0 for a
+  `production-ha` Multi-AZ failover. Data older than the window survives only if a
+  manual snapshot exists.
+- **RTO** is ~1–2 minutes for a `production-ha` infrastructure failover, and
+  otherwise the time to run the manual restore-and-cutover runbook above. A
+  first-class `loom-restore` Op (#80) would shorten and de-risk that.
+- **A regional or account loss is not survivable today.** The cross-region /
+  cross-account snapshot copy (#79) is what changes that.
+
 ## Gaps
 
 These are tracked in `INTENTIUS/loomster#72`. Today's backup and restore exist
