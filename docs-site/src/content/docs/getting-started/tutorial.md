@@ -104,12 +104,13 @@ and the rest). Browse all of it.
 just local-down    # tear down the app stack and Floci
 ```
 
-Two things don't run locally, both because they can't: **agents** (Bedrock
-AgentCore has no local emulator. Agent *definitions* are manageable, but deploy
-and invoke need real AWS) and anything that depends on real AWS behavior (IAM
-enforcement, KMS crypto, CloudWatch telemetry). The full list is in [Local
-caveats](/loomster/reference/local-caveats/). For everything else, what you see
-locally is what the code actually does.
+One thing is only partly local: **agent execution**. The AgentCore-enabled Floci
+image emulates the control plane, so agents deploy and definitions are manageable,
+but invoking one returns a canned stub rather than real reasoning — that needs
+AgentCore on a live account. Beyond that, anything depending on real AWS behavior
+(IAM enforcement, KMS crypto, CloudWatch telemetry) is a stand-in too. The full
+list is in [Local caveats](/loomster/reference/local-caveats/). For everything
+else, what you see locally is what the code actually does.
 
 The [Run Loom on your laptop](/loomster/guides/local/) guide has the layer-by-layer
 breakdown of what's real, what's a dev shortcut, and how the local run is wired.
@@ -162,6 +163,7 @@ Two caveats:
   the run. Fargate task definitions default to `X86_64`; an arm64 image on an
   x86_64 task def exits immediately and the service crash-loops. `ARM64` runs the
   tasks on Graviton to match, and is cheaper. CI-built (x86) images need nothing.
+  (The Floci image itself is multiarch, so it needs no platform flag either way.)
 
 ### Tear it down
 
@@ -383,8 +385,9 @@ CloudFormation-vs-Terraform, or no difference at all.
 - `production` / `production-ha` have been synthesized and fidelity-audited
   against Loom's `v1.6.0` templates, but not yet applied to a live account. The
   light tier has.
-- Agents need Bedrock AgentCore, which has no local emulator and isn't enabled in
-  every account. See steps 1 and 2.
+- Agents deploy locally against the AgentCore-enabled Floci image, but real agent
+  execution needs Bedrock AgentCore on a live account (not enabled everywhere).
+  See steps 1 and 2.
 
 The full seam-by-seam edges are in [Adoption](/loomster/guides/adoption/).
 

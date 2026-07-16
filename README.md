@@ -35,9 +35,10 @@ just local-down   # tear it down
 
 Floci provides the managed pieces (RDS, Cognito, S3, ECR); the app tier runs from
 a chant-generated `docker-compose`, browsable at `http://localhost:8080`. The web
-app runs for real; only agents can't run locally (Bedrock AgentCore has no local
-emulator). See the [local guide](https://intentius.io/loomster/guides/local/) and
-[local caveats](https://intentius.io/loomster/reference/local-caveats/).
+app runs for real, and agents now deploy locally too — the Floci image emulates
+Bedrock AgentCore's control plane — though invoking one returns a canned stub, not
+real reasoning. See the [local guide](https://intentius.io/loomster/guides/local/)
+and [local caveats](https://intentius.io/loomster/reference/local-caveats/).
 
 ## Develop
 
