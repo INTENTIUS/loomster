@@ -35,7 +35,7 @@ agent deploy needs — the default on the production tiers) and **`demo`**
 | A2A Agents | `a2a_agents` | — | a registered agent | when no A2A endpoint |
 | Catalog | the five above | — | populated | on foundation |
 | Settings | app config | Loom defaults | Loom defaults | Networking / Infrastructure |
-| Costs, Admin, Chat, Invocations | runtime | — | — | until there's traffic |
+| Costs, Admin, Chat, Invocations | runtime (invocation records) | — | a few demo invocations | on foundation / until real use |
 | Registry | preview | — | — | until you opt in |
 
 ## Tagging
@@ -114,9 +114,15 @@ defaults, not gaps. Nothing here needs seeding.
 ## Runtime screens
 
 **Costs**, **Admin** (audit logs and session analytics), **Chat**, and
-**Invocations** are populated by *using* the app, not by seeding — they fill in
-as agents are invoked and users act. The harness only checks that they render.
-**Registry** is a preview surface that stays empty until you opt in.
+**Invocations** are computed from real invocation records — they show nothing
+until agents run. Rather than fabricate spend, `demo` lights them up *honestly*:
+after the demo agent reaches `READY`, loom-seed invokes it a few times, so the
+Costs dashboard shows real (if tiny) usage and the audit/session screens have
+activity. On the emulator this is free; on `foundation` it's skipped, because
+invoking a real agent on a live account costs money. The harness asserts the
+Costs dashboard has at least one recorded invocation on demo — a zero there means
+the runtime path never ran. **Registry** is a preview surface that stays empty
+until you opt in.
 
 ## How this is enforced
 

@@ -74,6 +74,13 @@ describe("per-screen checks", () => {
     }
   });
 
+  test("Costs on demo requires recorded invocations (runtime dashboards populated)", () => {
+    expect(run("Costs", "demo", res(200, { total_invocations: 0 })).ok).toBe(false);
+    expect(run("Costs", "demo", res(200, { total_invocations: 3 })).ok).toBe(true);
+    // foundation only needs it to render
+    expect(run("Costs", "foundation", res(200, { total_invocations: 0 })).ok).toBe(true);
+  });
+
   test("Security tabs: approval policies + permission requests required on demo; identity providers only renders", () => {
     expect(run("Security — approval policies", "demo", res(200, [])).ok).toBe(false);
     expect(run("Security — approval policies", "demo", res(200, [{ id: 1 }])).ok).toBe(true);

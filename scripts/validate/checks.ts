@@ -154,7 +154,18 @@ export const SCREEN_CHECKS: ScreenCheck[] = [
       return fail(res.body.length ? "demo profile: agents exist but all FAILED (deploy is broken)" : "demo profile: no agent seeded (Catalog section empty)");
     }),
   },
-  { screen: "Costs", path: "/api/dashboard/costs", check: (_p, res) => on200(res, () => pass("renders")) },
+  {
+    // Costs is a runtime dashboard aggregated from invocation records — it stays
+    // at zero until agents run. On demo, loom-seed invokes the demo agent a few
+    // times, so a zero here means those runtime dashboards never got populated.
+    screen: "Costs",
+    path: "/api/dashboard/costs",
+    check: (p, res) => on200(res, () => {
+      if (p !== "demo") return pass("renders");
+      const n = (res.body as { total_invocations?: number } | null)?.total_invocations ?? 0;
+      return n >= 1 ? pass(`${n} invocations recorded`) : fail("demo profile: no invocations recorded (runtime dashboards empty)");
+    }),
+  },
   { screen: "Admin (audit)", path: "/api/admin/audit/summary", check: (_p, res) => on200(res, () => pass("renders")) },
   { screen: "Settings", path: "/api/settings/site", check: (_p, res) => on200(res, () => pass("renders")) },
   { screen: "Registry", path: "/api/registry/records", check: (_p, res) => on200(res, () => pass("renders")) },

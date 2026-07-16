@@ -61,6 +61,18 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain("api/agents/models");
   });
 
+  test("demo invokes the agent to populate the runtime dashboards, idempotent + READY-gated + demo-only", () => {
+    const script = seedDefaultsScript(refs);
+    // only when no invocation exists yet
+    expect(script).toContain("'.total_invocations == 0'");
+    // waits for the demo agent to be READY, then invokes it
+    expect(script).toContain('ASTATUS" = "READY"');
+    expect(script).toContain("POST \"$BASE/api/agents/$AID/invoke\"");
+    // the whole block sits inside the demo branch (after the foundation early-exit)
+    const demoExit = script.indexOf('loom-seed: foundation seed complete"; exit 0');
+    expect(script.indexOf("api/agents/$AID/invoke")).toBeGreaterThan(demoExit);
+  });
+
   test("demo also seeds the Security screen's approval-policy + permission-request tabs, but never an identity provider", () => {
     const script = seedDefaultsScript(refs);
     expect(script).toContain("POST \"$BASE/api/settings/approval-policies\"");

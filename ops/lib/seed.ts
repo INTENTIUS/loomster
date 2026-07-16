@@ -162,6 +162,34 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `    -d "{\\"managed_role_id\\":$RID,\\"requested_actions\\":[\\"bedrock:InvokeModel\\"],\\"requested_resources\\":[\\"*\\"],\\"justification\\":\\"Loomster demo permission request (seeded demo content)\\"}" >/dev/null \\`,
     `    && echo "loom-seed: seeded permission request" || echo "loom-seed: permission request skipped" >&2`,
     `fi`,
+    // Runtime dashboards (Costs, Admin audit, Invocations, Chat) fill from real
+    // invocation records, not seeding — so light them up honestly by invoking the
+    // demo agent a few times. Idempotent: skip once any invocation exists. Guarded
+    // on the agent reaching READY (it deploys async above). demo-only — invoking a
+    // real agent on a live account costs money, which is why this never runs on
+    // foundation.
+    `if curl -fsS "$BASE/api/dashboard/costs" | jq -e '.total_invocations == 0' >/dev/null; then`,
+    `  AID=$(curl -fsS "$BASE/api/agents" 2>/dev/null | jq -r '.[] | select(.name=="loomster_demo_agent") | .id // empty' | head -n1)`,
+    `  ASTATUS=""`,
+    `  if [ -n "$AID" ]; then`,
+    `    for i in $(seq 1 40); do`,
+    `      ASTATUS=$(curl -fsS "$BASE/api/agents" 2>/dev/null | jq -r '.[] | select(.name=="loomster_demo_agent") | .status // empty' | head -n1)`,
+    `      if [ "$ASTATUS" = "READY" ] || [ "$ASTATUS" = "FAILED" ]; then break; fi`,
+    `      sleep 3`,
+    `    done`,
+    `  fi`,
+    `  if [ "$ASTATUS" = "READY" ]; then`,
+    `    for PROMPT in "What can you help me with?" "Summarize what you do" "List your capabilities"; do`,
+    `      curl -fsS -N --max-time 25 -X POST "$BASE/api/agents/$AID/invoke" -H 'Content-Type: application/json' \\`,
+    `        -d "{\\"prompt\\":\\"$PROMPT\\",\\"payload\\":{\\"prompt\\":\\"$PROMPT\\"}}" >/dev/null 2>&1 || true`,
+    `    done`,
+    `    echo "loom-seed: seeded demo invocations (runtime dashboards populated)"`,
+    `  else`,
+    `    echo "loom-seed: demo agent not READY, skipping demo invocations" >&2`,
+    `  fi`,
+    `else`,
+    `  echo "loom-seed: invocations already recorded, skipping demo invocations"`,
+    `fi`,
     `echo "loom-seed: demo seed complete"`,
   ].join("\n");
 }
