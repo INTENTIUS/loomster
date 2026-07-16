@@ -1,15 +1,19 @@
 # loomster
 
-Typed, tiered infrastructure-as-code for
-[awslabs/loom](https://github.com/awslabs/loom) on
-[chant](https://intentius.io/chant). Six components, three tiers
-(`light` / `production` / `production-ha`), generated CI, and a naming scheme
-that lets many Loom instances coexist in one or many AWS accounts without
-collision. Pinned to Loom `v1.6.0`.
+A deployment of [awslabs/loom](https://github.com/awslabs/loom) you drive from the
+repo. Six components, three tiers (`light` / `production` / `production-ha`),
+generated CI, and a naming scheme that lets many Loom instances coexist in one or
+many AWS accounts without collision. Pinned to Loom `v1.6.0`. Built with
+[chant](https://intentius.io/chant), though you run loomster by its verbs, not by
+knowing chant.
 
-Loom's own deploy today is a manual, multi-step SAM process behind a
-`DEPLOYMENT.md`. chant types it, lints it, dedupes the cross-stack glue, orders
-it, tiers it, and generates the pipeline.
+## Drive it with your agent
+
+The repo is built to be operated by an agent from the first command. `skills/loomster/SKILL.md`
+is the capability map — every lifecycle verb, the golden paths, and the guardrails
+that keep a deploy from locking itself out. chant also serves an MCP server
+(`chant serve mcp`, stdio) for inspecting and building the graph. Ask your agent to
+"stand up Loom locally" and it knows what to run.
 
 **Docs:** [Tutorial](https://intentius.io/loomster/getting-started/tutorial/) ·
 [Overview](https://intentius.io/loomster/getting-started/overview/) ·

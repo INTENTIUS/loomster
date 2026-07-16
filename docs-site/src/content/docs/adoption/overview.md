@@ -77,8 +77,6 @@ reference-existing seam set holds at **light, production, and production-ha**.
 
 ## Known gaps
 
-Written down rather than papered over:
-
 - **No bastion composite.** Nothing here models a bastion host, and Loom's own
   upstream template doesn't define one either. There's nothing to reference or omit.
 - **A fully-`reference-existing` `loom-db` / `loom-cognito` stack has zero resources

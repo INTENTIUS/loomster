@@ -70,8 +70,9 @@ the real Cognito pool and real JWT validation.
 The AgentCore-enabled Floci image (`ghcr.io/lex00/floci:agentcore`, loomster#98)
 emulates Bedrock AgentCore's **control plane** with full state — the resources
 chant synthesizes (Runtime, RuntimeEndpoint, Memory, Gateway, WorkloadIdentity)
-actually deploy and are queryable, so the `loom-agents` wave reaches
-`CREATE_COMPLETE` on Floci, not just as CloudFormation bookkeeping.
+actually deploy and are queryable, so the `loom-agents` wave reaches a real
+`CREATE_COMPLETE` on Floci — the resources exist and respond, they aren't
+CloudFormation bookkeeping.
 
 What's still a stand-in is the **data plane**: `invoke-agent-runtime` returns a
 canned response (`{"output":"yes"}` by default, tunable via
