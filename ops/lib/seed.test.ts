@@ -61,6 +61,14 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain("api/agents/models");
   });
 
+  test("demo also seeds the Security screen's approval-policy + permission-request tabs, but never an identity provider", () => {
+    const script = seedDefaultsScript(refs);
+    expect(script).toContain("POST \"$BASE/api/settings/approval-policies\"");
+    expect(script).toContain("POST \"$BASE/api/security/permission-requests\"");
+    // identity providers must NOT be seeded — it would disable Loom's dev-auth bypass
+    expect(script).not.toContain("api/settings/identity-providers");
+  });
+
   test("everything it creates is branded loomster", () => {
     const script = seedDefaultsScript(refs);
     // branded tags applied to the role + MCP

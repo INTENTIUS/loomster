@@ -74,9 +74,18 @@ describe("per-screen checks", () => {
     }
   });
 
-  test("covers every main screen (Catalog is derived from its constituents)", () => {
-    expect(SCREEN_CHECKS.length).toBe(12);
+  test("Security tabs: approval policies + permission requests required on demo; identity providers only renders", () => {
+    expect(run("Security — approval policies", "demo", res(200, [])).ok).toBe(false);
+    expect(run("Security — approval policies", "demo", res(200, [{ id: 1 }])).ok).toBe(true);
+    expect(run("Security — permission requests", "demo", res(200, [])).ok).toBe(false);
+    expect(run("Security — permission requests", "foundation", res(200, [])).ok).toBe(true);
+    // identity providers is deliberately unseeded — empty passes on every profile
+    expect(run("Security — identity providers", "demo", res(200, [])).ok).toBe(true);
+  });
+
+  test("covers every main screen + Security tab (Catalog is derived from its constituents)", () => {
+    expect(SCREEN_CHECKS.length).toBe(15);
     // no duplicate endpoints
-    expect(new Set(SCREEN_CHECKS.map((c) => c.path)).size).toBe(12);
+    expect(new Set(SCREEN_CHECKS.map((c) => c.path)).size).toBe(15);
   });
 });

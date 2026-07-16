@@ -137,6 +137,31 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `else`,
     `  echo "loom-seed: LOOM_DEMO_A2A_URL unset — skipping A2A demo agent (needs a reachable A2A endpoint)" >&2`,
     `fi`,
+    // Security screen extras. NOT seeded here: an Identity Provider — creating
+    // one flips Loom out of its dev-auth bypass into real-OIDC mode, which locks
+    // a local/demo deploy (there's no real IdP to authenticate against). That tab
+    // is left for you to fill with a real provider on a real deploy.
+    // Approval policy (Security > Approval Policies) — idempotent by name.
+    `POLICY_NAME="Loomster Default Approval Policy"`,
+    `if curl -fsS "$BASE/api/settings/approval-policies" | jq -e --arg n "$POLICY_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
+    `  echo "loom-seed: approval policy already present"`,
+    `else`,
+    `  curl -fsS -X POST "$BASE/api/settings/approval-policies" -H 'Content-Type: application/json' \\`,
+    `    -d "{\\"name\\":\\"$POLICY_NAME\\",\\"policy_type\\":\\"tool_context\\",\\"tool_match_rules\\":[\\"*\\"],\\"approval_mode\\":\\"notify_only\\",\\"timeout_seconds\\":300,\\"agent_scope\\":{\\"type\\":\\"all\\"},\\"enabled\\":true}" >/dev/null \\`,
+    `    && echo "loom-seed: seeded approval policy" || echo "loom-seed: approval policy skipped" >&2`,
+    `fi`,
+    // Permission request (Security > Permission Requests) — a single demo pending
+    // request against the seeded role. Requests have no unique name, so only seed
+    // one when the list is empty (keeps re-runs from piling them up).
+    `RID=$(curl -fsS "$BASE/api/security/roles" 2>/dev/null | jq -r '.[0].id // empty')`,
+    `if [ -z "$RID" ]; then echo "loom-seed: no managed role, skipping permission request" >&2`,
+    `elif curl -fsS "$BASE/api/security/permission-requests" | jq -e 'length > 0' >/dev/null; then`,
+    `  echo "loom-seed: permission request already present"`,
+    `else`,
+    `  curl -fsS -X POST "$BASE/api/security/permission-requests" -H 'Content-Type: application/json' \\`,
+    `    -d "{\\"managed_role_id\\":$RID,\\"requested_actions\\":[\\"bedrock:InvokeModel\\"],\\"requested_resources\\":[\\"*\\"],\\"justification\\":\\"Loomster demo permission request (seeded demo content)\\"}" >/dev/null \\`,
+    `    && echo "loom-seed: seeded permission request" || echo "loom-seed: permission request skipped" >&2`,
+    `fi`,
     `echo "loom-seed: demo seed complete"`,
   ].join("\n");
 }
