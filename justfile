@@ -94,6 +94,17 @@ github-runtime-e2e:
 forgejo-runtime-e2e:
     bash test/forgejo-runtime-e2e.sh
 
+# Deploy the production tier end to end against Floci and assert every
+# tier-distinguishing resource (RDS Proxy, PrivateLink, ACM/Route53, autoscaling,
+# both agents). On-demand, needs Docker; binds :4566 (run `just local-down`
+# first). See test/production-floci-e2e.sh. Not part of `check`.
+production-floci-e2e:
+    bash test/production-floci-e2e.sh production
+
+# Same as above for production-ha: + Multi-AZ RDS, credential rotation, 2-task floor.
+production-ha-floci-e2e:
+    bash test/production-floci-e2e.sh production-ha
+
 # Everything CI-relevant.
 check: build lint test
 
