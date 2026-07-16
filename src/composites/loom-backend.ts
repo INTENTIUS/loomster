@@ -564,10 +564,17 @@ export const LoomBackend = Composite<LoomBackendProps, LoomBackendResult>((props
   }, defs?.taskDefinition));
 
   // ── ECS service ───────────────────────────────────────────────────────
+  // On `light`, shared-foundation's self-provisioned network is public subnets
+  // only — no NAT, no VPC endpoints — so a task with no public IP has no route
+  // to ECR (it can't pull its image and the service never stabilises). Give the
+  // light-tier task a public IP so it reaches ECR via the internet gateway, the
+  // same as loom-frontend. `production`/`production-ha` run in real private
+  // subnets with their own NAT/endpoints, so they keep the task private.
+  const assignPublicIp = tier === "light" ? "ENABLED" : "DISABLED";
   const awsVpcConfig = new EcsService_AwsVpcConfiguration({
     Subnets: props.privateSubnetIds,
     SecurityGroups: [props.ecsSecurityGroupId],
-    AssignPublicIp: "DISABLED",
+    AssignPublicIp: assignPublicIp,
   });
 
   const networkConfiguration = new EcsService_NetworkConfiguration({ AwsvpcConfiguration: awsVpcConfig });
