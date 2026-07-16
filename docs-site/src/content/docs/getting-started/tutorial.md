@@ -324,6 +324,10 @@ The stateless lifecycle concerns (`watch` / `reconcile` / `cost-report` /
 per-workflow variable. The README's "Scheduled CI" section has the exact
 variables each one needs.
 
+GitLab is the most mature generated-pipeline target, GitHub carries the deploy
+and scheduled workflows, and Forgejo is on the roadmap. [CI
+providers](/loomster/guides/ci/) covers where each stands.
+
 ## Cost (optional)
 
 `npm run estimate-cost` shells out to [Infracost](https://www.infracost.io)
@@ -390,6 +394,8 @@ The full seam-by-seam edges are in [Adoption](/loomster/guides/adoption/).
 - [Run Loom on your laptop](/loomster/guides/local/) — the local run in depth.
 - [Local caveats](/loomster/reference/local-caveats/) — where local diverges from real AWS.
 - [Adoption](/loomster/guides/adoption/) — the full bring-your-own-everything matrix.
+- [CI providers](/loomster/guides/ci/) — GitHub, GitLab, and Forgejo support.
+- [Backup & restore](/loomster/guides/backup-restore/) — data protection and the restore runbook.
 - [Naming & tagging](/loomster/reference/naming/) — the naming convention in full.
 - chant's own docs: [Components](https://intentius.io/chant/components/overview/),
   [Ops](https://intentius.io/chant/guide/ops/),
