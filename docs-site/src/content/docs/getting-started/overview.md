@@ -1,6 +1,6 @@
 ---
 title: What loomster is
-description: The map before the tutorial. Six components, what deploys where today, real wins vs. parity with Loom's own SAM deploy, and the known edges.
+description: The map before the tutorial — six components, what deploys where today, tiers and org topology, and the known edges.
 ---
 
 loomster is a **deployment of [awslabs/loom](https://github.com/awslabs/loom)** —
@@ -18,7 +18,9 @@ what's deliberately left empty.
 
 Loom's own deploy today is a manual, multi-step SAM process behind a
 `DEPLOYMENT.md`. chant types it, lints it, dedupes the cross-stack glue, orders
-it, tiers it, and generates the pipeline.
+it, tiers it, and generates the pipeline. For the honest breakdown of where that's
+a real win over the SAM baseline and where it's parity, see the tutorial's
+[Positioning](/loomster/getting-started/tutorial/#positioning).
 
 **Where it runs today:**
 
@@ -52,54 +54,6 @@ group, target group, the DB secret, the Cognito pool, and more) resolve via
 verification-only stack. It consumes `shared-foundation`'s outputs to prove they
 resolve, and is not part of Loom.
 
-## Same discipline, one layer down
-
-Loom's own [launch post](https://aws.amazon.com/blogs/opensource/building-secure-ai-agents-at-scale-introducing-loom-for-aws/)
-states its model plainly: no code is generated at runtime and deployed into any
-environment. Only configuration changes, and the control plane manages that
-configuration. That is chant's pitch too, one layer beneath:
-
-- Loom scans the agent code once, ahead of any deployment. chant type-checks and
-  lints a stack at author time, before anything synthesizes.
-- Loom never generates agent code at runtime. chant never generates
-  infrastructure code at deploy time. `chant build` emits a CloudFormation
-  template once, and every environment applies that same template.
-- Loom redeploys by changing config, not by hand-editing a running agent. chant
-  redeploys by changing tier, instance, or an adoption seam's mode, not by
-  forking a composite per environment.
-
-## Real wins vs. parity
-
-Loom's baseline is that manual SAM process. Clone three repos, `sam build` /
-`sam deploy` per stack, in order, by hand. Some of the difference is a real
-improvement; some of what sounds like a chant win is CloudFormation-vs-Terraform,
-or no difference at all.
-
-**Real wins:**
-
-- Author-time type-check and lint of cross-resource references. A wrong output
-  name or unresolved `Ref` is a build failure, not a `ROLLBACK_COMPLETE`.
-- Cross-stack wiring without hand-written glue. `loom-backend` resolves nine
-  inputs across three upstream stacks via `stackOutput(...)`.
-- One dependency-ordered orchestrator, not a `DEPLOYMENT.md` a human executes.
-- Build-once, promote-by-digest.
-- Tiering as config, not three forked copies.
-- Generated CI from the same graph the CLI reads.
-- A local emulator for the light tier. The CloudFormation doesn't change between
-  Floci and real AWS, only the endpoint does.
-
-**Parity, not wins:**
-
-- **"No state file."** CloudFormation manages state as a service, which is true of
-  vanilla SAM too. A real advantage over a Terraform-style state file, not
-  something chant adds on top of SAM.
-- **Walk-away** behaves identically. chant emits standard CloudFormation and stops,
-  and SAM does the same. The difference is the authoring and orchestration path,
-  not the output format.
-
-The Tutorial's [Positioning](/loomster/getting-started/tutorial/#positioning)
-section has the full argument.
-
 ## Org topology
 
 Loom is one control plane with logical, group-based multi-tenancy, not hard
@@ -122,8 +76,9 @@ section has the runnable proof that the two axes are orthogonal.
 Written down rather than papered over:
 
 - **`production` / `production-ha` aren't yet applied to a live account.** They
-  synthesize and pass the fidelity audit; the light tier is the one that's been
-  deployed to real AWS end to end.
+  deploy end to end on Floci — a repeatable `just production-floci-e2e` stands the
+  full stack up against a bring-your-own VPC and checks every tier-distinguishing
+  resource — but the real-account apply is still the light tier's alone.
 - **Agents deploy locally; only real agent execution needs AWS.** The
   AgentCore-enabled Floci image emulates the control plane, so the agents wave
   reaches `CREATE_COMPLETE` locally and definitions are manageable everywhere.
