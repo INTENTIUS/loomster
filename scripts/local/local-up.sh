@@ -45,8 +45,10 @@ docker network connect "$NET" floci >/dev/null 2>&1 || true
 FLOCI_NET_IP="$(docker inspect floci --format "{{(index .NetworkSettings.Networks \"$NET\").IPAddress}}" 2>/dev/null)"
 db_out() { aws cloudformation describe-stacks --stack-name loom-db --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text 2>/dev/null; }
 RDS_PORT="$(db_out oRdsPort)"; RDS_DB="$(db_out oRdsDbName)"
-POOL_ID="$(aws cloudformation describe-stacks --stack-name loom-cognito --query "Stacks[0].Outputs[?OutputKey=='oCognitoUserPoolId'].OutputValue" --output text 2>/dev/null)"
 BUCKET="$(aws cloudformation describe-stacks --stack-name shared-foundation --query "Stacks[0].Outputs[?OutputKey=='oArtifactBucket'].OutputValue" --output text 2>/dev/null)"
+# LOOM_COGNITO_USER_POOL_ID is intentionally NOT set (#50) — leaving it empty
+# engages Loom's own dev-auth bypass (local-dev user, all scopes), since Floci's
+# Cognito can't mint validatable JWTs. See src/local/compose.ts.
 # The RDS endpoint output is Floci's own address (Floci proxies RDS on RDS_PORT);
 # use Floci's address on the shared network so the app tier can reach it.
 mkdir -p "$OUT"
@@ -54,7 +56,6 @@ cat > "$OUT/.env" <<EOF
 LOOM_BACKEND_IMAGE=loom-local-backend:latest
 LOOM_FRONTEND_IMAGE=loom-local-frontend:latest
 LOOM_DATABASE_URL=postgresql+psycopg2://loom:${LOOM_DB_PASSWORD}@${FLOCI_NET_IP}:${RDS_PORT}/${RDS_DB}
-LOOM_COGNITO_USER_POOL_ID=${POOL_ID}
 LOOM_ARTIFACT_BUCKET=${BUCKET}
 AWS_ENDPOINT_URL=http://${FLOCI_NET_IP}:4566
 AWS_REGION=${REGION}
@@ -62,7 +63,7 @@ AWS_ACCESS_KEY_ID=test
 AWS_SECRET_ACCESS_KEY=test
 LOOM_ALLOWED_ORIGINS=http://localhost:8080
 EOF
-echo "    RDS=${FLOCI_NET_IP}:${RDS_PORT}/${RDS_DB}  pool=${POOL_ID}  floci-net-ip=${FLOCI_NET_IP}"
+echo "    RDS=${FLOCI_NET_IP}:${RDS_PORT}/${RDS_DB}  floci-net-ip=${FLOCI_NET_IP}"
 
 echo "==> [6/7] generate compose + nginx config (chant)"
 npx tsx scripts/local/gen-nginx.ts

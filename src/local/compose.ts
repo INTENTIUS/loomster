@@ -34,7 +34,14 @@ export const loomBackend = new Service({
   image: env("LOOM_BACKEND_IMAGE", { default: "loom-local-backend:latest" }),
   environment: {
     LOOM_DATABASE_URL: env("LOOM_DATABASE_URL"),
-    LOOM_COGNITO_USER_POOL_ID: env("LOOM_COGNITO_USER_POOL_ID"),
+    // LOOM_COGNITO_USER_POOL_ID is deliberately unset on the local tier (#50):
+    // Floci's Cognito can't mint validatable JWTs (it returns opaque tokens,
+    // and the Cognito validator fetches JWKS from real AWS for a pool that only
+    // exists in Floci). With no pool id and no active external IdP, Loom's own
+    // dev bypass engages (backend/app/dependencies/auth.py `get_current_user`):
+    // every request is a `local-dev` user with the admin groups + all scopes.
+    // That is Loom's sanctioned local-dev auth path — the app is fully usable
+    // without a real IdP. Production/production-ha use the real Cognito pool.
     LOOM_COGNITO_REGION: env("AWS_REGION", { default: "us-east-1" }),
     LOOM_ARTIFACT_BUCKET: env("LOOM_ARTIFACT_BUCKET"),
     AWS_ENDPOINT_URL: env("AWS_ENDPOINT_URL"),
