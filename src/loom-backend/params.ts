@@ -83,6 +83,13 @@ export const dbPassword = process.env.LOOM_DB_PASSWORD ?? "";
 export const dbName = process.env.LOOM_DB_NAME ?? "loom";
 
 // ── Sizing (chant#890 tier defaults live in the composite; overrides here) ──
+// Fargate CPU architecture (LOOM_CPU_ARCHITECTURE), shared with loom-frontend.
+// Default (unset) → the composite's X86_64, matching CI-built images. Set ARM64
+// for Apple-Silicon-built images or Graviton — must match how the image is built.
+export const cpuArchitecture: "X86_64" | "ARM64" | undefined =
+  process.env.LOOM_CPU_ARCHITECTURE === "ARM64" ? "ARM64"
+    : process.env.LOOM_CPU_ARCHITECTURE === "X86_64" ? "X86_64"
+      : undefined;
 export const cpu = process.env.LOOM_BACKEND_CPU;
 export const memory = process.env.LOOM_BACKEND_MEMORY;
 export const desiredCount = process.env.LOOM_BACKEND_DESIRED_COUNT ? Number(process.env.LOOM_BACKEND_DESIRED_COUNT) : undefined;

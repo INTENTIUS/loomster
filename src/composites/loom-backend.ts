@@ -63,6 +63,7 @@ import {
   TaskDefinition_LogConfiguration,
   TaskDefinition_KeyValuePair,
   TaskDefinition_Secret,
+  TaskDefinition_RuntimePlatform,
   EcsService,
   EcsService_NetworkConfiguration,
   EcsService_AwsVpcConfiguration,
@@ -151,6 +152,14 @@ export interface LoomBackendProps {
   // ── Sizing (chant#890 tier defaults below; all overridable, never hardcoded past the composite boundary) ──
   /** Container port. Default: 8000 (matches Loom). */
   containerPort?: number;
+  /**
+   * Fargate CPU architecture — must match the built image's arch. Default:
+   * `X86_64` (what CI runners build). Set `ARM64` when the image is built on
+   * Apple Silicon or for AWS Graviton (cheaper Fargate). A mismatch between
+   * this and the image's arch makes the container exit immediately on Fargate
+   * (exec-format error) — found on a real deploy from an arm64 dev machine.
+   */
+  cpuArchitecture?: "X86_64" | "ARM64";
   /** Default: "1024" (1 vCPU) — matches Loom's own `pCpu` default. */
   cpu?: string;
   /** Default: "2048" (2 GB) — matches Loom's own `pMemory` default. */
@@ -512,10 +521,15 @@ export const LoomBackend = Composite<LoomBackendProps, LoomBackendResult>((props
   const taskDefinitionFamily = naming.name("backend-task");
   const executionRoleArn = executionRole.Arn as string;
   const taskRoleArn = taskRole.Arn as string;
+  const runtimePlatform = new TaskDefinition_RuntimePlatform({
+    CpuArchitecture: props.cpuArchitecture ?? "X86_64",
+    OperatingSystemFamily: "LINUX",
+  });
   const taskDefinition = new TaskDefinition(mergeDefaults({
     Family: taskDefinitionFamily,
     NetworkMode: "awsvpc",
     RequiresCompatibilities: ["FARGATE"],
+    RuntimePlatform: runtimePlatform,
     Cpu: cpu,
     Memory: memory,
     ExecutionRoleArn: executionRoleArn,

@@ -269,12 +269,18 @@ stays inert until a team opts in:
 `deploy.yml`'s apply step runs the real orchestrator — it vendors Loom's
 source, configures AWS credentials + ECR login, and runs
 `chant run --components all --env "$LOOM_ENV"`, the same dependency-ordered
-sequence Part 1 runs locally. One honest caveat: that wiring has been
-exercised end to end against the Floci emulator, not yet against a live AWS
-account (`INTENTIUS/loomster#22`). For the first real-account apply, run the
+sequence Part 1 runs locally. The light tier has been deployed end to end to a
+real AWS account and Loom came up — served through a real ALB, backed by real
+RDS/Cognito (`INTENTIUS/loomster#22`). For the first real-account apply, run the
 `npx chant run --components <name> --env production` sequence from Part 1 by
 hand behind your own change-management process, then let the pipeline take
 over — nothing about the components changes either way.
+
+> **Building images on Apple Silicon?** Set `LOOM_CPU_ARCHITECTURE=ARM64`. ECS
+> Fargate task definitions default to `X86_64`; an arm64 image on an x86_64 task
+> def exits immediately (exec-format error) and the service crash-loops. `ARM64`
+> runs the tasks on Graviton to match (and is cheaper). CI-built (x86) images
+> need nothing — the default is correct there.
 
 Beyond the initial stand-up, `production`/`production-ha` get durable,
 gated Ops for the concerns a one-shot `chant run` doesn't cover — upgrade,
