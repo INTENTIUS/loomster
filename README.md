@@ -152,6 +152,7 @@ rollback, or on the local executor where they don't.
 | `loom-upgrade-production[-ha]` | Same, plus an approval gate and an RDS-restore rollback. | Yes |
 | `loom-rotate-production[-ha]` | Rotate the Cognito M2M client, the RDS credential, and (custom-domain tiers) the ALB's ACM cert. | Yes |
 | `loom-backup` | Labelled RDS snapshot, plus a cross-region DR copy when `LOOM_DR_REGION` is set. Additive. | No — local executor |
+| `loom-restore-drill` | Restore the latest backup to a throwaway instance, assert it comes up healthy, delete it. Proves the backup restores. | No — local executor |
 | `loom-cognito-export` | Export the Cognito pool's users, groups, and memberships (to stdout, or S3 with `LOOM_BACKUP_BUCKET`). Read-only. | No — local executor |
 | `loom-restore` | Restore the DB (snapshot or PITR) to a new instance, then cut the backend over to it (repoint secret + redeploy). | Yes — cutover is destructive |
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes. No foreign deletes. | Yes |
@@ -190,7 +191,7 @@ GitHub and Forgejo get the same treatment: `npm run generate:github` /
 `.forgejo/workflows/components.yml`), `just github-validate` / `forgejo-validate`,
 and `just github-runtime-e2e` / `forgejo-runtime-e2e` via `act`. All three also
 carry a gated deploy and scheduled lifecycle workflows. See
-[CI providers](https://intentius.io/loomster/guides/ci/) for how GitHub, GitLab,
+[CI providers](https://intentius.io/loomster/operations/ci/) for how GitHub, GitLab,
 and Forgejo compare.
 
 Every generated job is a thin trigger (`chant run --components <name>`) that

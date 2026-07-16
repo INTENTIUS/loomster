@@ -85,6 +85,29 @@ instance is left running on purpose. Decommissioning it (`aws rds
 delete-db-instance --final-db-snapshot-identifier ...`) stays a separate,
 human-confirmed step, since it destroys the pre-restore data.
 
+## Verifying restores (the drill)
+
+A backup you've never restored is a hope. `loom-restore-drill` proves the latest
+`loom-backup` snapshot actually restores, without touching the live database:
+
+```
+chant run loom-restore-drill                          # latest loom-backup snapshot
+LOOM_RESTORE_SNAPSHOT_ID=<id> chant run loom-restore-drill   # a specific snapshot
+```
+
+It restores the snapshot to a throwaway `<db-id>-drill-<ts>` instance, asserts it
+reaches `available` with the same engine, version, and storage as the source
+(RDS only reaches `available` from a genuinely restorable snapshot), then always
+deletes the drill instance — a shell `trap` runs the delete on every exit path, so
+a failed drill never leaves a paid instance behind. Because it only ever creates
+and deletes its own `-drill-` instance and never repoints the connection secret,
+it is non-destructive and runs ungated on the local executor, unlike `loom-restore`.
+
+`.github/workflows/restore-drill.yml` runs it monthly, inert until you set the
+`SCHEDULED_RESTORE_DRILL` repo variable. The control-plane assertion is what a
+restore can be proven at from outside the VPC; a deeper in-database schema probe
+needs network reachability to the private instance.
+
 ## Recovery targets per tier
 
 All three tiers share the same 7-day automated backups and point-in-time-recovery
@@ -120,6 +143,7 @@ Tracked in `INTENTIUS/loomster#72`.
 
 ## Related
 
-`loom-backup`, `loom-restore`, upgrade, rotate, and teardown are the gated,
-data-aware lifecycle Ops. See [Lifecycle](/loomster/getting-started/tutorial/#lifecycle)
-in the tutorial.
+`loom-backup`, `loom-restore`, `loom-restore-drill`, upgrade, rotate, and teardown
+are the data-aware lifecycle Ops. See the [Operations overview](/loomster/operations/overview/)
+for the whole set, or [Lifecycle](/loomster/getting-started/tutorial/#lifecycle) in
+the tutorial.
