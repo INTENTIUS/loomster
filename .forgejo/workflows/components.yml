@@ -1,0 +1,125 @@
+on:
+  workflow_dispatch: {}
+
+jobs:
+  loom-cognito:
+    runs-on: docker
+    container: node:22-slim
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - run: chant run --components loom-cognito --env production --dump-outputs loom-cognito.outputs.json
+      - name: Upload loom-cognito outputs
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: loom-cognito-outputs
+          path: loom-cognito.outputs.json
+  shared-foundation:
+    runs-on: docker
+    container: node:22-slim
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - run: chant run --components shared-foundation --env production --dump-outputs shared-foundation.outputs.json
+      - name: Upload shared-foundation outputs
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: shared-foundation-outputs
+          path: shared-foundation.outputs.json
+  downstream-stub:
+    runs-on: docker
+    needs:
+      - shared-foundation
+    container: node:22-slim
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Download shared-foundation outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: shared-foundation-outputs
+          path: .
+      - run: chant run --components downstream-stub --env production --seed-outputs shared-foundation.outputs.json
+  loom-db:
+    runs-on: docker
+    needs:
+      - shared-foundation
+    container: node:22-slim
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Download shared-foundation outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: shared-foundation-outputs
+          path: .
+      - run: chant run --components loom-db --env production --seed-outputs shared-foundation.outputs.json --dump-outputs loom-db.outputs.json
+      - name: Upload loom-db outputs
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: loom-db-outputs
+          path: loom-db.outputs.json
+  loom-frontend:
+    runs-on: docker
+    needs:
+      - shared-foundation
+    container: node:22-slim
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Download shared-foundation outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: shared-foundation-outputs
+          path: .
+      - run: chant run --components loom-frontend --env production --seed-outputs shared-foundation.outputs.json
+  loom-backend:
+    runs-on: docker
+    needs:
+      - loom-cognito
+      - loom-db
+      - shared-foundation
+    container: node:22-slim
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Download shared-foundation outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: shared-foundation-outputs
+          path: .
+      - name: Download loom-db outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: loom-db-outputs
+          path: .
+      - name: Download loom-cognito outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: loom-cognito-outputs
+          path: .
+      - run: chant run --components loom-backend --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-db.outputs.json --seed-outputs loom-cognito.outputs.json --dump-outputs loom-backend.outputs.json
+      - name: Upload loom-backend outputs
+        uses: https://code.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: loom-backend-outputs
+          path: loom-backend.outputs.json
+  loom-agents:
+    runs-on: docker
+    needs:
+      - loom-backend
+      - loom-cognito
+      - shared-foundation
+    container: node:22-slim
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Download shared-foundation outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: shared-foundation-outputs
+          path: .
+      - name: Download loom-cognito outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: loom-cognito-outputs
+          path: .
+      - name: Download loom-backend outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: loom-backend-outputs
+          path: .
+      - run: chant run --components loom-agents --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-cognito.outputs.json --seed-outputs loom-backend.outputs.json

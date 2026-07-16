@@ -27,6 +27,7 @@
     "estimate-cost": "bash scripts/estimate-cost.sh",
     "generate:gitlab": "chant build --components --generate gitlab -o .gitlab/components.yml",
     "generate:github": "chant build --components --generate github -o .github/workflows/components.yml",
+    "generate:forgejo": "chant build --components --generate forgejo -o .forgejo/workflows/components.yml",
     "ops:build": "chant build ops",
     "export-bundle": "bash scripts/export-bundle.sh",
     "vendor": "bash scripts/vendor-loom.sh",
@@ -35,12 +36,13 @@
     "synth:local": "chant build src/local --lexicon docker -o dist/local/docker-compose.yml"
   },
   "dependencies": {
-    "@intentius/chant": "^0.18.20",
-    "@intentius/chant-lexicon-aws": "^0.18.20",
-    "@intentius/chant-lexicon-docker": "^0.18.20",
-    "@intentius/chant-lexicon-github": "^0.18.20",
-    "@intentius/chant-lexicon-gitlab": "^0.18.20",
-    "@intentius/chant-lexicon-temporal": "^0.18.20"
+    "@intentius/chant": "^0.18.22",
+    "@intentius/chant-lexicon-aws": "^0.18.22",
+    "@intentius/chant-lexicon-docker": "^0.18.22",
+    "@intentius/chant-lexicon-forgejo": "^0.18.22",
+    "@intentius/chant-lexicon-github": "^0.18.22",
+    "@intentius/chant-lexicon-gitlab": "^0.18.22",
+    "@intentius/chant-lexicon-temporal": "^0.18.22"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

@@ -73,6 +73,12 @@ github-validate:
     npx chant build --components --generate github -o .github/workflows/components.yml
     git diff --exit-code .github/workflows/components.yml
 
+# Regenerate .forgejo/workflows/components.yml and diff against the committed
+# copy — fails on drift. Also gated by src/forgejo-pipeline.test.ts.
+forgejo-validate:
+    npx chant build --components --generate forgejo -o .forgejo/workflows/components.yml
+    git diff --exit-code .forgejo/workflows/components.yml
+
 # Run a chant-generated GitLab pipeline in Docker (gitlab-ci-local; on-demand,
 # needs Docker) — see test/gitlab-runtime-e2e.sh. Not part of `check`.
 gitlab-runtime-e2e:
