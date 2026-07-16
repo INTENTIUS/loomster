@@ -13,23 +13,23 @@ Around the generated pipeline sit the operational workflows: the gated deploy th
 runs `chant run --components all`, and the scheduled lifecycle jobs (watch,
 reconcile, cost-report, audit).
 
-The three providers are not at the same level of support today. GitHub is the
-project's host and carries the operational workflows. GitLab has the most mature
-generated-pipeline tooling. Forgejo is not wired up yet. This page says exactly
-where each stands and what closing the gap takes.
+All three providers are at parity: each has a committed, drift-validated,
+unit-tested, runtime-proven component pipeline plus a gated deploy and scheduled
+lifecycle workflows. GitHub remains the project's own host, so its operational
+workflows are the reference; GitLab and Forgejo carry the same shapes in their
+own dialects. This page says exactly what each provides.
 
 ## Where each provider stands
 
 | Capability | GitHub | GitLab | Forgejo |
 |---|---|---|---|
-| Generated component pipeline | shipped (`generate:github`) | shipped (`generate:gitlab`) | planned (needs a chant generator) |
-| Committed + drift-validated + unit test | shipped (`github-validate`, `github-pipeline.test.ts`) | shipped (`gitlab-validate`, `gitlab-pipeline.test.ts`) | planned |
-| Runtime E2E against Floci | shipped (`github-runtime-e2e`, via `act`) | shipped (`gitlab-runtime-e2e`) | planned |
-| Gated deploy pipeline | shipped (`deploy.yml`) | shipped (`.gitlab-ci.yml` deploy job) | planned |
-| Scheduled lifecycle (watch/reconcile/cost/audit) | shipped (4 workflows) | shipped (schedule-gated jobs) | planned |
+| Generated component pipeline | shipped (`generate:github`) | shipped (`generate:gitlab`) | shipped (`generate:forgejo`) |
+| Committed + drift-validated + unit test | shipped (`github-validate`, `github-pipeline.test.ts`) | shipped (`gitlab-validate`, `gitlab-pipeline.test.ts`) | shipped (`forgejo-validate`, `forgejo-pipeline.test.ts`) |
+| Runtime E2E against Floci | shipped (`github-runtime-e2e`, via `act`) | shipped (`gitlab-runtime-e2e`) | shipped (`forgejo-runtime-e2e`, via `act`) |
+| Gated deploy pipeline | shipped (`deploy.yml`) | shipped (`.gitlab-ci.yml` deploy job) | shipped (`.forgejo/workflows/deploy.yml`) |
+| Scheduled lifecycle (watch/reconcile/cost/audit) | shipped (4 workflows) | shipped (schedule-gated jobs) | shipped (4 workflows) |
 
-The roadmap that closes every "planned" cell is tracked in
-`INTENTIUS/loomster#71`.
+All three providers are now at parity.
 
 ## GitHub
 
@@ -82,21 +82,26 @@ the full lifecycle, matching GitHub.
 
 ## Forgejo (Codeberg / Gitea)
 
-Forgejo is **not supported yet**. There is no `.forgejo/` directory, no
-`generate:forgejo` script, and the repo does not depend on the Forgejo lexicon.
+Forgejo Actions is a GitHub-Actions dialect (`runs-on: docker`, actions resolved
+from `code.forgejo.org`), and it's at the same level as the other two.
 
-The blocker is one level down, in chant: the Forgejo lexicon does not yet
-implement `generateComponentPipeline`, so `chant build --components --generate
-forgejo` has nothing to call. That's tracked as a chant-side dependency
-(`INTENTIUS/chant#969`). Forgejo Actions is a GitHub-Actions dialect, so the
-generator can largely reuse the GitHub one with a different output path
-(`.forgejo/workflows/`).
+- **Generated + committed.** `npm run generate:forgejo` writes the committed
+  `.forgejo/workflows/components.yml`.
+- **Drift-validated and tested.** `just forgejo-validate` regenerates and diffs,
+  and `src/forgejo-pipeline.test.ts` asserts the committed file matches the live
+  component graph.
+- **Runtime E2E.** `just forgejo-runtime-e2e` runs the generated workflow in Docker
+  via `act` against Floci (a real `act_runner` runs the same file), deploying the
+  light tier's infrastructure components end to end with the cross-stack artifact
+  handoff. On-demand, needs Docker and `act`, not part of gating CI.
+- **Gated deploy + scheduled lifecycle.** `.forgejo/workflows/deploy.yml` (inert
+  until `DEPLOY=true`) plus `watch` / `reconcile` / `cost-report` / `audit`
+  workflows, mirroring the GitHub ones.
 
-Once that lands, Forgejo reaches parity the same way the others do: a committed,
-drift-validated, unit-tested generated pipeline; a `forgejo-runtime-e2e` that runs
-it via `forgejo-runner` / `act_runner` / `act` against Floci (chant already has
-this pattern); a gated deploy workflow; and scheduled lifecycle workflows using
-Forgejo Actions cron.
+Two Forgejo-specific notes: image builds in the deploy workflow need a Forgejo
+runner with Docker access, and the `reconcile` PR path depends on chant's
+ReconcileOp using the Forgejo API. Both mirror how the GitHub deploy/reconcile
+workflows behave (inert by default, not yet run against real infrastructure).
 
 ## Consuming the output instead
 
