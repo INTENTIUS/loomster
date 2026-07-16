@@ -83,6 +83,32 @@ export const SCREEN_CHECKS: ScreenCheck[] = [
     }),
   },
   {
+    // The Security screen also has Identity Providers — deliberately left empty:
+    // seeding one flips Loom out of its dev-auth bypass into real-OIDC mode and
+    // locks a local/demo deploy. So this only checks the tab renders.
+    screen: "Security — identity providers",
+    path: "/api/settings/identity-providers",
+    check: (_p, res) => on200(res, () => (isArray(res.body) ? pass(`${res.body.length} identity providers`) : fail("not an array"))),
+  },
+  {
+    screen: "Security — approval policies",
+    path: "/api/settings/approval-policies",
+    check: (p, res) => on200(res, () => {
+      if (!isArray(res.body)) return fail("not an array");
+      if (p === "demo") return res.body.length >= 1 ? pass(`${res.body.length} approval policies`) : fail("demo profile: no approval policy seeded");
+      return pass(`${res.body.length} approval policies`);
+    }),
+  },
+  {
+    screen: "Security — permission requests",
+    path: "/api/security/permission-requests",
+    check: (p, res) => on200(res, () => {
+      if (!isArray(res.body)) return fail("not an array");
+      if (p === "demo") return res.body.length >= 1 ? pass(`${res.body.length} permission requests`) : fail("demo profile: no permission request seeded");
+      return pass(`${res.body.length} permission requests`);
+    }),
+  },
+  {
     screen: "MCP Servers",
     path: "/api/mcp/servers",
     check: (p, res) => on200(res, () => {

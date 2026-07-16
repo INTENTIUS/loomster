@@ -65,6 +65,17 @@ LOOM_API_BASE_URL=https://loom.example.com npm run validate
 Run it against a fresh deploy and the Security screens fail (no role, no
 authorizer); run `npm run seed`, then validate again and every screen passes.
 
+## The Security screen
+
+`foundation` seeds the two tabs an agent deploy needs — an imported IAM role and
+a Cognito authorizer. `demo` additionally seeds an approval policy and a pending
+permission request, so those tabs aren't empty either.
+
+One tab is deliberately left empty: **Identity Providers**. Registering one flips
+Loom out of its dev-auth bypass into real-OIDC mode, which locks a local or demo
+deploy (there's no real IdP to authenticate against). You add a real provider
+there on a real deploy; seeding a fake one would only break the app.
+
 ## Demo content and cost
 
 The `demo` profile deploys a real agent and creates a memory — free on the
