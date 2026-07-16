@@ -8,6 +8,13 @@ const loomEnv = process.env.LOOM_ENV ?? "dev";
 
 export default {
   lexicons: ["aws", "temporal", "docker"],
+  // Scope whole-project discovery (bare `chant lifecycle diff|snapshot`, the
+  // path WatchOp/ReconcileOp use) to `src/`, so it never walks `docs-site/`'s
+  // Astro config (`astro:`-scheme imports the ESM loader rejects) or `test/`
+  // fixtures (loomster#94). Per-stack (`chant build src/<stack>`), component
+  // (`chant build --components`), and Ops (`chant build ops`) commands pass
+  // their own explicit path and are unaffected.
+  sourceDir: "src",
   // Whatever LOOM_ENV this build/lint/lifecycle invocation targets is the
   // only allowed environment — same single-deployment-at-a-time convention
   // every src/*/params.ts file already follows.
