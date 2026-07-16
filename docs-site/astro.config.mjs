@@ -30,6 +30,7 @@ export default defineConfig({
 				{
 					label: 'Reference',
 					items: [
+						{ label: 'Tiers & targets', slug: 'reference/tiers' },
 						{ label: 'Naming & Tagging', slug: 'reference/naming' },
 						{ label: 'Local caveats', slug: 'reference/local-caveats' },
 					],
