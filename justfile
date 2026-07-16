@@ -103,3 +103,8 @@ local-up:
 
 local-down:
     bash scripts/local/local-down.sh
+
+# Validate a running Loom screen by screen against the active seed profile.
+# LOOM_API_BASE_URL (default the local-up proxy) + LOOM_SEED_PROFILE (default demo).
+validate:
+    npm run validate
