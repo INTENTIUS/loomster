@@ -1,6 +1,6 @@
 ---
 title: Local caveats
-description: How the local (Floci) run diverges from real AWS — read this before you trust anything the local tier shows you.
+description: How the local (Floci) run diverges from real AWS. Read this before you trust anything the local tier shows you.
 ---
 
 The local tier ([Run Loom on your laptop](/loomster/guides/local/)) is for
@@ -13,13 +13,13 @@ below says what's different, why, and what's true on real AWS instead.
 Floci's ECS does not inject Secrets Manager `Secrets` into containers, so the
 light tier delivers the database URL as a plain `Environment` variable built from
 loom-db's resolved endpoint. **Real AWS** uses Secrets Manager. Don't copy local
-secret handling into a real deployment — `production` / `production-ha` keep the
+secret handling into a real deployment. `production` / `production-ha` keep the
 secret.
 
 ## `Fn::Sub` GetAtt isn't resolved inside a SecretString
 
 Related: Floci doesn't resolve `Fn::Sub ${LogicalId.Attribute}` GetAtt references
-inside a `SecretString` — it leaves the literal. That's why the light tier
+inside a `SecretString`, leaving the literal instead. That's why the light tier
 delivers the DB URL via a cross-stack input rather than the secret. The secret
 template is correct for real AWS.
 
@@ -40,7 +40,7 @@ health-based failover. **Real AWS** uses the actual ALB with all of that.
 
 Floci creates roles and policies but doesn't evaluate them. A local run
 succeeding proves nothing about least-privilege correctness. **Real AWS** enforces
-IAM — a stack that works locally can still be denied there.
+IAM. A stack that works locally can still be denied there.
 
 ## KMS crypto and secret rotation don't run
 
@@ -50,7 +50,7 @@ rotation doesn't run locally.
 ## No telemetry
 
 There is no CloudWatch, X-Ray, or OTel pipeline locally. Cost, usage, and trace
-features degrade to empty — the data those views need is produced by real AWS
+features degrade to empty. The data those views need is produced by real AWS
 telemetry.
 
 ## Agents don't run
@@ -63,6 +63,6 @@ Bedrock AgentCore has no Floci emulator. Agent *definitions* are manageable
 
 Floci proves synthesis, deployability, and that the web-tier workload runs. It is
 **not** a substitute for a real-AWS run, and it doesn't validate anything in the
-sections above. The light tier has been deployed to a real account end to end;
-`production` / `production-ha` have not yet — see the
+sections above. The light tier has been deployed to a real account end to end.
+`production` / `production-ha` have not yet. See the
 [Tutorial](/loomster/getting-started/tutorial/#3-go-to-production).

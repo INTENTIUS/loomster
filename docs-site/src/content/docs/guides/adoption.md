@@ -6,7 +6,7 @@ description: The full seam-by-seam adoption matrix — provision, reference-exis
 A team runs Loom-on-chant by keeping what it wants and replacing or leaving out
 the rest, all through parameters, with no forking of any composite's source.
 Every referenceable piece of Loom's infrastructure exposes a
-`provision | reference-existing | omit` choice — where `omit` makes sense at all;
+`provision | reference-existing | omit` choice, where `omit` makes sense at all;
 some pieces are load-bearing and only choose between `provision` and
 `reference-existing`. The seams ship with each composite; this page is the map
 across all of them, plus a runnable example (`src/examples/byo/`) and a
@@ -15,35 +15,35 @@ verification test (`src/examples/byo/adoption.test.ts`) proving they compose.
 ## Reference-existing network + IAM is the primary case
 
 Most platform teams don't let application stacks provision their own VPC or IAM
-roles — a platform/security team owns those centrally. `reference-existing` is
+roles. A platform/security team owns those centrally. `reference-existing` is
 first-class for both, not a fallback:
 
-- **Network** (`shared-foundation`'s `network` seam) — VPC id, public/private
+- **Network** (`shared-foundation`'s `network` seam). VPC id, public/private
   subnet ids by AZ. `reference-existing` wires the ALB, ECS tasks, and security
   groups straight into the given ids; chant creates no VPC, subnet, route table,
-  or internet gateway. `provision` builds 2 public subnets and nothing else — it
+  or internet gateway. `provision` builds 2 public subnets and nothing else. It
   exists for a from-scratch light/local synth, and the composite refuses it on
   `production` / `production-ha` (there's no provisioned path to PrivateLink's
   required private subnets).
-- **IAM** — partially covered. `shared-foundation`'s `agentRole` seam (the
+- **IAM**, partially covered. `shared-foundation`'s `agentRole` seam (the
   AgentCore execution role scoped to that stack's own artifact bucket, ECR KMS,
   and logs) is `provision | reference-existing | omit`, same as every other
   `shared-foundation` seam. `loom-backend`'s execution/task roles and
-  `loom-frontend`'s execution role are **not yet seamed** — see "Known gaps".
+  `loom-frontend`'s execution role are **not yet seamed**. See "Known gaps".
 
 ## Shared Cognito pool / external IdP across multiple Looms
 
-An org runs many Loom instances across hard boundaries — separate accounts, prod
+An org runs many Loom instances across hard boundaries, separate accounts, prod
 vs. non-prod, separate compliance scopes. Loom's own groups and `loom:group` tags
 isolate *teams* within one deployment; they don't isolate one deployment from
 another. A shared org-level Cognito pool (or an external OIDC IdP fronted the same
 way), referenced by every instance with groups and the scope catalog defined once
-at the org level, is the multi-instance pattern — not a fallback for teams that
+at the org level, is the multi-instance pattern, not a fallback for teams that
 skipped provisioning. `identity: reference-existing` on `loom-cognito` is exactly
 that: zero Cognito resources, every id and URL threaded from params.
 `src/examples/byo/loom-cognito/` and `src/examples/byo/loom-cognito-second-instance/`
 instantiate the composite twice, under two `naming.instance` values, against the
-identical pool config — `adoption.test.ts` asserts both produce zero members and
+identical pool config. `adoption.test.ts` asserts both produce zero members and
 resolve to the same pool id. Provisioning one pool per instance
 (`identity: provision`, the default) remains right for a single greenfield
 boundary.
@@ -88,19 +88,19 @@ resources of its own serializes to valid CloudFormation with no dangling `Ref` o
 Written down rather than papered over:
 
 - **`loom-backend` / `loom-frontend` execution/task IAM roles.** Both composites
-  always provision their own roles — there's no `reference-existing` seam for
+  always provision their own roles. There's no `reference-existing` seam for
   them, unlike every upstream piece they depend on (network, KMS, ECR, data,
   identity, and `shared-foundation`'s own `agentRole`). A team that needs
   pre-existing roles can't get them through params today; this would take a seam
   added to those two composites, matching the shape `agentRole` already
   establishes.
 - **No bastion composite.** Nothing here models a bastion host, and Loom's own
-  upstream template doesn't define one either — there's nothing to reference or
+  upstream template doesn't define one either. There's nothing to reference or
   omit, and this page doesn't invent one to check a box.
 - **A fully-`reference-existing` `loom-db` / `loom-cognito` stack has zero
   resources of its own**, by design. `chant build --lexicon aws` on a directory
   with no lexicon-tagged declarable at all (not even a `Parameter`) fails its own
-  empty-output guard — a general chant behavior, not something these seams
+  empty-output guard, a general chant behavior, not something these seams
   introduce. Such a stack's outputs are meant to be consumed by a downstream
   `stackOutput(...)`, not built standalone, so `adoption.test.ts` verifies these
   stacks directly rather than through the CLI's own build path.
