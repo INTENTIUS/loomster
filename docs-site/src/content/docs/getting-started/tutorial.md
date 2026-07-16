@@ -100,6 +100,21 @@ app runs for real: a genuine Postgres behind the backend API, the real schema
 migrations, the real routers (catalog, settings, costs, memories, credentials,
 and the rest). Browse all of it.
 
+And it comes up **usable, not empty**. `local-up`'s last step seeds the app
+through Loom's own API, so on first login the Security screen already has an
+imported agent role and a Cognito authorizer, the Catalog is populated (a
+deployed agent, a memory, an MCP server, an A2A agent), and the approval-policy
+and permission-request tabs aren't blank. A fresh Loom database seeds almost
+none of that on its own — see [Screens](/loomster/reference/screens/) for what's
+populated and what's deliberately left empty (and why). You can confirm it:
+
+```
+just validate          # every screen loads with the data its profile seeds
+```
+
+`validate` is the "is this deploy actually usable" check — it walks each screen
+and fails if a section that should be seeded is empty or an agent deploy died.
+
 ```
 just local-down    # tear down the app stack and Floci
 ```
@@ -152,6 +167,20 @@ aws elbv2 describe-load-balancers \
 Loom comes up on a real ALB, backed by real RDS and Cognito. This is the tier
 that has been deployed end to end to a live account. The web app served, the
 data plane real.
+
+It's *serving* but not yet *usable* — the same fresh-database problem as local,
+without local-up's auto-seed. Seed it once against the running app so the
+Security screen has a role and authorizer and an agent can be deployed:
+
+```
+LOOM_API_BASE_URL=https://<your-alb-or-domain> npm run seed
+```
+
+On a real account the default profile is `foundation` — it imports the agent
+execution role and registers a Cognito authorizer, and stops there. It does
+*not* deploy a demo agent or create a memory, because those are billable on a
+live account. See [Seeded defaults](/loomster/reference/seeding/) for the
+profiles and [Screens](/loomster/reference/screens/) for what each populates.
 
 Two caveats:
 
@@ -394,6 +423,8 @@ The full seam-by-seam edges are in [Adoption](/loomster/guides/adoption/).
 ## Where to go next
 
 - [Run Loom on your laptop](/loomster/guides/local/) — the local run in depth.
+- [Screens](/loomster/reference/screens/) — what every screen shows after a deploy, and what's seeded.
+- [Seeded defaults](/loomster/reference/seeding/) — the seed profiles and how to run them.
 - [Local caveats](/loomster/reference/local-caveats/) — where local diverges from real AWS.
 - [Adoption](/loomster/guides/adoption/) — the full bring-your-own-everything matrix.
 - [CI providers](/loomster/guides/ci/) — GitHub, GitLab, and Forgejo support.
