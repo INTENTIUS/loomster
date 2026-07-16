@@ -44,6 +44,7 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain("POST \"$BASE/api/mcp/servers\"");
     expect(script).toContain("Loomster Echo MCP");
     expect(script).toContain("POST \"$BASE/api/memories\"");
+    expect(script).toContain('\\"strategy_type\\":\\"summary\\"'); // the memory carries a strategy, not inert
     expect(script).toContain("POST \"$BASE/api/agents\"");
     expect(script).toContain('\\"source\\":\\"deploy\\"');
     expect(script).toContain("POST \"$BASE/api/a2a/agents\"");

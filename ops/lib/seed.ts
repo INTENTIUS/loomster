@@ -105,9 +105,11 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `if curl -fsS "$BASE/api/memories" | jq -e --arg n "$MEM_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
     `  echo "loom-seed: demo memory already present"`,
     `else`,
+    // A summary strategy, so the memory actually processes events rather than
+    // being an inert resource — the most representative single strategy.
     `  curl -fsS -X POST "$BASE/api/memories" -H 'Content-Type: application/json' \\`,
-    `    -d "{\\"name\\":\\"$MEM_NAME\\",\\"description\\":\\"Loomster demo memory (seeded demo content)\\",\\"event_expiry_duration\\":30,\\"tags\\":$BRAND_TAGS}" >/dev/null \\`,
-    `    && echo "loom-seed: seeded demo memory" || echo "loom-seed: demo memory skipped" >&2`,
+    `    -d "{\\"name\\":\\"$MEM_NAME\\",\\"description\\":\\"Loomster demo memory (seeded demo content)\\",\\"event_expiry_duration\\":30,\\"memory_strategies\\":[{\\"strategy_type\\":\\"summary\\",\\"name\\":\\"summary\\",\\"namespaces\\":[\\"/strategy/{strategyId}/actor/{actorId}/session/{sessionId}/\\"]}],\\"tags\\":$BRAND_TAGS}" >/dev/null \\`,
+    `    && echo "loom-seed: seeded demo memory (with a summary strategy)" || echo "loom-seed: demo memory skipped" >&2`,
     `fi`,
     // Agent (deploy) — the imported role runs it; model id is discovered from the
     // catalog. Loom requires an identifier-style name (no hyphens).

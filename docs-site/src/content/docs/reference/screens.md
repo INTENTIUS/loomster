@@ -80,9 +80,11 @@ one so the Catalog isn't a wall of empty sections:
   than hardcoded. The harness requires at least one agent that's `READY` or
   `CREATING` — an all-`FAILED` list means the deploy path is broken and fails
   validation.
-- **Memory** — creates one memory resource. Creating a memory calls Bedrock
-  AgentCore; it's free on the Floci emulator but a real (billable) resource on a
-  live account, which is why it's `demo`-only.
+- **Memory** — creates one memory resource with a **summary strategy**, so it
+  actually processes events rather than sitting inert (a strategyless memory is
+  valid but does nothing). Creating a memory calls Bedrock AgentCore; it's free
+  on the Floci emulator but a real (billable) resource on a live account, which is
+  why it's `demo`-only.
 - **MCP Servers** — registers one sample server. The create call doesn't validate
   the endpoint, so a placeholder URL is fine.
 - **A2A Agents** — registers one agent. Unlike MCP, registration *fetches* the
@@ -105,11 +107,16 @@ defaults, not gaps. Nothing here needs seeding.
   an allow-list to *restrict* the catalog, so empty means "all models allowed."
   The agent picker uses the full catalog regardless. Seeding a curated list would
   override Loom's own default, not fix anything.
-- **Networking** — VPC configurations start empty, which is correct on `light`:
-  its agents run in `PUBLIC` network mode and need no VPC config. This is a
-  production-tier concern.
-- **Infrastructure** — the AgentCore Agent Registry is a preview feature, off by
-  default. You opt in on a real deploy; there's nothing to fabricate.
+- **Networking** — VPC configurations start empty, and that's correct on `light`:
+  its agents run in `PUBLIC` network mode, and a light deploy only has public
+  subnets, so there's nothing a VPC config would point at. These are named
+  presets the *UI* uses to deploy an agent into a VPC. On the production tiers the
+  chant-deployed agents already carry their VPC config in the template — a Loom
+  VPC config is only needed if you also deploy VPC-mode agents from the UI, at
+  which point you register one against the deployed private subnets.
+- **Infrastructure** — the AgentCore Agent Registry is a preview feature that
+  loomster doesn't provision, so it's off by default with no ARN. You opt in on a
+  real deploy once the feature is available; there's nothing to fabricate.
 
 ## Runtime screens
 
