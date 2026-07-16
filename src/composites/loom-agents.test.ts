@@ -23,7 +23,7 @@ function baseProps(overrides: Partial<LoomAgentsProps> = {}): LoomAgentsProps {
     naming: lightNaming,
     artifactBucket: "loom-test-a-shared-foundation-artifacts-abc123",
     ecsSecurityGroupId: "sg-ecs-123",
-    assistantImageUri: "111111111111.dkr.ecr.us-east-1.amazonaws.com/loom-assistant@sha256:abc",
+    assistantCodePrefix: "strands_agent/agent.zip",
     ...overrides,
   };
 }
@@ -60,6 +60,19 @@ describe("LoomAgents — light tier", () => {
     const runtimeProps = (instance.assistantRuntime as any).props;
     const protocolProps = (runtimeProps.ProtocolConfiguration as any)?.props ?? runtimeProps.ProtocolConfiguration;
     expect(protocolProps).toBe("HTTP");
+  });
+
+  test("assistant deploys as a code artifact (S3 zip on PYTHON_3_13), not a container", () => {
+    const instance = LoomAgents(baseProps());
+    const artifactProps = ((instance.assistantRuntime as any).props.AgentRuntimeArtifact as any).props;
+    expect(artifactProps.ContainerConfiguration).toBeUndefined();
+    const codeProps = (artifactProps.CodeConfiguration as any).props;
+    expect(codeProps.Runtime).toBe("PYTHON_3_13");
+    // Matches Loom's own create_runtime entryPoint (vendor/loom .../deployment.py).
+    expect(codeProps.EntryPoint).toEqual(["opentelemetry-instrument", "src/handler.py"]);
+    const s3 = (codeProps.Code as any).props.S3;
+    expect(s3.Bucket).toBe("loom-test-a-shared-foundation-artifacts-abc123");
+    expect(s3.Prefix).toBe("strands_agent/agent.zip");
   });
 
   test("privateSubnetIds is not required on light", () => {
