@@ -28,11 +28,17 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Operations',
+					items: [
+						{ label: 'Overview', slug: 'operations/overview' },
+						{ label: 'Backup & restore', slug: 'operations/backup-restore' },
+						{ label: 'CI providers', slug: 'operations/ci' },
+					],
+				},
+				{
 					label: 'Guides',
 					items: [
 						{ label: 'Run Loom on your laptop', slug: 'guides/local' },
-						{ label: 'CI providers', slug: 'guides/ci' },
-						{ label: 'Backup & restore', slug: 'guides/backup-restore' },
 					],
 				},
 				{

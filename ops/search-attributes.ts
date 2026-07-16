@@ -37,3 +37,6 @@ export const backupAttr = new SearchAttribute({ name: "Backup", type: "Keyword" 
 
 /** loom-restore: `Restore = "true"` marks every restore workflow run. */
 export const restoreAttr = new SearchAttribute({ name: "Restore", type: "Keyword" });
+
+/** loom-restore-drill: `RestoreDrill = "true"` marks every restore-drill workflow run. */
+export const restoreDrillAttr = new SearchAttribute({ name: "RestoreDrill", type: "Keyword" });

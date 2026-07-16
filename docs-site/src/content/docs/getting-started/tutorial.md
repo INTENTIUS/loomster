@@ -390,7 +390,7 @@ variables each one needs.
 
 GitHub, GitLab, and Forgejo are all at parity — each has a committed,
 drift-validated, runtime-tested component pipeline plus gated deploy and
-scheduled lifecycle workflows. [CI providers](/loomster/guides/ci/) covers the
+scheduled lifecycle workflows. [CI providers](/loomster/operations/ci/) covers the
 per-provider detail.
 
 ## Cost (optional)
@@ -458,8 +458,8 @@ The full seam-by-seam edges are in [Adoption](/loomster/adoption/overview/).
 - [Seeded defaults](/loomster/reference/seeding/) — the seed profiles and how to run them.
 - [Local caveats](/loomster/reference/local-caveats/) — where local diverges from real AWS.
 - [Adoption](/loomster/adoption/overview/) — the full bring-your-own-everything matrix.
-- [CI providers](/loomster/guides/ci/) — GitHub, GitLab, and Forgejo support.
-- [Backup & restore](/loomster/guides/backup-restore/) — data protection and the restore runbook.
+- [CI providers](/loomster/operations/ci/) — GitHub, GitLab, and Forgejo support.
+- [Backup & restore](/loomster/operations/backup-restore/) — data protection and the restore runbook.
 - [Naming & tagging](/loomster/reference/naming/) — the naming convention in full.
 - chant's own docs: [Components](https://intentius.io/chant/components/overview/),
   [Ops](https://intentius.io/chant/guide/ops/),

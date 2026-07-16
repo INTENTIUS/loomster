@@ -43,7 +43,8 @@ Pick the cheapest one that answers the question in front of you.
 | Seed the app | `npm run seed` | **via Loom's API, never the DB** — see Guardrails |
 | Prove it's usable | `npm run validate` | walks every screen; the deploy gate |
 | Back up | `npm run backup` + `npm run cognito-export` | RDS snapshot + Cognito export |
-| Restore | `npm run restore` | see `guides/backup-restore.md` |
+| Verify a backup restores | `npm run restore-drill` | restores to a throwaway instance, asserts health, deletes it — non-destructive |
+| Restore | `npm run restore` | gated cutover; see `operations/backup-restore.md` |
 | Reconcile cloud → code | `npm run reconcile` | opens a PR, never mutates the cloud |
 | Audit the CI YAML | `just audit` | security audit of the generated pipeline |
 | Tear down | `chant run loom-teardown` | |

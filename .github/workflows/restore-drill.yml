@@ -1,0 +1,46 @@
+name: restore-drill
+
+# Scheduled CI-cron trigger for the loom-restore-drill Op — proves the latest
+# loom-backup snapshot actually restores. A thin trigger only: this job's one
+# real step is `npm run restore-drill` (`chant run loom-restore-drill`). The
+# drill restores to a throwaway instance, asserts it comes up healthy, and always
+# deletes it — non-destructive to the live database, so it runs on the local
+# executor with no gate. See ops/loom-restore-drill.op.ts.
+#
+# Monthly, because a restore takes real time and money; more often than backup,
+# less often than drift detection. CI-cron is one trigger host among several.
+#
+# Inert until a team opts in: set the repo variable SCHEDULED_RESTORE_DRILL to
+# 'true' and provide the `production` environment's AWS credentials (same one
+# deploy.yml / backup.yml use).
+on:
+  schedule:
+    - cron: "0 4 1 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restore-drill
+  cancel-in-progress: false
+
+jobs:
+  restore-drill:
+    if: ${{ vars.SCHEDULED_RESTORE_DRILL == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: restore-drill
+        run: npm run restore-drill
+        env:
+          LOOM_ENV: ${{ vars.LOOM_ENV || 'dev' }}
+          LOOM_TIER: ${{ vars.LOOM_TIER || 'light' }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
