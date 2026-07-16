@@ -2,7 +2,7 @@
  * Concrete parameter source for the deployable `loom-db` stack (chant#887).
  * Everything here comes from the environment (LOOM001 — nothing hardcoded in
  * this file or the composite), same convention `shared-foundation/params.ts`
- * uses — except `vpcId`/`privateSubnetIds`/`ecsSecurityGroupId`, which are
+ * uses — except `pVpcId`/`pPrivateSubnetIds`/`pEcsSecurityGroupId`, which are
  * genuine CloudFormation `Parameter`s because they cross stacks:
  * `../components/loom-db.component.ts` wires them from shared-foundation's
  * `oVpcId`/`oPrivateSubnetIds`/`oEcsSecurityGroupId` outputs at deploy time
@@ -60,16 +60,16 @@ export const dataMode = dataModeFromEnv();
  * `../components/loom-db.component.ts`'s `stackOutput("shared-foundation",
  * "oVpcId"/"oPrivateSubnetIds")` wiring, since the RDS instance belongs in
  * private subnets alongside the ECS tasks, not the ALB's public ones.
- * `privateSubnetIds` is a comma-joined string (CloudFormation Outputs can't
+ * `pPrivateSubnetIds` is a comma-joined string (CloudFormation Outputs can't
  * be lists) — split back apart in `./db.ts`. Only meaningful for
  * `data.mode: "provision"`.
  */
-export const vpcId = new Parameter("AWS::EC2::VPC::Id", { description: "shared-foundation VPC id (shared-foundation oVpcId)" });
-export const privateSubnetIds = new Parameter("String", { description: "Comma-separated private subnet ids for the RDS subnet group (shared-foundation oPrivateSubnetIds)" });
+export const pVpcId = new Parameter("AWS::EC2::VPC::Id", { description: "shared-foundation VPC id (shared-foundation oVpcId)" });
+export const pPrivateSubnetIds = new Parameter("String", { description: "Comma-separated private subnet ids for the RDS subnet group (shared-foundation oPrivateSubnetIds)" });
 
 /** CIDR allowed to reach RDS directly — Loom's own `pAllowedCidr` posture. Ignored once `LOOM_DB_SOURCE_SG_ID` is set (chant#898: reference shared-foundation's ECS security group instead of a CIDR block). */
 export const allowedCidr = process.env.LOOM_DB_ALLOWED_CIDR;
-/** When set, takes priority over `allowedCidr` — see `ecsSecurityGroupId` below. */
+/** When set, takes priority over `allowedCidr` — see `pEcsSecurityGroupId` below. */
 export const useSourceSecurityGroup = process.env.LOOM_DB_SOURCE_SG === "true";
 
 export const dbName = process.env.LOOM_DB_NAME;
@@ -95,6 +95,6 @@ export const referenceConnectionSecretArn = process.env.LOOM_DB_CONNECTION_SECRE
  * COR004 exempts them from its unused-declarable check for exactly this
  * reason.
  */
-export const ecsSecurityGroupId = new Parameter("String", {
+export const pEcsSecurityGroupId = new Parameter("String", {
   description: "shared-foundation ECS security group id (ingress source for the RDS security group)",
 });
