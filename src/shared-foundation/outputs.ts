@@ -22,7 +22,7 @@
 
 import { output, Ref } from "@intentius/chant-lexicon-aws";
 import { foundation } from "./foundation";
-import { namingParams, domainName, route53, acm } from "./params";
+import { namingParams, domainName, route53, acm, kms, ecr, agentRole } from "./params";
 import { network } from "./network";
 import { loomNaming } from "../lib/naming";
 import { literalOutputValue, joinOutputValues } from "../composites/shared-foundation";
@@ -65,13 +65,29 @@ export const oAlbSecurityGroupId = output(foundation.albSg.GroupId, "oAlbSecurit
 export const oEcsSecurityGroupId = output(foundation.ecsSg.GroupId, "oEcsSecurityGroupId");
 export const oFrontendTargetGroupArn = output(foundation.frontendTargetGroup.TargetGroupArn, "oFrontendTargetGroupArn");
 export const oBackendTargetGroupArn = output(foundation.backendTargetGroup.TargetGroupArn, "oBackendTargetGroupArn");
-// kms/ecr/agentRole are left at their composite default ("provision") in
-// ./foundation.ts, so these members always exist for this deployment — the
-// `!` reflects that choice, not a general guarantee (a caller that switches
-// a seam to "reference-existing"/"omit" would need to adjust these too).
-export const oEcrKmsKeyArn = output(foundation.kmsKey!.Arn, "oEcrKmsKeyArn");
-export const oFrontendRepositoryUri = output(foundation.frontendRepo!.RepositoryUri, "oFrontendRepositoryUri");
-export const oBackendRepositoryUri = output(foundation.backendRepo!.RepositoryUri, "oBackendRepositoryUri");
+// kms/ecr/agentRole (#120) honour their seams the same way the DNS outputs do:
+// reference-existing threads the given arn/uri literal (no resource member
+// exists to Ref/GetAtt); omit emits no output; unset/provision GetAtts the
+// member the composite built. These are not tier-gated — every tier builds
+// (or references) ECR + KMS + the agent role.
+export const oEcrKmsKeyArn =
+  kms?.mode === "omit"
+    ? undefined
+    : kms?.mode === "reference-existing"
+      ? output(literalOutputValue(kms.kmsKeyArn), "oEcrKmsKeyArn")
+      : output(foundation.kmsKey!.Arn, "oEcrKmsKeyArn");
+export const oFrontendRepositoryUri =
+  ecr?.mode === "omit"
+    ? undefined
+    : ecr?.mode === "reference-existing"
+      ? output(literalOutputValue(ecr.frontendRepositoryUri), "oFrontendRepositoryUri")
+      : output(foundation.frontendRepo!.RepositoryUri, "oFrontendRepositoryUri");
+export const oBackendRepositoryUri =
+  ecr?.mode === "omit"
+    ? undefined
+    : ecr?.mode === "reference-existing"
+      ? output(literalOutputValue(ecr.backendRepositoryUri), "oBackendRepositoryUri")
+      : output(foundation.backendRepo!.RepositoryUri, "oBackendRepositoryUri");
 export const oArtifactBucket = output(Ref(foundation.artifactBucket), "oArtifactBucket");
 
 // A custom domain is known at author time (a literal, not a stack
@@ -106,4 +122,9 @@ export const oEcsClusterArn = output(foundation.ecsCluster.Arn, "oEcsClusterArn"
 export const oEcsClusterName = output(literalOutputValue(naming.name("cluster")), "oEcsClusterName");
 
 // ── role.yaml ─────────────────────────────────────────────────────────────
-export const oAgentRoleArn = output(foundation.agentRole!.Arn, "oAgentRoleArn");
+export const oAgentRoleArn =
+  agentRole?.mode === "omit"
+    ? undefined
+    : agentRole?.mode === "reference-existing"
+      ? output(literalOutputValue(agentRole.agentRoleArn), "oAgentRoleArn")
+      : output(foundation.agentRole!.Arn, "oAgentRoleArn");
