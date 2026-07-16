@@ -13,3 +13,6 @@ archive
 # src/components/loom-backend.component.ts's docstring.
 vendor/
 .gitlab-ci-local/
+
+# github-runtime-e2e generated workflow (on-demand, never committed)
+test/github-runtime-e2e/ci.yml

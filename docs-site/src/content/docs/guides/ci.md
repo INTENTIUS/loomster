@@ -23,8 +23,8 @@ where each stands and what closing the gap takes.
 | Capability | GitHub | GitLab | Forgejo |
 |---|---|---|---|
 | Generated component pipeline | shipped (`generate:github`) | shipped (`generate:gitlab`) | planned (needs a chant generator) |
-| Committed + drift-validated + unit test | planned | shipped (`gitlab-validate`, `gitlab-pipeline.test.ts`) | planned |
-| Runtime E2E against Floci | planned | shipped (`gitlab-runtime-e2e`) | planned |
+| Committed + drift-validated + unit test | shipped (`github-validate`, `github-pipeline.test.ts`) | shipped (`gitlab-validate`, `gitlab-pipeline.test.ts`) | planned |
+| Runtime E2E against Floci | shipped (`github-runtime-e2e`, via `act`) | shipped (`gitlab-runtime-e2e`) | planned |
 | Gated deploy pipeline | shipped (`deploy.yml`) | planned | planned |
 | Scheduled lifecycle (watch/reconcile/cost/audit) | shipped (4 workflows) | planned | planned |
 
@@ -41,16 +41,19 @@ GitHub is the live host, and it carries the operational surface.
 - **Scheduled lifecycle.** `watch.yml`, `reconcile.yml`, `cost-report.yml`, and
   `audit.yml` run the stateless lifecycle concerns on cron, each inert until a
   repo variable opts it in.
-- **Generated component pipeline.** `npm run generate:github` produces a
-  `.github/workflows/*.yml` with one job per component and `needs:` edges, plus
-  artifact upload/download for cross-stack outputs.
+- **Generated component pipeline.** `npm run generate:github` produces the
+  committed `.github/workflows/components.yml` with one job per component and
+  `needs:` edges, plus artifact upload/download for cross-stack outputs.
+- **Drift-validated and tested.** `just github-validate` regenerates and diffs,
+  and `src/github-pipeline.test.ts` asserts the committed file matches the live
+  component graph (the same drift gate GitLab has).
+- **Runtime E2E.** `just github-runtime-e2e` runs the generated workflow in Docker
+  via `act` against Floci, deploying the light tier's infrastructure components
+  end to end including the cross-stack artifact handoff between jobs. On-demand,
+  needs Docker and `act`, not part of gating CI.
 
-What's missing for parity with GitLab's generated-pipeline tooling: the generated
-workflow is not committed, so there's no drift check and no unit test asserting it
-matches the component graph, and it is never executed in a local runner. Closing
-that means committing the generated file, adding a `github-validate` target
-(regenerate and diff), a `github-pipeline.test.ts` mirroring the GitLab one, and a
-`github-runtime-e2e` that runs the workflow with `act` against Floci.
+GitHub now has the full generated-pipeline lifecycle, matching GitLab, on top of
+the deploy and scheduled workflows it already carried.
 
 ## GitLab
 
