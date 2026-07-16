@@ -6,6 +6,7 @@
  */
 
 import type { LoomNamingParams, Tier } from "../lib/naming";
+import type { Route53Seam, AcmSeam } from "../composites/shared-foundation";
 
 const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
 
@@ -30,6 +31,35 @@ export const namingParams: LoomNamingParams = {
 
 /** Custom domain (e.g. "loom.example.com") — required on production/production-ha unless ACM+Route53 are both omitted. Unused on light. */
 export const domainName = process.env.LOOM_DOMAIN_NAME;
+
+/**
+ * Route53 seam (#117). The common adoption case is referencing an existing zone
+ * — most teams already own the parent domain — so `LOOM_HOSTED_ZONE_ID` points at
+ * one (loomster adds the ALB alias record, creates no zone). `LOOM_ROUTE53=omit`
+ * drops DNS entirely; `provision` forces a new zone. Unset → the composite's
+ * tier default (provision on production/production-ha, unused on light).
+ */
+export function resolveRoute53(hostedZoneId: string | undefined, mode: string | undefined): Route53Seam | undefined {
+  if (hostedZoneId) return { mode: "reference-existing", hostedZoneId };
+  if (mode === "omit") return { mode: "omit" };
+  if (mode === "provision") return { mode: "provision" };
+  return undefined;
+}
+export const route53 = resolveRoute53(process.env.LOOM_HOSTED_ZONE_ID, process.env.LOOM_ROUTE53);
+
+/**
+ * ACM seam (#117). `LOOM_CERTIFICATE_ARN` references an existing, already
+ * DNS-validated certificate (no cert provisioned, no validation wait);
+ * `LOOM_ACM=omit` drops HTTPS; `provision` forces a new cert. Unset → the
+ * composite's tier default.
+ */
+export function resolveAcm(certificateArn: string | undefined, mode: string | undefined): AcmSeam | undefined {
+  if (certificateArn) return { mode: "reference-existing", certificateArn };
+  if (mode === "omit") return { mode: "omit" };
+  if (mode === "provision") return { mode: "provision" };
+  return undefined;
+}
+export const acm = resolveAcm(process.env.LOOM_CERTIFICATE_ARN, process.env.LOOM_ACM);
 
 /** CIDR allowed to reach the ALB. Falls back to the composite's own default (0.0.0.0/0) when unset. */
 export const albIngressCidr = process.env.LOOM_ALB_INGRESS_CIDR;
