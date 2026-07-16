@@ -16,6 +16,7 @@ it, tiers it, and generates the pipeline.
 [Adoption](https://intentius.io/loomster/guides/adoption/) ·
 [Run it locally](https://intentius.io/loomster/guides/local/) ·
 [Tiers & targets](https://intentius.io/loomster/reference/tiers/) ·
+[Screens](https://intentius.io/loomster/reference/screens/) ·
 [Naming](https://intentius.io/loomster/reference/naming/)
 
 ## Where it runs today

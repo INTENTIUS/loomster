@@ -3,13 +3,18 @@ title: What loomster is
 description: The map before the tutorial. Six components, what deploys where today, real wins vs. parity with Loom's own SAM deploy, and the known edges.
 ---
 
-loomster is typed, tiered infrastructure-as-code for
-[awslabs/loom](https://github.com/awslabs/loom) on
-[chant](https://intentius.io/chant). Six components, three tiers
-(`light` / `production` / `production-ha`), generated CI, and a naming scheme
-that lets many Loom instances coexist in one or many AWS accounts without
-collision. Pinned to Loom `v1.6.0`, a moving `as-is` AWS Labs sample, so expect
-breaking changes upstream between versions.
+loomster is a **deployment of [awslabs/loom](https://github.com/awslabs/loom)** —
+typed, tiered infrastructure-as-code on [chant](https://intentius.io/chant) that
+stands up Loom's infrastructure *and* leaves the app usable, not just running.
+Six components, three tiers (`light` / `production` / `production-ha`), generated
+CI, a naming scheme that lets many Loom instances coexist in one or many AWS
+accounts without collision, and a seed step that populates the app so its screens
+work on first login. Pinned to Loom `v1.6.0`, a moving `as-is` AWS Labs sample,
+so expect breaking changes upstream between versions.
+
+The [Screens reference](/loomster/reference/screens/) maps the running app to the
+deployment decisions behind it — what every screen shows, what's seeded, and
+what's deliberately left empty.
 
 Loom's own deploy today is a manual, multi-step SAM process behind a
 `DEPLOYMENT.md`. chant types it, lints it, dedupes the cross-stack glue, orders
