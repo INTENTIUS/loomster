@@ -25,8 +25,8 @@ where each stands and what closing the gap takes.
 | Generated component pipeline | shipped (`generate:github`) | shipped (`generate:gitlab`) | planned (needs a chant generator) |
 | Committed + drift-validated + unit test | shipped (`github-validate`, `github-pipeline.test.ts`) | shipped (`gitlab-validate`, `gitlab-pipeline.test.ts`) | planned |
 | Runtime E2E against Floci | shipped (`github-runtime-e2e`, via `act`) | shipped (`gitlab-runtime-e2e`) | planned |
-| Gated deploy pipeline | shipped (`deploy.yml`) | planned | planned |
-| Scheduled lifecycle (watch/reconcile/cost/audit) | shipped (4 workflows) | planned | planned |
+| Gated deploy pipeline | shipped (`deploy.yml`) | shipped (`.gitlab-ci.yml` deploy job) | planned |
+| Scheduled lifecycle (watch/reconcile/cost/audit) | shipped (4 workflows) | shipped (schedule-gated jobs) | planned |
 
 The roadmap that closes every "planned" cell is tracked in
 `INTENTIUS/loomster#71`.
@@ -59,22 +59,26 @@ the deploy and scheduled workflows it already carried.
 
 GitLab has the most mature generated-pipeline lifecycle.
 
-- **Generated + committed.** `npm run generate:gitlab` writes `.gitlab-ci.yml`,
-  which is committed to the repo root.
+- **Generated + committed.** `npm run generate:gitlab` writes
+  `.gitlab/components.yml`. The root `.gitlab-ci.yml` `include`s it (on push/MR,
+  and skips it on schedule pipelines).
 - **Drift-validated.** `just gitlab-validate` regenerates and diffs, failing on
   drift. `src/gitlab-pipeline.test.ts` asserts the committed copy, the live
   component graph, and the generated stage/job/`needs:` structure all agree.
-- **Runtime E2E.** `just gitlab-runtime-e2e` runs the real `.gitlab-ci.yml` in
-  Docker via `gitlab-ci-local` against Floci, deploying the light tier's
-  infrastructure components end to end, including the cross-stack output handoff
-  between waves. On-demand, needs Docker, not part of gating CI.
+- **Runtime E2E.** `just gitlab-runtime-e2e` runs the generated pipeline in Docker
+  via `gitlab-ci-local` against Floci, deploying the light tier's infrastructure
+  components end to end, including the cross-stack output handoff between waves.
+  On-demand, needs Docker, not part of gating CI.
+- **Gated deploy.** The root `.gitlab-ci.yml` carries a `deploy` job that runs
+  `chant run --components all`, inert until the `DEPLOY` variable is set, always a
+  manual button, and never on a schedule. Mirrors `deploy.yml`.
+- **Scheduled lifecycle.** `watch` / `reconcile` / `cost-report` / `audit` jobs run
+  only on schedule pipelines, each inert until its own variable is set (reconcile
+  also tier-gated). Mirrors the GitHub crons.
 
-What's missing for parity with GitHub's operational surface: there is no gated
-GitLab deploy pipeline and no scheduled lifecycle pipelines. Closing that means a
-committed, inert-by-default deploy job (`when: manual` on a protected branch,
-credentials from masked CI/CD variables) that runs the same
-`chant run --components all`, and GitLab pipeline schedules for the four lifecycle
-concerns with the same opt-in gating the GitHub crons use.
+The component pipeline runs on push and is skipped on schedule (a conditional
+`include`), so a scheduled lifecycle run never triggers a deploy. GitLab now has
+the full lifecycle, matching GitHub.
 
 ## Forgejo (Codeberg / Gitea)
 
