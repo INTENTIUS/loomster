@@ -3,6 +3,10 @@ title: Seeded defaults
 description: What a fresh Loom deploy seeds, why the Security screen's pickers start empty, and how the loom-seed Op fills them per tier (demo / foundation / none), configurable via LOOM_SEED_PROFILE.
 ---
 
+> For the screen-by-screen view of what this populates and why, see the
+> [Screens reference](/loomster/reference/screens/). This page is the mechanics:
+> profiles, how to run it, and what it does not seed.
+
 A fresh Loom deploy comes up mostly empty. Loom's own database init seeds only
 the platform tags and a set of demo tag-profiles — nothing else. So the Security
 screen's IAM-role and authorizer pickers are blank, and you can't deploy an agent
