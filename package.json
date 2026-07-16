@@ -23,6 +23,7 @@
     "audit": "chant run loom-audit",
     "backup": "chant run loom-backup",
     "cognito-export": "chant run loom-cognito-export",
+    "restore": "chant run loom-restore",
     "estimate-cost": "bash scripts/estimate-cost.sh",
     "generate:gitlab": "chant build --components --generate gitlab -o .gitlab/components.yml",
     "generate:github": "chant build --components --generate github -o .github/workflows/components.yml",

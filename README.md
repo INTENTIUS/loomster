@@ -146,6 +146,7 @@ rollback, or on the local executor where they don't.
 | `loom-rotate-production[-ha]` | Rotate the Cognito M2M client, the RDS credential, and (custom-domain tiers) the ALB's ACM cert. | Yes |
 | `loom-backup` | Labelled RDS snapshot, plus a cross-region DR copy when `LOOM_DR_REGION` is set. Additive. | No — local executor |
 | `loom-cognito-export` | Export the Cognito pool's users, groups, and memberships (to stdout, or S3 with `LOOM_BACKUP_BUCKET`). Read-only. | No — local executor |
+| `loom-restore` | Restore the DB (snapshot or PITR) to a new instance, then cut the backend over to it (repoint secret + redeploy). | Yes — cutover is destructive |
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes. No foreign deletes. | Yes |
 
 ```

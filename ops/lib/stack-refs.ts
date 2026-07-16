@@ -23,6 +23,10 @@ export interface LoomStackRefs {
   dbInstanceIdentifier: string;
   /** Secrets Manager secret name for the RDS master credentials (loom-db's `RdsCredentialsSecret`). */
   credentialsSecretName: string;
+  /** RDS DB subnet group name (loom-db's `subnetGroupName`) — a restored instance must join the same subnet group to be network-reachable. */
+  dbSubnetGroupName: string;
+  /** RDS security group name (loom-db's `sgName`, the SG `GroupName`) — resolved to an id by name at run time for a restore's `--vpc-security-group-ids`. */
+  rdsSecurityGroupName: string;
   /** Secrets Manager secret name for the SQLAlchemy connection URL (loom-db's `RdsConnectionSecret`). */
   connectionSecretName: string;
   /** ECS cluster name (shared-foundation). */
@@ -56,6 +60,8 @@ export function stackRefs(naming: LoomNamingParams): LoomStackRefs {
   return {
     dbInstanceIdentifier: db.name("instance", { service: "rdsInstance" }),
     credentialsSecretName: db.name("credentials"),
+    dbSubnetGroupName: db.name("subnet-group"),
+    rdsSecurityGroupName: db.name("sg"),
     connectionSecretName: db.name("database-url"),
     ecsClusterName: sharedFoundation.name("cluster"),
     backendServiceName: backend.name("backend-svc"),

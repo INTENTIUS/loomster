@@ -34,3 +34,6 @@ export const prAttr = new SearchAttribute({ name: "PR", type: "Keyword" });
 
 /** loom-backup: `Backup = "true"` marks every backup workflow run. */
 export const backupAttr = new SearchAttribute({ name: "Backup", type: "Keyword" });
+
+/** loom-restore: `Restore = "true"` marks every restore workflow run. */
+export const restoreAttr = new SearchAttribute({ name: "Restore", type: "Keyword" });
