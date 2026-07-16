@@ -41,7 +41,22 @@ describe("seedDefaultsScript", () => {
     const script = seedDefaultsScript(refs);
     expect(script).toContain('if [ "$PROFILE" != "demo" ]; then echo "loom-seed: foundation seed complete"; exit 0; fi');
     expect(script).toContain("POST \"$BASE/api/mcp/servers\"");
-    expect(script).toContain("Demo Echo MCP");
+    expect(script).toContain("Loomster Echo MCP");
+  });
+
+  test("everything it creates is branded loomster", () => {
+    const script = seedDefaultsScript(refs);
+    // branded tags applied to the role + MCP
+    expect(script).toContain('\\"loom:application\\":\\"loomster\\"');
+    expect(script).toContain('\\"loom:owner\\":\\"loomster\\"');
+    // a loomster tag profile, seeded idempotently
+    expect(script).toContain("POST \"$BASE/api/settings/tag-profiles\"");
+    expect(script).toContain('any(.[]; .name == "loomster")');
+    expect(script).toContain('\\"name\\":\\"loomster\\"');
+    // branded resource names
+    expect(script).toContain("Loomster Cognito Pool");
+    // the access-control group stays overridable
+    expect(script).toContain('GROUP="${LOOM_SEED_GROUP:-loomster}"');
   });
 
   test("the demo default (light tier) emits the same script with a demo default profile", () => {
