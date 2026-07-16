@@ -59,11 +59,20 @@ const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // AWS the full Verify runs. (Held in a const so the `deploy` spread references
 // a const, not a ternary — chant's EVL004 lint rule.)
 const onRealAws = !process.env.AWS_ENDPOINT_URL;
+// The full tiers (production / production-ha) serve HTTPS-only on the custom
+// domain — the prod ALB has no HTTP listener — so the health-gate must probe
+// `https://<domain>`. Light serves HTTP on the ALB's own DNS name. Found live
+// (loomster#125): an http:// probe to the HTTPS-only prod ALB gets no listener
+// (000) and the gate false-fails even though the app is healthy. The health-gate
+// `host` honors a full URL scheme and prepends http:// only to a bare host.
+const fullTier = namingParams.tier !== "light";
+const domain = process.env.LOOM_DOMAIN_NAME;
+const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput("shared-foundation", "oAlbDnsName");
 const verifyPhases = onRealAws
   ? [
       phase("Verify", [
         { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },
-        { kind: "health-gate", host: stackOutput("shared-foundation", "oAlbDnsName"), path: "/" },
+        { kind: "health-gate", host: healthGateHost, path: "/" },
       ]),
     ]
   : [];

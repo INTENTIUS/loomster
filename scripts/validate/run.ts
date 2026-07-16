@@ -16,9 +16,16 @@ import { SCREEN_CHECKS, type FetchResult, type Profile } from "./checks";
 const BASE = (process.env.LOOM_API_BASE_URL ?? "http://localhost:8080").replace(/\/+$/, "");
 const PROFILE = (process.env.LOOM_SEED_PROFILE ?? "demo") as Profile;
 
+// A real-Cognito deployment enforces auth on every data endpoint; a local-up app
+// runs Loom's dev-auth bypass and needs none. Pass LOOM_API_TOKEN (a bearer JWT —
+// an M2M client-credentials token or a real user token) to validate a live,
+// authenticated deployment; unset, the harness targets the dev-auth local app.
+const TOKEN = process.env.LOOM_API_TOKEN;
+const AUTH_HEADERS: Record<string, string> = TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
+
 async function fetchScreen(path: string): Promise<FetchResult> {
   try {
-    const res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json" } });
+    const res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json", ...AUTH_HEADERS } });
     let body: unknown;
     try {
       body = await res.json();
