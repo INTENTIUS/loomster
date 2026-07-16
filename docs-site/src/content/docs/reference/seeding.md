@@ -24,6 +24,19 @@ Selected by tier, overridable with `LOOM_SEED_PROFILE`:
 | `demo` | `light` | Foundation, plus demo content (a sample MCP server) so the Catalog and MCP screens aren't empty. |
 | `none` | — | Nothing beyond Loom's own database init. |
 
+## Everything is branded `loomster`
+
+Every record `loom-seed` creates carries the `loomster` brand, so it's
+identifiable apart from Loom's own demo data and anything entered by hand:
+
+- a `loomster` tag profile on the Tagging screen,
+- the `loom:application` and `loom:owner` tags set to `loomster` on seeded resources,
+- `Loomster`-prefixed names ("Loomster Cognito Pool", "Loomster Echo MCP").
+
+`loom:group` governs who can see a resource, so it stays overridable via
+`LOOM_SEED_GROUP` (default `loomster`) — set it to your team's group on a
+multi-tenant deploy.
+
 ## Running it
 
 ```sh
