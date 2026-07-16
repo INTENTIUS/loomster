@@ -284,6 +284,7 @@ Standing the stacks up is the start. Beyond the component deploys:
 | Upgrade (snapshot, migrate, promote-by-digest) | `chant run loom-upgrade-<tier>` | On production tiers | Whichever tier is live |
 | Rotate (Cognito M2M client, RDS credential, ACM cert) | `chant run loom-rotate-production[-ha]` | Every phase | `production` / `production-ha` |
 | Backup (RDS snapshot + DR copy) | `chant run loom-backup` | No | Every tier |
+| Restore (snapshot/PITR + cutover) | `chant run loom-restore` | Yes, before cutover | Whichever tier is live |
 | Teardown | `chant run loom-teardown` | Yes, owned-only | Whichever tier is live |
 
 The observe and reconcile Ops are stateless, so they run one-shot on the local
