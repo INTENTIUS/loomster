@@ -22,7 +22,7 @@
 
 import { output, Ref } from "@intentius/chant-lexicon-aws";
 import { foundation } from "./foundation";
-import { namingParams, domainName } from "./params";
+import { namingParams, domainName, route53, acm } from "./params";
 import { network } from "./network";
 import { loomNaming } from "../lib/naming";
 import { literalOutputValue, joinOutputValues } from "../composites/shared-foundation";
@@ -81,14 +81,23 @@ export const oDomainName = domainName
   ? output(literalOutputValue(domainName), "oDomainName")
   : output(foundation.alb.DNSName, "oDomainName");
 
-export const oCertificateArn = fullTier
-  ? output(Ref(foundation.certificate!), "oCertificateArn")
-  : undefined;
+// production/production-ha only, and only when the seam actually built a cert.
+// reference-existing threads the given ARN (no `foundation.certificate` member
+// exists to Ref); omit / light emit no output at all (#117).
+export const oCertificateArn =
+  !fullTier || acm?.mode === "omit"
+    ? undefined
+    : acm?.mode === "reference-existing"
+      ? output(literalOutputValue(acm.certificateArn), "oCertificateArn")
+      : output(Ref(foundation.certificate!), "oCertificateArn");
 
 // ── dns.yaml (bonus — not in Loom's infra.yaml output set, but genuinely useful downstream) ──
-export const oHostedZoneId = fullTier
-  ? output(Ref(foundation.hostedZone!), "oHostedZoneId")
-  : undefined;
+export const oHostedZoneId =
+  !fullTier || route53?.mode === "omit"
+    ? undefined
+    : route53?.mode === "reference-existing"
+      ? output(literalOutputValue(route53.hostedZoneId), "oHostedZoneId")
+      : output(Ref(foundation.hostedZone!), "oHostedZoneId");
 
 // ── ecs.yaml ──────────────────────────────────────────────────────────────
 export const oEcsClusterArn = output(foundation.ecsCluster.Arn, "oEcsClusterArn");

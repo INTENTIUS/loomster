@@ -46,6 +46,7 @@ import type { LoomNamingParams } from "../../lib/naming";
 // whole-project discovery walks both trees in one pass (chant#928). Aliased
 // back to the short names here purely for readability within this file.
 import { byoFoundation as foundation } from "./shared-foundation/foundation";
+import * as byoFoundationParams from "./shared-foundation/params";
 import { byoDb as db } from "./loom-db/db";
 import { byoCognito as cognito } from "./loom-cognito/cognito";
 import * as cognitoParams from "./loom-cognito/params";
@@ -138,6 +139,37 @@ describe("BYO-everything example (chant#898) — shared-foundation", () => {
     assertNoDanglingRefs(template);
     expect(template.Resources.byoSharedFoundationAlb.Type).toBe("AWS::ElasticLoadBalancingV2::LoadBalancer");
   });
+});
+
+// The example module fixes tier="production", so the reference-existing seams
+// were only ever validated at one tier. The DNS seams (route53/acm) build only on
+// the full tiers, so a tier-specific dangling ref in the reference-existing path
+// (e.g. an output Ref-ing a certificate/hosted-zone that reference-existing never
+// creates) went uncaught. Validate the whole seam set at EVERY tier (#117).
+describe("BYO-everything example (chant#898) — shared-foundation reference-existing at every tier", () => {
+  for (const tier of ["light", "production", "production-ha"] as const) {
+    test(`${tier}: full reference-existing seam set serializes with no dangling refs and creates no zone/cert/VPC`, () => {
+      const naming: LoomNamingParams = { project: "loom", env: "prod", instance: "a", tier, region: "us-east-1", owner: "platform" };
+      const f = SharedFoundation({
+        naming,
+        network: byoFoundationParams.network,
+        kms: byoFoundationParams.kms,
+        ecr: byoFoundationParams.ecr,
+        route53: byoFoundationParams.route53,
+        acm: byoFoundationParams.acm,
+        agentRole: byoFoundationParams.agentRole,
+        domainName: byoFoundationParams.domainName,
+      });
+      const template = synthesize(`byoFoundation_${tier}`, f);
+      assertNoDanglingRefs(template);
+      const types = Object.values(template.Resources).map((r: any) => r.Type);
+      // reference-existing threads ids/ARNs through — it never provisions these,
+      // on any tier (DNS only builds on the full tiers, but referenced there too).
+      expect(types).not.toContain("AWS::Route53::HostedZone");
+      expect(types).not.toContain("AWS::CertificateManager::Certificate");
+      expect(types).not.toContain("AWS::EC2::VPC");
+    });
+  }
 });
 
 describe("BYO-everything example (chant#898) — loom-db", () => {

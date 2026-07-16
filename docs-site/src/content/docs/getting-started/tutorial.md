@@ -230,11 +230,37 @@ export LOOM_DOMAIN_NAME=loom.example.com
 export LOOM_DB_PASSWORD=<a real secret>
 ```
 
+### DNS
+
+The production tiers serve on your own domain over HTTPS, so DNS is part of the
+setup. `LOOM_DOMAIN_NAME` is always required; how the hosted zone and certificate
+are handled has two paths:
+
+- **Reference your existing zone (the common case).** Most teams already own the
+  parent domain in Route53 and want loomster to add records to it, not create a
+  new zone. Point it at your zone and a pre-validated cert:
+
+  ```
+  export LOOM_HOSTED_ZONE_ID=<your Route53 hosted zone id>
+  export LOOM_CERTIFICATE_ARN=<your ACM certificate ARN, already DNS-validated>
+  ```
+
+  loomster creates no zone or cert — it adds the ALB alias record to your zone
+  and attaches your cert to the HTTPS listener.
+
+- **Let loomster provision a new zone + cert (the default).** Set only
+  `LOOM_DOMAIN_NAME`; loomster creates a Route53 hosted zone and a DNS-validated
+  ACM cert. You then delegate that subdomain from the parent zone by adding its NS
+  records — the one manual step this path needs.
+
+Set `LOOM_ROUTE53=omit` (and `LOOM_ACM=omit`) to drop the custom domain entirely
+and serve on the ALB's own DNS name — the same thing the light tier does.
+
 `shared-foundation` fails fast with a tier-specific message if the network vars
 are missing on a production tier, rather than surfacing a generic error deep in
-synthesis. Most teams don't let an application stack provision its own VPC, ACM
-cert, or IAM roles anyway. See [Adoption](/loomster/guides/adoption/) for how
-every one of those is a `reference-existing` parameter.
+synthesis. Most teams don't let an application stack provision its own VPC, DNS
+zone, ACM cert, or IAM roles anyway. See [Adoption](/loomster/guides/adoption/)
+for how every one of those is a `reference-existing` parameter.
 
 **The apply is gated.** `.github/workflows/deploy.yml` stays inert until you opt
 in: set the repo variable `DEPLOY` to `true`, and provision a GitHub environment
