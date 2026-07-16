@@ -12,7 +12,7 @@ import { phase, stackOutput, type Component } from "@intentius/chant/components"
  * `LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS` env vars) and its ECS security
  * group: `oEcsSecurityGroupId` is threaded in as the RDS security group's
  * ingress source (chant#898 — opt in via `LOOM_DB_SOURCE_SG=true`, see
- * `../loom-db/params.ts`'s `ecsSecurityGroupId` Parameter and
+ * `../loom-db/params.ts`'s `pEcsSecurityGroupId` Parameter and
  * `../loom-db/db.ts`). Named outputs (`../loom-db/outputs.ts`) are what #889
  * (the backend ECS service) attaches to via `stackOutput("loom-db", ...)`.
  */
@@ -27,9 +27,9 @@ export const loomDb: Component = {
         stack: "loom-db",
         template: "dist/loom-db.template.json",
         inputs: {
-          vpcId: stackOutput("shared-foundation", "oVpcId"),
-          privateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
-          ecsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
+          pVpcId: stackOutput("shared-foundation", "oVpcId"),
+          pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
+          pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
         },
       },
     ]),

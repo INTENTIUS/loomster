@@ -54,7 +54,7 @@ function buildData(): DataSeam {
   return {
     mode: "provision",
     network: {
-      vpcId: Ref(params.vpcId) as unknown as string,
+      vpcId: Ref(params.pVpcId) as unknown as string,
       // `pPrivateSubnetIds`'s Ref is shared-foundation's `oPrivateSubnetIds`
       // output, joined with `SUBNET_LIST_DELIMITER` (":", not ",") — see
       // that constant's docstring for why. `explodeTwoSubnetIds` turns it
@@ -66,11 +66,11 @@ function buildData(): DataSeam {
       // after splitting, a template-level Fn::Split/Fn::Join, not a JS
       // `.join(",")` on a value `buildDbCore` can't see until deploy time
       // (see ../composites/loom-db.ts).
-      subnetIds: explodeTwoSubnetIds(Ref(params.privateSubnetIds) as unknown as string),
-      subnetIdsCsv: toCommaList(Split(SUBNET_LIST_DELIMITER, Ref(params.privateSubnetIds))) as unknown as string,
+      subnetIds: explodeTwoSubnetIds(Ref(params.pPrivateSubnetIds) as unknown as string),
+      subnetIdsCsv: toCommaList(Split(SUBNET_LIST_DELIMITER, Ref(params.pPrivateSubnetIds))) as unknown as string,
     },
     dbIngress: params.useSourceSecurityGroup
-      ? { mode: "security-group", sourceSecurityGroupId: Ref(params.ecsSecurityGroupId) as unknown as string }
+      ? { mode: "security-group", sourceSecurityGroupId: Ref(params.pEcsSecurityGroupId) as unknown as string }
       : { mode: "cidr", cidr: params.allowedCidr },
     dbName: params.dbName,
     dbUsername: params.dbUsername,
