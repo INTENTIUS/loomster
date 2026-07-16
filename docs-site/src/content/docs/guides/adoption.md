@@ -49,6 +49,33 @@ resolve to the same pool id. Provisioning one pool per instance
 (`identity: provision`, the default) remains right for a single greenfield
 boundary.
 
+## Seeding the app, not just the infrastructure
+
+The seams above get the *infrastructure* right. A deployed Loom also has to be
+*usable*, and that's a separate layer: Loom's own database seeds almost nothing,
+so a fresh deploy's Security screen has no role or authorizer and no agent can be
+created. `loom-seed` closes that by registering what loomster provisioned into
+Loom's app database, through Loom's own API — an imported agent role, a Cognito
+authorizer, a `loomster` tag profile. On a real deploy the default profile is
+`foundation` (that floor, and nothing billable); `light`/local defaults to `demo`
+(also a sample agent, memory, MCP, and A2A). Run it against the deployed app:
+
+```
+LOOM_API_BASE_URL=https://<your-loom> npm run seed
+```
+
+Two things are deliberately never seeded, both because seeding them would break
+or mislead: an **identity provider** (it flips Loom out of its dev-auth bypass
+and locks a local deploy) and any **demo content on production tiers** (billable
+resources). See [Screens](/loomster/reference/screens/) for the per-screen detail
+and [Seeded defaults](/loomster/reference/seeding/) for the profiles.
+
+This is a different thing from the **Cognito demo seed** in the matrix below
+(`loom-cognito`'s `groups` / demo seed row): that's Loom's upstream 12 groups and
+22 demo *users*, which loomster never defaults in — you bring your own org
+structure. `loom-seed` populates the *application* database (roles, authorizers,
+catalog); the Cognito seed would populate the *identity* pool.
+
 ## The matrix
 
 | Composite | Seam | Options | Default | What replacing it requires |
