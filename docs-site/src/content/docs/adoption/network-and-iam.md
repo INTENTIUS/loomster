@@ -36,11 +36,10 @@ outputs, so you set them once.
 IAM is first-class reference-existing across the board:
 
 - **`shared-foundation`'s `agentRole`** — the AgentCore execution role, scoped to
-  that stack's own artifact bucket, ECR KMS, and logs. `provision | reference-existing | omit`
-  at the composite level; hand over `agentRoleArn` to use the least-privilege role a
-  security team already built. `src/examples/byo/` wires it, though the standard
-  deployable doesn't yet expose it as a `LOOM_*` env var (the same wiring the DNS
-  seams just got — a small follow-up).
+  that stack's own artifact bucket, ECR KMS, and logs. `provision | reference-existing | omit`.
+  Set `LOOM_AGENT_ROLE_ARN` to hand over the least-privilege role a security team
+  already built (`LOOM_AGENT_ROLE=omit` drops it). `src/examples/byo/` wires it at
+  the composite level; the deployable reads the env var (#120).
 - **`loom-backend`'s execution + task roles** — `provision | reference-existing`
   via `LOOM_BACKEND_EXECUTION_ROLE_ARN` / `LOOM_BACKEND_TASK_ROLE_ARN`. A referenced
   execution role needs ECR-pull + logs-write; the task role needs whatever the app

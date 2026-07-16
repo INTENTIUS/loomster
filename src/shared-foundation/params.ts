@@ -6,7 +6,7 @@
  */
 
 import type { LoomNamingParams, Tier } from "../lib/naming";
-import type { Route53Seam, AcmSeam } from "../composites/shared-foundation";
+import type { Route53Seam, AcmSeam, KmsSeam, EcrSeam, AgentRoleSeam } from "../composites/shared-foundation";
 
 const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
 
@@ -60,6 +60,60 @@ export function resolveAcm(certificateArn: string | undefined, mode: string | un
   return undefined;
 }
 export const acm = resolveAcm(process.env.LOOM_CERTIFICATE_ARN, process.env.LOOM_ACM);
+
+/**
+ * KMS seam (#120). `LOOM_KMS_KEY_ARN` references an existing key (used to encrypt
+ * the ECR repos); `LOOM_KMS=omit` drops it. Unset → the composite's provision
+ * default. Same shape as the DNS seams above.
+ */
+export function resolveKms(kmsKeyArn: string | undefined, mode: string | undefined): KmsSeam | undefined {
+  if (kmsKeyArn) return { mode: "reference-existing", kmsKeyArn };
+  if (mode === "omit") return { mode: "omit" };
+  if (mode === "provision") return { mode: "provision" };
+  return undefined;
+}
+export const kms = resolveKms(process.env.LOOM_KMS_KEY_ARN, process.env.LOOM_KMS);
+
+/**
+ * ECR seam (#120). Referencing existing repos needs all four ids
+ * (`LOOM_FRONTEND_REPOSITORY_URI`/`_ARN`, `LOOM_BACKEND_REPOSITORY_URI`/`_ARN`);
+ * a partial set is ignored rather than half-wired. `LOOM_ECR=omit` drops the
+ * repos. Unset → the composite's provision default.
+ */
+export function resolveEcr(
+  frontendUri: string | undefined,
+  frontendArn: string | undefined,
+  backendUri: string | undefined,
+  backendArn: string | undefined,
+  mode: string | undefined,
+): EcrSeam | undefined {
+  if (frontendUri && frontendArn && backendUri && backendArn) {
+    return { mode: "reference-existing", frontendRepositoryUri: frontendUri, frontendRepositoryArn: frontendArn, backendRepositoryUri: backendUri, backendRepositoryArn: backendArn };
+  }
+  if (mode === "omit") return { mode: "omit" };
+  if (mode === "provision") return { mode: "provision" };
+  return undefined;
+}
+export const ecr = resolveEcr(
+  process.env.LOOM_FRONTEND_REPOSITORY_URI,
+  process.env.LOOM_FRONTEND_REPOSITORY_ARN,
+  process.env.LOOM_BACKEND_REPOSITORY_URI,
+  process.env.LOOM_BACKEND_REPOSITORY_ARN,
+  process.env.LOOM_ECR,
+);
+
+/**
+ * Agent execution role seam (#120). `LOOM_AGENT_ROLE_ARN` references the
+ * least-privilege AgentCore role a security team already built; `LOOM_AGENT_ROLE=omit`
+ * drops it. Unset → the composite's provision default.
+ */
+export function resolveAgentRole(agentRoleArn: string | undefined, mode: string | undefined): AgentRoleSeam | undefined {
+  if (agentRoleArn) return { mode: "reference-existing", agentRoleArn };
+  if (mode === "omit") return { mode: "omit" };
+  if (mode === "provision") return { mode: "provision" };
+  return undefined;
+}
+export const agentRole = resolveAgentRole(process.env.LOOM_AGENT_ROLE_ARN, process.env.LOOM_AGENT_ROLE);
 
 /** CIDR allowed to reach the ALB. Falls back to the composite's own default (0.0.0.0/0) when unset. */
 export const albIngressCidr = process.env.LOOM_ALB_INGRESS_CIDR;

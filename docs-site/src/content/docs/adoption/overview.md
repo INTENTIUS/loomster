@@ -28,11 +28,11 @@ Every seam, its options, its default, and what replacing it requires.
 | Composite | Seam | Options | Default | What replacing it requires |
 |---|---|---|---|---|
 | `shared-foundation` | `network` | `provision` \| `reference-existing` | `provision` (light-tier scaffolding only; `production` / `production-ha` require `reference-existing`) | `vpcId`, `publicSubnetIds` (≥2, across 2 AZs), `privateSubnetIds` (required once PrivateLink is in play) |
-| `shared-foundation` | `kms` | `provision` \| `reference-existing` \| `omit` | `provision` | `kmsKeyArn` — used to encrypt the two ECR repos when `ecr` is also present |
-| `shared-foundation` | `ecr` | `provision` \| `reference-existing` \| `omit` | `provision` | `frontendRepositoryUri`/`Arn`, `backendRepositoryUri`/`Arn` |
+| `shared-foundation` | `kms` | `provision` \| `reference-existing` \| `omit` | `provision` | `LOOM_KMS_KEY_ARN` → an existing key (encrypts the two ECR repos); `LOOM_KMS=omit` drops it |
+| `shared-foundation` | `ecr` | `provision` \| `reference-existing` \| `omit` | `provision` | all four of `LOOM_FRONTEND_REPOSITORY_URI`/`_ARN`, `LOOM_BACKEND_REPOSITORY_URI`/`_ARN` (a partial set is ignored); `LOOM_ECR=omit` drops the repos |
 | `shared-foundation` | `route53` | `provision` \| `reference-existing` \| `omit` | `provision` (production / production-ha only; unused on light) | `LOOM_HOSTED_ZONE_ID` → the existing zone's id (loomster adds the alias record, creates no zone); `LOOM_ROUTE53=omit` drops DNS |
 | `shared-foundation` | `acm` | `provision` \| `reference-existing` \| `omit` | `provision` (production / production-ha only) | `LOOM_CERTIFICATE_ARN` → an already-DNS-validated cert; `LOOM_ACM=omit` drops HTTPS |
-| `shared-foundation` | `agentRole` | `provision` \| `reference-existing` \| `omit` | `provision` | `agentRoleArn` — the least-privilege AgentCore execution role a security team already built |
+| `shared-foundation` | `agentRole` | `provision` \| `reference-existing` \| `omit` | `provision` | `LOOM_AGENT_ROLE_ARN` → the least-privilege AgentCore execution role a security team already built; `LOOM_AGENT_ROLE=omit` drops it |
 | `shared-foundation` | `loggingBucketName` | reference-existing \| unset | unset (no access logging) | An existing S3 bucket for ALB/NLB + artifact-bucket access logs — Loom never creates this bucket itself |
 | `shared-foundation` | `privateLink` | `provision` \| `omit` | `provision` on production / production-ha, `omit` on light (both overridable) | `privateLink.mode` — `omit` drops the NLB + VPC endpoint service on production; `provision` (with private subnets supplied) adds it on any tier |
 | `loom-db` | `data` | `provision` \| `reference-existing` \| `omit` | `provision` | `endpoint`, `credentialsSecretArn`, optionally `connectionSecretArn`/`port`/`dbName` — an externally-managed Postgres endpoint (RDS, Aurora, or otherwise) |
