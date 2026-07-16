@@ -89,6 +89,11 @@ gitlab-runtime-e2e:
 github-runtime-e2e:
     bash test/github-runtime-e2e.sh
 
+# Run the chant-generated Forgejo Actions workflow in Docker (act; on-demand,
+# needs Docker + act) — see test/forgejo-runtime-e2e.sh. Not part of `check`.
+forgejo-runtime-e2e:
+    bash test/forgejo-runtime-e2e.sh
+
 # Everything CI-relevant.
 check: build lint test
 
