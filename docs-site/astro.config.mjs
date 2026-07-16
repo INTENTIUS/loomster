@@ -23,6 +23,8 @@ export default defineConfig({
 					items: [
 						{ label: 'Adoption', slug: 'guides/adoption' },
 						{ label: 'Run Loom on your laptop', slug: 'guides/local' },
+						{ label: 'CI providers', slug: 'guides/ci' },
+						{ label: 'Backup & restore', slug: 'guides/backup-restore' },
 					],
 				},
 				{
