@@ -17,18 +17,26 @@ and an agent can run them for you.
 
 ## Drive it with your agent
 
-This repo is meant to be operated by an agent from the first command. Two things
-make that work:
+Clone the repo and your agent already knows how to operate it:
 
-- A **loomster skill** (`skills/loomster/SKILL.md`) — the capability map: every
-  lifecycle verb (deploy, seed, validate, back up, reconcile, tear down), the golden
-  paths, and the guardrails that keep a deploy from locking itself out.
+```
+git clone https://github.com/INTENTIUS/loomster
+cd loomster && npm install
+```
+
+The commands run from here, and two things are already wired in the checkout:
+
+- A **loomster skill** (`skills/loomster/SKILL.md`) — the capability map an agent
+  reads on its own: every lifecycle verb (deploy, seed, validate, back up, reconcile,
+  tear down), the golden paths, and the guardrails that keep a deploy from locking
+  itself out.
 - **chant's MCP server** — `chant serve mcp` (stdio) exposes `build`, `lint`,
-  `list`, `describe`, `diff`, and the Op tools. Point your agent at it to inspect and
-  build the graph directly.
+  `list`, `describe`, `diff`, and the Op tools, for inspecting and building the graph
+  directly.
 
-Ask your agent to "stand up Loom locally" or "deploy the light tier and validate
-it," and the skill tells it which commands to run and what not to touch.
+Once you're in the checkout, ask your agent to "stand up Loom locally" or "deploy
+the light tier and validate it" — the skill tells it which commands to run and what
+not to touch.
 
 ## Where it runs today
 
