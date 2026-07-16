@@ -1,0 +1,2627 @@
+{
+  "artifacts": {
+    "image/000000000000.dkr.ecr.us-east-1.localhost:5100/alb-api:latest": {
+      "attributes": {
+        "repository": "000000000000.dkr.ecr.us-east-1.localhost:5100/alb-api",
+        "size": "10.5MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-08 21:54:58 -0600 MDT",
+      "physicalId": "9be99f25eb81",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/000000000000.dkr.ecr.us-east-1.localhost:5100/alb-ui:latest": {
+      "attributes": {
+        "repository": "000000000000.dkr.ecr.us-east-1.localhost:5100/alb-ui",
+        "size": "10.5MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-08 21:54:58 -0600 MDT",
+      "physicalId": "9be99f25eb81",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/000000000000.dkr.ecr.us-east-1.localhost:5100/loom-dev-a-shared-foundation-backend:latest": {
+      "attributes": {
+        "repository": "000000000000.dkr.ecr.us-east-1.localhost:5100/loom-dev-a-shared-foundation-backend",
+        "size": "289MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:11:42 -0600 MDT",
+      "physicalId": "226da8d64b73",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/000000000000.dkr.ecr.us-east-1.localhost:5100/loom-dev-a-shared-foundation-frontend:latest": {
+      "attributes": {
+        "repository": "000000000000.dkr.ecr.us-east-1.localhost:5100/loom-dev-a-shared-foundation-frontend",
+        "size": "71.8MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:12:16 -0600 MDT",
+      "physicalId": "9b9af59ab42f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/000000000000.dkr.ecr.us-east-1.localhost:5100/loom-local-a-shared-foundation-backend:latest": {
+      "attributes": {
+        "repository": "000000000000.dkr.ecr.us-east-1.localhost:5100/loom-local-a-shared-foundation-backend",
+        "size": "289MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:11:42 -0600 MDT",
+      "physicalId": "226da8d64b73",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/000000000000.dkr.ecr.us-east-1.localhost:5100/loom-local-a-shared-foundation-frontend:latest": {
+      "attributes": {
+        "repository": "000000000000.dkr.ecr.us-east-1.localhost:5100/loom-local-a-shared-foundation-frontend",
+        "size": "71.8MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:12:16 -0600 MDT",
+      "physicalId": "9b9af59ab42f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/354867293429.dkr.ecr.us-east-1.amazonaws.com/molab-control-plane:cloudfix1": {
+      "attributes": {
+        "repository": "354867293429.dkr.ecr.us-east-1.amazonaws.com/molab-control-plane",
+        "size": "225MB",
+        "tag": "cloudfix1"
+      },
+      "lastUpdated": "2026-06-07 20:52:40 -0600 MDT",
+      "physicalId": "e7d8472b2b51",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/354867293429.dkr.ecr.us-east-1.amazonaws.com/molab-control-plane:latest": {
+      "attributes": {
+        "repository": "354867293429.dkr.ecr.us-east-1.amazonaws.com/molab-control-plane",
+        "size": "413MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-25 10:34:51 -0600 MDT",
+      "physicalId": "430e1ad009ea",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/354867293429.dkr.ecr.us-east-1.amazonaws.com/molab-kernel:cuda-amd64": {
+      "attributes": {
+        "repository": "354867293429.dkr.ecr.us-east-1.amazonaws.com/molab-kernel",
+        "size": "6.31GB",
+        "tag": "cuda-amd64"
+      },
+      "lastUpdated": "2026-06-25 10:11:25 -0600 MDT",
+      "physicalId": "c5c540604f80",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/354867293429.dkr.ecr.us-east-2.amazonaws.com/loom-e2e-a-shared-foundation-frontend:latest": {
+      "attributes": {
+        "repository": "354867293429.dkr.ecr.us-east-2.amazonaws.com/loom-e2e-a-shared-foundation-frontend",
+        "size": "71.8MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:12:16 -0600 MDT",
+      "physicalId": "9b9af59ab42f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/alpine:3.20": {
+      "attributes": {
+        "repository": "alpine",
+        "size": "8.82MB",
+        "tag": "3.20"
+      },
+      "lastUpdated": "2026-04-16 17:53:24 -0600 MDT",
+      "physicalId": "ab3fe4defd29",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/blacklight-e2e:latest": {
+      "attributes": {
+        "repository": "blacklight-e2e",
+        "size": "803MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-17 22:21:42 -0600 MDT",
+      "physicalId": "d3ab863ef4b2",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/busybox:latest": {
+      "attributes": {
+        "repository": "busybox",
+        "size": "4.17MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-05-12 20:21:49 -0600 MDT",
+      "physicalId": "e0e8b3cbfed6",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/caddy:2.8": {
+      "attributes": {
+        "repository": "caddy",
+        "size": "49.3MB",
+        "tag": "2.8"
+      },
+      "lastUpdated": "2024-06-04 16:12:59 -0600 MDT",
+      "physicalId": "5b8bf58dbe5e",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/chant-build/api.tar:latest": {
+      "attributes": {
+        "repository": "chant-build/api.tar",
+        "size": "10.5MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-08 21:54:58 -0600 MDT",
+      "physicalId": "9be99f25eb81",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/chant-build/archive:latest": {
+      "attributes": {
+        "repository": "chant-build/archive",
+        "size": "71.8MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:12:16 -0600 MDT",
+      "physicalId": "9b9af59ab42f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/chant-build/ui.tar:latest": {
+      "attributes": {
+        "repository": "chant-build/ui.tar",
+        "size": "10.5MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-08 21:54:58 -0600 MDT",
+      "physicalId": "9be99f25eb81",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/chant-smoke-npm:latest": {
+      "attributes": {
+        "repository": "chant-smoke-npm",
+        "size": "1.54GB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-11 22:54:04 -0600 MDT",
+      "physicalId": "0e82e98515bc",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/cockroachdb/cockroach:latest": {
+      "attributes": {
+        "repository": "cockroachdb/cockroach",
+        "size": "483MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-05-27 11:49:52 -0600 MDT",
+      "physicalId": "5ee2132a65a9",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/cockroachdb/cockroach:v26.2.1": {
+      "attributes": {
+        "repository": "cockroachdb/cockroach",
+        "size": "483MB",
+        "tag": "v26.2.1"
+      },
+      "lastUpdated": "2026-05-27 11:49:52 -0600 MDT",
+      "physicalId": "5ee2132a65a9",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/codeberg.org/forgejo/forgejo:11": {
+      "attributes": {
+        "repository": "codeberg.org/forgejo/forgejo",
+        "size": "182MB",
+        "tag": "11"
+      },
+      "lastUpdated": "2026-06-09 22:28:40 -0600 MDT",
+      "physicalId": "0048206c532f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/firecow/gitlab-ci-local-util:latest": {
+      "attributes": {
+        "repository": "firecow/gitlab-ci-local-util",
+        "size": "75.2MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2023-04-09 09:13:48 -0600 MDT",
+      "physicalId": "6aba5d210b97",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/floci/floci-az:latest": {
+      "attributes": {
+        "repository": "floci/floci-az",
+        "size": "305MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-25 22:41:34 -0600 MDT",
+      "physicalId": "79bb5f9b368d",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/floci/floci-gcp:latest": {
+      "attributes": {
+        "repository": "floci/floci-gcp",
+        "size": "408MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-25 23:02:18 -0600 MDT",
+      "physicalId": "57602b179836",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/floci/floci:1.5.22": {
+      "attributes": {
+        "repository": "floci/floci",
+        "size": "422MB",
+        "tag": "1.5.22"
+      },
+      "lastUpdated": "2026-06-04 00:48:44 -0600 MDT",
+      "physicalId": "e6151187d50b",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/floci/floci:1.5.30": {
+      "attributes": {
+        "repository": "floci/floci",
+        "size": "511MB",
+        "tag": "1.5.30"
+      },
+      "lastUpdated": "2026-07-03 01:07:35 -0600 MDT",
+      "physicalId": "6e05b82a47ea",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/floci/floci:latest": {
+      "attributes": {
+        "repository": "floci/floci",
+        "size": "511MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-03 01:07:35 -0600 MDT",
+      "physicalId": "6e05b82a47ea",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/fsouza/fake-gcs-server:latest": {
+      "attributes": {
+        "repository": "fsouza/fake-gcs-server",
+        "size": "55.4MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-02-13 22:20:12 -0700 MST",
+      "physicalId": "7f700ff13892",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/mudflaps:0.1.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/mudflaps",
+        "size": "7.91MB",
+        "tag": "0.1.0"
+      },
+      "lastUpdated": "2026-07-10 18:47:50 -0600 MDT",
+      "physicalId": "6e650b6e2b85",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/mudflaps:0.2.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/mudflaps",
+        "size": "7.91MB",
+        "tag": "0.2.0"
+      },
+      "lastUpdated": "2026-07-10 21:36:22 -0600 MDT",
+      "physicalId": "99d3a2ca96d6",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/mudflaps:0.3.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/mudflaps",
+        "size": "8.04MB",
+        "tag": "0.3.0"
+      },
+      "lastUpdated": "2026-07-10 22:06:46 -0600 MDT",
+      "physicalId": "0f2d14ddcaf9",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/mudflaps:0.3.1": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/mudflaps",
+        "size": "8.04MB",
+        "tag": "0.3.1"
+      },
+      "lastUpdated": "2026-07-11 22:33:09 -0600 MDT",
+      "physicalId": "bf2eaea60c43",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/mudflaps:0.4.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/mudflaps",
+        "size": "8.04MB",
+        "tag": "0.4.0"
+      },
+      "lastUpdated": "2026-07-12 11:23:41 -0600 MDT",
+      "physicalId": "d690d90c9ed3",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/mudflaps:0.4.1": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/mudflaps",
+        "size": "8.04MB",
+        "tag": "0.4.1"
+      },
+      "lastUpdated": "2026-07-13 22:39:56 -0600 MDT",
+      "physicalId": "6ea287e9ff1f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/spritzer:0.1.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/spritzer",
+        "size": "8.11MB",
+        "tag": "0.1.0"
+      },
+      "lastUpdated": "2026-07-11 17:19:11 -0600 MDT",
+      "physicalId": "69a57dc2a4c5",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/spritzer:0.2.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/spritzer",
+        "size": "8.11MB",
+        "tag": "0.2.0"
+      },
+      "lastUpdated": "2026-07-11 18:02:38 -0600 MDT",
+      "physicalId": "4eafd883bd8c",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/spritzer:0.3.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/spritzer",
+        "size": "8.31MB",
+        "tag": "0.3.0"
+      },
+      "lastUpdated": "2026-07-11 20:35:24 -0600 MDT",
+      "physicalId": "bf59efad1afa",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/spritzer:0.3.1": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/spritzer",
+        "size": "8.31MB",
+        "tag": "0.3.1"
+      },
+      "lastUpdated": "2026-07-11 23:14:28 -0600 MDT",
+      "physicalId": "e2898c6830b2",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/spritzer:0.4.0": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/spritzer",
+        "size": "8.37MB",
+        "tag": "0.4.0"
+      },
+      "lastUpdated": "2026-07-13 19:05:39 -0600 MDT",
+      "physicalId": "f9e0f1a4ccd8",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/intentius/spritzer:0.4.1": {
+      "attributes": {
+        "repository": "ghcr.io/intentius/spritzer",
+        "size": "8.37MB",
+        "tag": "0.4.1"
+      },
+      "lastUpdated": "2026-07-13 23:01:45 -0600 MDT",
+      "physicalId": "e259c0469073",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/k3d-io/k3d-proxy:5.8.3": {
+      "attributes": {
+        "repository": "ghcr.io/k3d-io/k3d-proxy",
+        "size": "63.3MB",
+        "tag": "5.8.3"
+      },
+      "lastUpdated": "2025-02-15 12:30:34 -0700 MST",
+      "physicalId": "fba83c70c5de",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/ghcr.io/k3d-io/k3d-tools:5.8.3": {
+      "attributes": {
+        "repository": "ghcr.io/k3d-io/k3d-tools",
+        "size": "23.5MB",
+        "tag": "5.8.3"
+      },
+      "lastUpdated": "2025-02-15 12:19:11 -0700 MST",
+      "physicalId": "bff9734c3d65",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/gitlab/gitlab-ce:17.11.0-ce.0": {
+      "attributes": {
+        "repository": "gitlab/gitlab-ce",
+        "size": "3.71GB",
+        "tag": "17.11.0-ce.0"
+      },
+      "lastUpdated": "2025-04-15 23:30:26 -0600 MDT",
+      "physicalId": "e35105c0c1ab",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/localstack/localstack:latest": {
+      "attributes": {
+        "repository": "localstack/localstack",
+        "size": "1.24GB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-01 00:33:12 -0600 MDT",
+      "physicalId": "8e93e8924e88",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/loom-local-backend:latest": {
+      "attributes": {
+        "repository": "loom-local-backend",
+        "size": "289MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:11:42 -0600 MDT",
+      "physicalId": "226da8d64b73",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/loom-local-frontend:latest": {
+      "attributes": {
+        "repository": "loom-local-frontend",
+        "size": "71.8MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:12:16 -0600 MDT",
+      "physicalId": "9b9af59ab42f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/loomster-backend-validate:latest": {
+      "attributes": {
+        "repository": "loomster-backend-validate",
+        "size": "289MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:11:42 -0600 MDT",
+      "physicalId": "226da8d64b73",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/loomster-frontend-validate:latest": {
+      "attributes": {
+        "repository": "loomster-frontend-validate",
+        "size": "71.8MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-07-15 09:12:16 -0600 MDT",
+      "physicalId": "9b9af59ab42f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/mcr.microsoft.com/azure-storage/azurite:latest": {
+      "attributes": {
+        "repository": "mcr.microsoft.com/azure-storage/azurite",
+        "size": "265MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2025-07-31 02:36:03 -0600 MDT",
+      "physicalId": "0245d36a4d06",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/memcached:1.6": {
+      "attributes": {
+        "repository": "memcached",
+        "size": "107MB",
+        "tag": "1.6"
+      },
+      "lastUpdated": "2026-07-13 19:25:06 -0600 MDT",
+      "physicalId": "1eb39e013eee",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/minio/mc:latest": {
+      "attributes": {
+        "repository": "minio/mc",
+        "size": "82.3MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2025-09-06 22:06:54 -0600 MDT",
+      "physicalId": "5dee113ef037",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/minio/minio:latest": {
+      "attributes": {
+        "repository": "minio/minio",
+        "size": "167MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2025-09-07 12:44:27 -0600 MDT",
+      "physicalId": "8f08aee61480",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/molab/control-plane:dev": {
+      "attributes": {
+        "repository": "molab/control-plane",
+        "size": "438MB",
+        "tag": "dev"
+      },
+      "lastUpdated": "2026-06-23 18:51:50 -0600 MDT",
+      "physicalId": "2b4222008f50",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/molab/kernel:dev": {
+      "attributes": {
+        "repository": "molab/kernel",
+        "size": "1.62GB",
+        "tag": "dev"
+      },
+      "lastUpdated": "2026-06-23 18:51:48 -0600 MDT",
+      "physicalId": "5b3c9d6e28fc",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/mongo:7.0": {
+      "attributes": {
+        "repository": "mongo",
+        "size": "828MB",
+        "tag": "7.0"
+      },
+      "lastUpdated": "2026-07-01 20:30:42 -0600 MDT",
+      "physicalId": "525ab710fa91",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/neo4j:2026.05.0-enterprise": {
+      "attributes": {
+        "repository": "neo4j",
+        "size": "813MB",
+        "tag": "2026.05.0-enterprise"
+      },
+      "lastUpdated": "2026-07-01 23:28:03 -0600 MDT",
+      "physicalId": "89c7df605e06",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/neo4j:5-community": {
+      "attributes": {
+        "repository": "neo4j",
+        "size": "612MB",
+        "tag": "5-community"
+      },
+      "lastUpdated": "2026-07-15 19:16:54 -0600 MDT",
+      "physicalId": "846cea23f484",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "181MB",
+        "tag": "1"
+      },
+      "lastUpdated": "2026-07-13 19:22:40 -0600 MDT",
+      "physicalId": "148c6275deb5",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "61.6MB",
+        "tag": "1-alpine"
+      },
+      "lastUpdated": "2026-06-22 14:53:00 -0600 MDT",
+      "physicalId": "92271ec46f10",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "106MB",
+        "tag": "1-alpine-otel"
+      },
+      "lastUpdated": "2026-06-22 15:53:02 -0600 MDT",
+      "physicalId": "f377fe4ed692",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "104MB",
+        "tag": "1-alpine-perl"
+      },
+      "lastUpdated": "2026-06-22 15:53:00 -0600 MDT",
+      "physicalId": "74b7e4d048eb",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "13.2MB",
+        "tag": "1-alpine-slim"
+      },
+      "lastUpdated": "2026-06-22 13:47:12 -0600 MDT",
+      "physicalId": "229196427c33",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.17": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "40.9MB",
+        "tag": "1-alpine3.17"
+      },
+      "lastUpdated": "2023-08-08 18:55:33 -0600 MDT",
+      "physicalId": "7987e0c18af0",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.17-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "78.2MB",
+        "tag": "1-alpine3.17-perl"
+      },
+      "lastUpdated": "2023-08-08 18:55:38 -0600 MDT",
+      "physicalId": "524f4b8c04df",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.17-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "12.2MB",
+        "tag": "1-alpine3.17-slim"
+      },
+      "lastUpdated": "2023-08-08 18:55:14 -0600 MDT",
+      "physicalId": "6b197828d80e",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.18": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "43.6MB",
+        "tag": "1-alpine3.18"
+      },
+      "lastUpdated": "2024-02-14 11:24:57 -0700 MST",
+      "physicalId": "b8c82647e8a2",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.18-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "65.3MB",
+        "tag": "1-alpine3.18-otel"
+      },
+      "lastUpdated": "2024-03-19 14:00:07 -0600 MDT",
+      "physicalId": "df3c1786fbc3",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.18-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "81MB",
+        "tag": "1-alpine3.18-perl"
+      },
+      "lastUpdated": "2024-02-14 11:24:57 -0700 MST",
+      "physicalId": "df00cb9b69ea",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.18-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "12.6MB",
+        "tag": "1-alpine3.18-slim"
+      },
+      "lastUpdated": "2024-02-14 11:24:57 -0700 MST",
+      "physicalId": "9a880fb5278e",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.19": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "44.8MB",
+        "tag": "1-alpine3.19"
+      },
+      "lastUpdated": "2024-06-20 18:41:06 -0600 MDT",
+      "physicalId": "d7cd33d7d4ed",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.19-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "54.5MB",
+        "tag": "1-alpine3.19-otel"
+      },
+      "lastUpdated": "2024-06-20 18:41:06 -0600 MDT",
+      "physicalId": "622b013fcc44",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.19-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "84.2MB",
+        "tag": "1-alpine3.19-perl"
+      },
+      "lastUpdated": "2024-06-20 18:41:06 -0600 MDT",
+      "physicalId": "99e12e2a31dc",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.19-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "12.7MB",
+        "tag": "1-alpine3.19-slim"
+      },
+      "lastUpdated": "2024-06-20 18:41:06 -0600 MDT",
+      "physicalId": "d6b22a42f838",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.20": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "50.9MB",
+        "tag": "1-alpine3.20"
+      },
+      "lastUpdated": "2024-11-26 11:42:08 -0700 MST",
+      "physicalId": "f9d642c42f7b",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.20-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "60.6MB",
+        "tag": "1-alpine3.20-otel"
+      },
+      "lastUpdated": "2024-11-26 11:42:08 -0700 MST",
+      "physicalId": "e70bd5d35774",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.20-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "90.3MB",
+        "tag": "1-alpine3.20-perl"
+      },
+      "lastUpdated": "2024-11-26 11:42:08 -0700 MST",
+      "physicalId": "d3d6bb35ab0a",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.20-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "13.2MB",
+        "tag": "1-alpine3.20-slim"
+      },
+      "lastUpdated": "2024-11-26 11:42:08 -0700 MST",
+      "physicalId": "5e5e3a275a34",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.21": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "49.7MB",
+        "tag": "1-alpine3.21"
+      },
+      "lastUpdated": "2025-04-16 08:50:31 -0600 MDT",
+      "physicalId": "96868d9fa38f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.21-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "86.4MB",
+        "tag": "1-alpine3.21-otel"
+      },
+      "lastUpdated": "2025-04-16 09:01:48 -0600 MDT",
+      "physicalId": "653d807060c9",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.21-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "89.9MB",
+        "tag": "1-alpine3.21-perl"
+      },
+      "lastUpdated": "2025-04-16 08:50:31 -0600 MDT",
+      "physicalId": "cb28a920b4ef",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.21-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "12.3MB",
+        "tag": "1-alpine3.21-slim"
+      },
+      "lastUpdated": "2025-04-16 08:50:31 -0600 MDT",
+      "physicalId": "c56f44011a32",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.22": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "53.4MB",
+        "tag": "1-alpine3.22"
+      },
+      "lastUpdated": "2025-10-28 17:10:10 -0600 MDT",
+      "physicalId": "cbad6347cca2",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.22-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "91.4MB",
+        "tag": "1-alpine3.22-otel"
+      },
+      "lastUpdated": "2025-10-28 18:11:06 -0600 MDT",
+      "physicalId": "b2e4a2f82afa",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.22-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "93.6MB",
+        "tag": "1-alpine3.22-perl"
+      },
+      "lastUpdated": "2025-10-28 18:10:49 -0600 MDT",
+      "physicalId": "6e576aaa3acb",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.22-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "12.9MB",
+        "tag": "1-alpine3.22-slim"
+      },
+      "lastUpdated": "2025-10-28 16:42:19 -0600 MDT",
+      "physicalId": "05ac16c28522",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.23": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "61.6MB",
+        "tag": "1-alpine3.23"
+      },
+      "lastUpdated": "2026-06-22 14:53:00 -0600 MDT",
+      "physicalId": "92271ec46f10",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.23-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "106MB",
+        "tag": "1-alpine3.23-otel"
+      },
+      "lastUpdated": "2026-06-22 15:53:02 -0600 MDT",
+      "physicalId": "f377fe4ed692",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.23-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "104MB",
+        "tag": "1-alpine3.23-perl"
+      },
+      "lastUpdated": "2026-06-22 15:53:00 -0600 MDT",
+      "physicalId": "74b7e4d048eb",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-alpine3.23-slim": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "13.2MB",
+        "tag": "1-alpine3.23-slim"
+      },
+      "lastUpdated": "2026-06-22 13:47:12 -0600 MDT",
+      "physicalId": "229196427c33",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-bookworm": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "198MB",
+        "tag": "1-bookworm"
+      },
+      "lastUpdated": "2025-08-13 10:34:01 -0600 MDT",
+      "physicalId": "0777d15d89ec",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-bookworm-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "206MB",
+        "tag": "1-bookworm-otel"
+      },
+      "lastUpdated": "2025-08-13 10:34:01 -0600 MDT",
+      "physicalId": "c76ea880fab1",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-bookworm-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "248MB",
+        "tag": "1-bookworm-perl"
+      },
+      "lastUpdated": "2025-08-13 10:34:01 -0600 MDT",
+      "physicalId": "8d229011f9cd",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-bullseye": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "135MB",
+        "tag": "1-bullseye"
+      },
+      "lastUpdated": "2023-06-12 22:35:29 -0600 MDT",
+      "physicalId": "17868f7231bc",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-bullseye-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "182MB",
+        "tag": "1-bullseye-perl"
+      },
+      "lastUpdated": "2023-06-12 22:35:42 -0600 MDT",
+      "physicalId": "a2c3d2605e5b",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "189MB",
+        "tag": "1-otel"
+      },
+      "lastUpdated": "2026-07-13 20:33:56 -0600 MDT",
+      "physicalId": "866b23467e26",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "234MB",
+        "tag": "1-perl"
+      },
+      "lastUpdated": "2026-07-13 20:33:58 -0600 MDT",
+      "physicalId": "a6c154d626cb",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-trixie": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "181MB",
+        "tag": "1-trixie"
+      },
+      "lastUpdated": "2026-07-13 19:22:40 -0600 MDT",
+      "physicalId": "148c6275deb5",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-trixie-otel": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "189MB",
+        "tag": "1-trixie-otel"
+      },
+      "lastUpdated": "2026-07-13 20:33:56 -0600 MDT",
+      "physicalId": "866b23467e26",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1-trixie-perl": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "234MB",
+        "tag": "1-trixie-perl"
+      },
+      "lastUpdated": "2026-07-13 20:33:58 -0600 MDT",
+      "physicalId": "a6c154d626cb",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1.10": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "182MB",
+        "tag": "1.10"
+      },
+      "lastUpdated": "2017-03-27 13:48:34 -0600 MDT",
+      "physicalId": "0346349a1a64",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1.10-alpine": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "54MB",
+        "tag": "1.10-alpine"
+      },
+      "lastUpdated": "2017-03-03 15:03:51 -0700 MST",
+      "physicalId": "f94d6dd9b576",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:1.27-alpine": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "49.7MB",
+        "tag": "1.27-alpine"
+      },
+      "lastUpdated": "2025-04-16 08:50:31 -0600 MDT",
+      "physicalId": "96868d9fa38f",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/nginx:alpine": {
+      "attributes": {
+        "repository": "nginx",
+        "size": "61.6MB",
+        "tag": "alpine"
+      },
+      "lastUpdated": "2026-06-22 14:53:00 -0600 MDT",
+      "physicalId": "92271ec46f10",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/node:22": {
+      "attributes": {
+        "repository": "node",
+        "size": "1.13GB",
+        "tag": "22"
+      },
+      "lastUpdated": "2026-07-13 22:21:17 -0600 MDT",
+      "physicalId": "466e07e7ea13",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/node:22-slim": {
+      "attributes": {
+        "repository": "node",
+        "size": "247MB",
+        "tag": "22-slim"
+      },
+      "lastUpdated": "2026-07-13 19:51:48 -0600 MDT",
+      "physicalId": "28394edeaf04",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/postgres:15-alpine": {
+      "attributes": {
+        "repository": "postgres",
+        "size": "286MB",
+        "tag": "15-alpine"
+      },
+      "lastUpdated": "2026-07-07 11:48:20 -0600 MDT",
+      "physicalId": "25464d6a8b69",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/public.ecr.aws/docker/library/busybox:latest": {
+      "attributes": {
+        "repository": "public.ecr.aws/docker/library/busybox",
+        "size": "4.17MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-05-12 20:21:49 -0600 MDT",
+      "physicalId": "e0e8b3cbfed6",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/public.ecr.aws/lambda/nodejs:20": {
+      "attributes": {
+        "repository": "public.ecr.aws/lambda/nodejs",
+        "size": "421MB",
+        "tag": "20"
+      },
+      "lastUpdated": "2026-04-12 08:29:52 -0600 MDT",
+      "physicalId": "c0d1f391dc66",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/public.ecr.aws/lambda/python:3.14": {
+      "attributes": {
+        "repository": "public.ecr.aws/lambda/python",
+        "size": "604MB",
+        "tag": "3.14"
+      },
+      "lastUpdated": "2026-07-15 05:56:59 -0600 MDT",
+      "physicalId": "b27817add240",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/python:3.12-slim": {
+      "attributes": {
+        "repository": "python",
+        "size": "119MB",
+        "tag": "3.12-slim"
+      },
+      "lastUpdated": "2026-06-10 19:11:27 -0600 MDT",
+      "physicalId": "2931a4956468",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/rackattack:dev": {
+      "attributes": {
+        "repository": "rackattack",
+        "size": "190MB",
+        "tag": "dev"
+      },
+      "lastUpdated": "2026-06-16 16:48:20 -0600 MDT",
+      "physicalId": "b58d4f37c889",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/rackattack:latest": {
+      "attributes": {
+        "repository": "rackattack",
+        "size": "189MB",
+        "tag": "latest"
+      },
+      "lastUpdated": "2026-06-06 17:16:16 -0600 MDT",
+      "physicalId": "9e3ef14bc7cf",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/rancher/k3s:v1.32.13-k3s1": {
+      "attributes": {
+        "repository": "rancher/k3s",
+        "size": "227MB",
+        "tag": "v1.32.13-k3s1"
+      },
+      "lastUpdated": "2026-03-04 11:48:09 -0700 MST",
+      "physicalId": "0a5d24bf5977",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/rancher/k3s:v1.33.6-k3s1": {
+      "attributes": {
+        "repository": "rancher/k3s",
+        "size": "231MB",
+        "tag": "v1.33.6-k3s1"
+      },
+      "lastUpdated": "2025-11-20 14:52:50 -0700 MST",
+      "physicalId": "ef0a09caa484",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/registry:2": {
+      "attributes": {
+        "repository": "registry",
+        "size": "25MB",
+        "tag": "2"
+      },
+      "lastUpdated": "2023-10-02 12:42:41 -0600 MDT",
+      "physicalId": "33eeff39e0aa",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/tinkerpop/gremlin-server:3.7.3": {
+      "attributes": {
+        "repository": "tinkerpop/gremlin-server",
+        "size": "389MB",
+        "tag": "3.7.3"
+      },
+      "lastUpdated": "2024-10-29 12:09:42 -0600 MDT",
+      "physicalId": "9357af0734be",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "image/valkey/valkey:8": {
+      "attributes": {
+        "repository": "valkey/valkey",
+        "size": "133MB",
+        "tag": "8"
+      },
+      "lastUpdated": "2026-07-14 17:55:52 -0600 MDT",
+      "physicalId": "b89cfc389ba2",
+      "status": "PRESENT",
+      "type": "Docker::Image"
+    },
+    "network/bridge": {
+      "attributes": {
+        "driver": "bridge",
+        "scope": "local"
+      },
+      "lastUpdated": "2026-07-16 08:26:22.136438166 +0000 UTC",
+      "physicalId": "0257ca36c55d",
+      "status": "PRESENT",
+      "type": "Docker::Network"
+    },
+    "network/host": {
+      "attributes": {
+        "driver": "host",
+        "scope": "local"
+      },
+      "lastUpdated": "2022-12-26 22:55:35.266315166 +0000 UTC",
+      "physicalId": "7d3f146f6887",
+      "status": "PRESENT",
+      "type": "Docker::Network"
+    },
+    "network/k3d-neo4j-backup": {
+      "attributes": {
+        "driver": "bridge",
+        "scope": "local"
+      },
+      "lastUpdated": "2026-06-29 07:16:37.656511428 +0000 UTC",
+      "physicalId": "4aaa5a522b12",
+      "status": "PRESENT",
+      "type": "Docker::Network"
+    },
+    "network/none": {
+      "attributes": {
+        "driver": "null",
+        "scope": "local"
+      },
+      "lastUpdated": "2022-12-26 22:55:35.259943583 +0000 UTC",
+      "physicalId": "de46c4290fef",
+      "status": "PRESENT",
+      "type": "Docker::Network"
+    }
+  },
+  "commit": "8d5d66694597c0236015085d43fd210d15ff1663",
+  "digest": {
+    "dependencies": {
+      "agentsAssistantCodeInterpreterRole": [],
+      "agentsAssistantEndpoint": [],
+      "agentsAssistantGateway": [],
+      "agentsAssistantGatewayRole": [],
+      "agentsAssistantGatewayTarget": [],
+      "agentsAssistantMemory": [],
+      "agentsAssistantRole": [],
+      "agentsAssistantRuntime": [],
+      "agentsAssistantWorkloadIdentity": [],
+      "albSecurityGroupId": [],
+      "albSecurityGroupIdEcho": [],
+      "backendExecutionRole": [],
+      "backendLogGroup": [],
+      "backendLogsKmsKey": [],
+      "backendRepositoryUri": [],
+      "backendRepositoryUriEcho": [],
+      "backendService": [],
+      "backendTargetGroupArn": [],
+      "backendTargetGroupArnEcho": [],
+      "backendTaskDefinition": [],
+      "backendTaskRole": [],
+      "byoBackendExecutionRole": [],
+      "byoBackendLogGroup": [],
+      "byoBackendLogsKmsKey": [],
+      "byoBackendScalableTarget": [],
+      "byoBackendScalingPolicy": [],
+      "byoBackendService": [],
+      "byoBackendTaskDefinition": [],
+      "byoBackendTaskRole": [],
+      "byoFoundationAlb": [],
+      "byoFoundationAlbSg": [],
+      "byoFoundationArtifactBucket": [],
+      "byoFoundationArtifactBucketPolicy": [],
+      "byoFoundationBackendListenerRule": [],
+      "byoFoundationBackendTargetGroup": [],
+      "byoFoundationDnsRecord": [],
+      "byoFoundationEcsCluster": [],
+      "byoFoundationEcsSg": [],
+      "byoFoundationFrontendTargetGroup": [],
+      "byoFoundationHttpsListener": [],
+      "byoFoundationNlb": [],
+      "byoFoundationNlbListener": [],
+      "byoFoundationNlbTargetGroup": [],
+      "byoFoundationVpcEndpointService": [],
+      "byoFrontendExecutionRole": [],
+      "byoFrontendLogGroup": [],
+      "byoFrontendLogsKmsKey": [],
+      "byoFrontendService": [],
+      "byoFrontendTaskDefinition": [],
+      "cognitoM2mClient": [],
+      "cognitoResourceServer": [],
+      "cognitoUserPool": [],
+      "cognitoUserPoolDomain": [],
+      "dbRdsConnectionSecret": [],
+      "dbRdsCredentialsSecret": [],
+      "dbRdsInstance": [],
+      "dbRdsMonitoringRole": [],
+      "dbRdsSecurityGroup": [],
+      "dbRdsSubnetGroup": [],
+      "dbSecretsKmsKey": [],
+      "dbSecretsKmsKeyAlias": [],
+      "ecsClusterArn": [],
+      "ecsClusterArnEcho": [],
+      "ecsSecurityGroupId": [],
+      "ecsSecurityGroupIdEcho": [],
+      "ExamplesByoLoomBackendoServiceName": [],
+      "ExamplesByoLoomCognitooCognitoDiscoveryUrl": [],
+      "ExamplesByoLoomCognitooCognitoDomain": [],
+      "ExamplesByoLoomCognitooCognitoIssuer": [],
+      "ExamplesByoLoomCognitooCognitoTokenUrl": [],
+      "ExamplesByoLoomCognitooCognitoUserPoolArn": [],
+      "ExamplesByoLoomCognitooCognitoUserPoolId": [],
+      "ExamplesByoLoomCognitooM2MClientId": [],
+      "ExamplesByoLoomCognitooResourceServerIdentifier": [],
+      "ExamplesByoLoomDboConnectEndpoint": [],
+      "ExamplesByoLoomDboRdsCredentialsSecretArn": [],
+      "ExamplesByoLoomDboRdsDbName": [],
+      "ExamplesByoLoomDboRdsEndpoint": [],
+      "ExamplesByoLoomDboRdsPort": [],
+      "ExamplesByoLoomDboRdsSecretArn": [],
+      "ExamplesByoLoomFrontendoServiceName": [],
+      "ExamplesByoSharedFoundationoAgentRoleArn": [],
+      "ExamplesByoSharedFoundationoAlbArn": [],
+      "ExamplesByoSharedFoundationoAlbDnsName": [],
+      "ExamplesByoSharedFoundationoAlbSecurityGroupId": [],
+      "ExamplesByoSharedFoundationoArtifactBucket": [
+        "byoFoundationArtifactBucket"
+      ],
+      "ExamplesByoSharedFoundationoBackendRepositoryUri": [],
+      "ExamplesByoSharedFoundationoBackendTargetGroupArn": [],
+      "ExamplesByoSharedFoundationoDomainName": [],
+      "ExamplesByoSharedFoundationoEcrKmsKeyArn": [],
+      "ExamplesByoSharedFoundationoEcsClusterArn": [],
+      "ExamplesByoSharedFoundationoEcsSecurityGroupId": [],
+      "ExamplesByoSharedFoundationoFrontendRepositoryUri": [],
+      "ExamplesByoSharedFoundationoFrontendTargetGroupArn": [],
+      "ExamplesByoSharedFoundationoHttpsListenerArn": [],
+      "foundationAgentRole": [],
+      "foundationAlb": [],
+      "foundationAlbSg": [],
+      "foundationArtifactBucket": [],
+      "foundationArtifactBucketPolicy": [],
+      "foundationBackendListenerRule": [],
+      "foundationBackendRepo": [],
+      "foundationBackendTargetGroup": [],
+      "foundationEcsCluster": [],
+      "foundationEcsSg": [],
+      "foundationFrontendRepo": [],
+      "foundationFrontendTargetGroup": [],
+      "foundationHttpsListener": [],
+      "foundationKmsAlias": [],
+      "foundationKmsKey": [],
+      "frontendExecutionRole": [],
+      "frontendLogGroup": [],
+      "frontendLogsKmsKey": [],
+      "frontendRepositoryUri": [],
+      "frontendRepositoryUriEcho": [],
+      "frontendService": [],
+      "frontendTargetGroupArn": [],
+      "frontendTargetGroupArnEcho": [],
+      "frontendTaskDefinition": [],
+      "httpsListenerArn": [],
+      "httpsListenerArnEcho": [],
+      "LoomAgentspArtifactBucket": [],
+      "LoomAgentspEcsSecurityGroupId": [],
+      "LoomAgentspPrivateSubnetIds": [],
+      "loomBackend": [],
+      "LoomBackendoServiceName": [],
+      "LoomBackendpArtifactBucket": [],
+      "LoomBackendpEcsClusterArn": [],
+      "LoomBackendpEcsSecurityGroupId": [],
+      "LoomBackendpImageUri": [],
+      "LoomBackendpPrivateSubnetIds": [],
+      "LoomBackendpTargetGroupArn": [],
+      "LoomCognitooCognitoDiscoveryUrl": [
+        "cognitoUserPool"
+      ],
+      "LoomCognitooCognitoDomain": [],
+      "LoomCognitooCognitoIssuer": [
+        "cognitoUserPool"
+      ],
+      "LoomCognitooCognitoTokenUrl": [],
+      "LoomCognitooCognitoUserPoolArn": [],
+      "LoomCognitooCognitoUserPoolId": [
+        "cognitoUserPool"
+      ],
+      "LoomCognitooM2MClientId": [],
+      "LoomCognitooResourceServerIdentifier": [],
+      "LoomDboConnectEndpoint": [],
+      "LoomDboRdsCredentialsSecretArn": [
+        "dbRdsCredentialsSecret"
+      ],
+      "LoomDboRdsDbName": [],
+      "LoomDboRdsEndpoint": [],
+      "LoomDboRdsPort": [],
+      "LoomDboRdsSecretArn": [
+        "dbRdsConnectionSecret"
+      ],
+      "LoomDbpEcsSecurityGroupId": [],
+      "LoomDbpPrivateSubnetIds": [],
+      "loomFrontend": [],
+      "LoomFrontendoServiceName": [],
+      "LoomFrontendpEcsClusterArn": [],
+      "LoomFrontendpEcsSecurityGroupId": [],
+      "LoomFrontendpImageUri": [],
+      "LoomFrontendpTargetGroupArn": [],
+      "loomNet": [],
+      "loomProxy": [],
+      "oAssistantCodeInterpreterRoleArn": [],
+      "oAssistantEndpointArn": [],
+      "oAssistantGatewayUrl": [],
+      "oAssistantMemoryArn": [],
+      "oAssistantRuntimeArn": [],
+      "oAssistantRuntimeVersion": [],
+      "oAssistantWorkloadIdentityArn": [],
+      "oCertificateArn": [],
+      "oEcsClusterName": [],
+      "oHostedZoneId": [],
+      "oPrivateSubnetIds": [],
+      "oPublicSubnetIds": [],
+      "oSecretsKmsKeyArn": [],
+      "oUserClientId": [],
+      "oVpcId": [],
+      "pAssistantImageUri": [],
+      "pCognitoDiscoveryUrl": [],
+      "pCognitoTokenUrl": [],
+      "pCognitoUserPoolId": [],
+      "pDatabaseSecretArn": [],
+      "pDomainName": [],
+      "pEcrKmsKeyArn": [],
+      "pEcsClusterName": [],
+      "pHarnessAgentImageUri": [],
+      "pPublicSubnetIds": [],
+      "pRdsEndpoint": [],
+      "pRdsPort": [],
+      "pSecretsKmsKeyArn": [],
+      "pVpcId": [],
+      "SharedFoundationoAgentRoleArn": [],
+      "SharedFoundationoAlbArn": [],
+      "SharedFoundationoAlbDnsName": [],
+      "SharedFoundationoAlbSecurityGroupId": [],
+      "SharedFoundationoArtifactBucket": [
+        "foundationArtifactBucket"
+      ],
+      "SharedFoundationoBackendRepositoryUri": [],
+      "SharedFoundationoBackendTargetGroupArn": [],
+      "SharedFoundationoDomainName": [],
+      "SharedFoundationoEcrKmsKeyArn": [],
+      "SharedFoundationoEcsClusterArn": [],
+      "SharedFoundationoEcsSecurityGroupId": [],
+      "SharedFoundationoFrontendRepositoryUri": [],
+      "SharedFoundationoFrontendTargetGroupArn": [],
+      "SharedFoundationoHttpsListenerArn": []
+    },
+    "deployOrder": [
+      "",
+      "aws",
+      "docker"
+    ],
+    "outputs": {
+      "oAgentRoleArn": {
+        "attribute": "Arn",
+        "entity": "foundationAgentRole",
+        "source": "aws"
+      },
+      "oAlbArn": {
+        "attribute": "LoadBalancerArn",
+        "entity": "foundationAlb",
+        "source": "aws"
+      },
+      "oAlbDnsName": {
+        "attribute": "DNSName",
+        "entity": "foundationAlb",
+        "source": "aws"
+      },
+      "oAlbSecurityGroupId": {
+        "attribute": "GroupId",
+        "entity": "foundationAlbSg",
+        "source": "aws"
+      },
+      "oArtifactBucket": {
+        "attribute": "",
+        "entity": "SharedFoundationoArtifactBucket",
+        "source": ""
+      },
+      "oAssistantCodeInterpreterRoleArn": {
+        "attribute": "Arn",
+        "entity": "agentsAssistantCodeInterpreterRole",
+        "source": "aws"
+      },
+      "oAssistantEndpointArn": {
+        "attribute": "AgentRuntimeEndpointArn",
+        "entity": "agentsAssistantEndpoint",
+        "source": "aws"
+      },
+      "oAssistantGatewayUrl": {
+        "attribute": "GatewayUrl",
+        "entity": "agentsAssistantGateway",
+        "source": "aws"
+      },
+      "oAssistantMemoryArn": {
+        "attribute": "MemoryArn",
+        "entity": "agentsAssistantMemory",
+        "source": "aws"
+      },
+      "oAssistantRuntimeArn": {
+        "attribute": "AgentRuntimeArn",
+        "entity": "agentsAssistantRuntime",
+        "source": "aws"
+      },
+      "oAssistantRuntimeVersion": {
+        "attribute": "AgentRuntimeVersion",
+        "entity": "agentsAssistantRuntime",
+        "source": "aws"
+      },
+      "oAssistantWorkloadIdentityArn": {
+        "attribute": "WorkloadIdentityArn",
+        "entity": "agentsAssistantWorkloadIdentity",
+        "source": "aws"
+      },
+      "oBackendRepositoryUri": {
+        "attribute": "RepositoryUri",
+        "entity": "foundationBackendRepo",
+        "source": "aws"
+      },
+      "oBackendTargetGroupArn": {
+        "attribute": "TargetGroupArn",
+        "entity": "foundationBackendTargetGroup",
+        "source": "aws"
+      },
+      "oCertificateArn": {
+        "attribute": "",
+        "entity": "oCertificateArn",
+        "source": ""
+      },
+      "oCognitoDiscoveryUrl": {
+        "attribute": "",
+        "entity": "LoomCognitooCognitoDiscoveryUrl",
+        "source": ""
+      },
+      "oCognitoDomain": {
+        "attribute": "",
+        "entity": "LoomCognitooCognitoDomain",
+        "source": ""
+      },
+      "oCognitoIssuer": {
+        "attribute": "",
+        "entity": "LoomCognitooCognitoIssuer",
+        "source": ""
+      },
+      "oCognitoTokenUrl": {
+        "attribute": "",
+        "entity": "LoomCognitooCognitoTokenUrl",
+        "source": ""
+      },
+      "oCognitoUserPoolArn": {
+        "attribute": "Arn",
+        "entity": "cognitoUserPool",
+        "source": "aws"
+      },
+      "oCognitoUserPoolId": {
+        "attribute": "",
+        "entity": "LoomCognitooCognitoUserPoolId",
+        "source": ""
+      },
+      "oConnectEndpoint": {
+        "attribute": "Endpoint.Address",
+        "entity": "dbRdsInstance",
+        "source": "aws"
+      },
+      "oDomainName": {
+        "attribute": "DNSName",
+        "entity": "foundationAlb",
+        "source": "aws"
+      },
+      "oEcrKmsKeyArn": {
+        "attribute": "Arn",
+        "entity": "foundationKmsKey",
+        "source": "aws"
+      },
+      "oEcsClusterArn": {
+        "attribute": "Arn",
+        "entity": "foundationEcsCluster",
+        "source": "aws"
+      },
+      "oEcsClusterName": {
+        "attribute": "",
+        "entity": "oEcsClusterName",
+        "source": ""
+      },
+      "oEcsSecurityGroupId": {
+        "attribute": "GroupId",
+        "entity": "foundationEcsSg",
+        "source": "aws"
+      },
+      "oFrontendRepositoryUri": {
+        "attribute": "RepositoryUri",
+        "entity": "foundationFrontendRepo",
+        "source": "aws"
+      },
+      "oFrontendTargetGroupArn": {
+        "attribute": "TargetGroupArn",
+        "entity": "foundationFrontendTargetGroup",
+        "source": "aws"
+      },
+      "oHostedZoneId": {
+        "attribute": "",
+        "entity": "oHostedZoneId",
+        "source": ""
+      },
+      "oHttpsListenerArn": {
+        "attribute": "ListenerArn",
+        "entity": "foundationHttpsListener",
+        "source": "aws"
+      },
+      "oM2MClientId": {
+        "attribute": "ClientId",
+        "entity": "cognitoM2mClient",
+        "source": "aws"
+      },
+      "oPrivateSubnetIds": {
+        "attribute": "",
+        "entity": "oPrivateSubnetIds",
+        "source": ""
+      },
+      "oPublicSubnetIds": {
+        "attribute": "",
+        "entity": "oPublicSubnetIds",
+        "source": ""
+      },
+      "oRdsCredentialsSecretArn": {
+        "attribute": "",
+        "entity": "LoomDboRdsCredentialsSecretArn",
+        "source": ""
+      },
+      "oRdsDbName": {
+        "attribute": "",
+        "entity": "LoomDboRdsDbName",
+        "source": ""
+      },
+      "oRdsEndpoint": {
+        "attribute": "Endpoint.Address",
+        "entity": "dbRdsInstance",
+        "source": "aws"
+      },
+      "oRdsPort": {
+        "attribute": "Endpoint.Port",
+        "entity": "dbRdsInstance",
+        "source": "aws"
+      },
+      "oRdsSecretArn": {
+        "attribute": "",
+        "entity": "LoomDboRdsSecretArn",
+        "source": ""
+      },
+      "oResourceServerIdentifier": {
+        "attribute": "",
+        "entity": "LoomCognitooResourceServerIdentifier",
+        "source": ""
+      },
+      "oSecretsKmsKeyArn": {
+        "attribute": "Arn",
+        "entity": "dbSecretsKmsKey",
+        "source": "aws"
+      },
+      "oServiceName": {
+        "attribute": "Name",
+        "entity": "frontendService",
+        "source": "aws"
+      },
+      "oUserClientId": {
+        "attribute": "",
+        "entity": "oUserClientId",
+        "source": ""
+      },
+      "oVpcId": {
+        "attribute": "",
+        "entity": "oVpcId",
+        "source": ""
+      }
+    },
+    "resources": {
+      "agentsAssistantCodeInterpreterRole": {
+        "lexicon": "aws",
+        "propsHash": "8b2520c6b9a98aea5139de83aab39dbd48ae10e072965aa41973cdf758522ef7",
+        "type": "AWS::IAM::Role"
+      },
+      "agentsAssistantEndpoint": {
+        "lexicon": "aws",
+        "propsHash": "a695e02226fb465d1da88061a33ba5c16008e30f88fa0d358ca2a5391ad2dccd",
+        "type": "AWS::BedrockAgentCore::RuntimeEndpoint"
+      },
+      "agentsAssistantGateway": {
+        "lexicon": "aws",
+        "propsHash": "2c2d44f9e74fe370205265a70623c60a490060c0c6f8f875f0e78d529640d4fa",
+        "type": "AWS::BedrockAgentCore::Gateway"
+      },
+      "agentsAssistantGatewayRole": {
+        "lexicon": "aws",
+        "propsHash": "2816a7a6741a4d648d141a30e1eb79294d163bbbcbaf1417c54ad45bc5e8d370",
+        "type": "AWS::IAM::Role"
+      },
+      "agentsAssistantGatewayTarget": {
+        "lexicon": "aws",
+        "propsHash": "43a098ce6e1dd95fe03e04c32b50377cfa7979fcf1e849f5b5031153e1177819",
+        "type": "AWS::BedrockAgentCore::GatewayTarget"
+      },
+      "agentsAssistantMemory": {
+        "lexicon": "aws",
+        "propsHash": "1ab4dd1b70c2498b62ad8abe260fadfe5a0bf5e3f259d5ff02c305a32d74b82b",
+        "type": "AWS::BedrockAgentCore::Memory"
+      },
+      "agentsAssistantRole": {
+        "lexicon": "aws",
+        "propsHash": "7016b93724822d1f32e9990ffac97e1acd16e7909ca09e20da839cf8a5d51c32",
+        "type": "AWS::IAM::Role"
+      },
+      "agentsAssistantRuntime": {
+        "lexicon": "aws",
+        "propsHash": "7005f9630359dff2b75ce6d1a27b4aee733fee891301fe5c52895ee522eb9d15",
+        "type": "AWS::BedrockAgentCore::Runtime"
+      },
+      "agentsAssistantWorkloadIdentity": {
+        "lexicon": "aws",
+        "propsHash": "d3c985859d4caa509b5fd4483787df1ba97951f9ad8ab4e5e34cfc365b8d0861",
+        "type": "AWS::BedrockAgentCore::WorkloadIdentity"
+      },
+      "albSecurityGroupId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "albSecurityGroupIdEcho": {
+        "lexicon": "aws",
+        "propsHash": "788fa41701d4a8b104ddfe71acd6b010e6d9516233c3d99003696254b762d2fa",
+        "type": "AWS::SSM::Parameter"
+      },
+      "backendExecutionRole": {
+        "lexicon": "aws",
+        "propsHash": "051abb6b431cd04be6dfd19aa9c146f4189320f9dc6a3468f1acf76064e0ae5f",
+        "type": "AWS::IAM::Role"
+      },
+      "backendLogGroup": {
+        "lexicon": "aws",
+        "propsHash": "6d9bb5cd64defa1d9d8a4138829e9938a41db79870118c99e8004212d0ed61ea",
+        "type": "AWS::Logs::LogGroup"
+      },
+      "backendLogsKmsKey": {
+        "lexicon": "aws",
+        "propsHash": "f6a4da91888371ebc66236e3b1d20ef80c921936223b06f83251f3eb66ca961f",
+        "type": "AWS::KMS::Key"
+      },
+      "backendRepositoryUri": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "backendRepositoryUriEcho": {
+        "lexicon": "aws",
+        "propsHash": "ac53da1077a02bae0ecd24f2e0ef1759d6beaf4d8b444f682984f4ed42559fa7",
+        "type": "AWS::SSM::Parameter"
+      },
+      "backendService": {
+        "lexicon": "aws",
+        "propsHash": "b3e7f9897cf6f4078ed1c0b48cf3164fdf1ee8d0b5290bf6be37e87b323e3d57",
+        "type": "AWS::ECS::Service"
+      },
+      "backendTargetGroupArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "backendTargetGroupArnEcho": {
+        "lexicon": "aws",
+        "propsHash": "515acd33b5a61a8062512ac0227cec7bd3d48703fc7e85929ebd93984ca2dbcb",
+        "type": "AWS::SSM::Parameter"
+      },
+      "backendTaskDefinition": {
+        "lexicon": "aws",
+        "propsHash": "7199a8eb71642eed5e62c883659815a823776d4fac86960ec0fd2053c87bf064",
+        "type": "AWS::ECS::TaskDefinition"
+      },
+      "backendTaskRole": {
+        "lexicon": "aws",
+        "propsHash": "723147e16a2842d564f41026aeff261cd60597b10a98d5ca8ed78fc5ccb4d0dc",
+        "type": "AWS::IAM::Role"
+      },
+      "byoBackendExecutionRole": {
+        "lexicon": "aws",
+        "propsHash": "8958a8360333bf04a24d98567c2dcf7a377fc1d98c6554350c380ad3fabe11ba",
+        "type": "AWS::IAM::Role"
+      },
+      "byoBackendLogGroup": {
+        "lexicon": "aws",
+        "propsHash": "1320759b1eadf1552b862b51412ba804f744ce8cddc14ee720869b54f0daf99c",
+        "type": "AWS::Logs::LogGroup"
+      },
+      "byoBackendLogsKmsKey": {
+        "lexicon": "aws",
+        "propsHash": "efedfabf3f1be7bcc2ad6b3c057251a5878021f681554649ca7e9aa647e37ae5",
+        "type": "AWS::KMS::Key"
+      },
+      "byoBackendScalableTarget": {
+        "lexicon": "aws",
+        "propsHash": "b928996ee31e32b3884a9301c0efcbb41c80538effd8b0ec6d0d17e339f939e6",
+        "type": "AWS::ApplicationAutoScaling::ScalableTarget"
+      },
+      "byoBackendScalingPolicy": {
+        "lexicon": "aws",
+        "propsHash": "73b75836ebf9ad84c5ee8bd10ec83fc86581690a31d5930af5cfd5ee109600e8",
+        "type": "AWS::ApplicationAutoScaling::ScalingPolicy"
+      },
+      "byoBackendService": {
+        "lexicon": "aws",
+        "propsHash": "3d3bf10eb24456f3fe629c341791687deccc3d67ad5871baac798cb082013501",
+        "type": "AWS::ECS::Service"
+      },
+      "byoBackendTaskDefinition": {
+        "lexicon": "aws",
+        "propsHash": "9997e75e931d4835910dd001ab9c44ff79a46ebdb11eb4bd7a23c0f01b020b93",
+        "type": "AWS::ECS::TaskDefinition"
+      },
+      "byoBackendTaskRole": {
+        "lexicon": "aws",
+        "propsHash": "533510b5f3f14f93db68cd7ad755403ee055c3d110a7a00bebac4dd2b6056778",
+        "type": "AWS::IAM::Role"
+      },
+      "byoFoundationAlb": {
+        "lexicon": "aws",
+        "propsHash": "e5a64d9d9b2a4eba76685db9742f3a38520a6dac3ee28c1f6dccd6890f6efb6f",
+        "type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+      },
+      "byoFoundationAlbSg": {
+        "lexicon": "aws",
+        "propsHash": "c12f776c694a33b702a63e3a36a8ec787f329e16ae21a7cf3cc69d71413f8619",
+        "type": "AWS::EC2::SecurityGroup"
+      },
+      "byoFoundationArtifactBucket": {
+        "lexicon": "aws",
+        "propsHash": "daa7c4a751ebf1c2e120624ded6df39bf7027e2e5cc9d2dfe45ccdcd267c2e2d",
+        "type": "AWS::S3::Bucket"
+      },
+      "byoFoundationArtifactBucketPolicy": {
+        "lexicon": "aws",
+        "propsHash": "98038ae8f9175cd3efb240323afb0221d58574bea1c03e97d9f7356b06baf48d",
+        "type": "AWS::S3::BucketPolicy"
+      },
+      "byoFoundationBackendListenerRule": {
+        "lexicon": "aws",
+        "propsHash": "690300d953dc0e881b0d79e7391bd1a2cc648622ca7c27dc24b840161d4dd450",
+        "type": "AWS::ElasticLoadBalancingV2::ListenerRule"
+      },
+      "byoFoundationBackendTargetGroup": {
+        "lexicon": "aws",
+        "propsHash": "c377283ac2f50612a198bdc62adf394beaa258c6dfa607bfc8d27d74fbf673e4",
+        "type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+      },
+      "byoFoundationDnsRecord": {
+        "lexicon": "aws",
+        "propsHash": "59490f934aa06dfcafcacfe5b163c816926fe06c8471499ae73679ee706244d9",
+        "type": "AWS::Route53::RecordSet"
+      },
+      "byoFoundationEcsCluster": {
+        "lexicon": "aws",
+        "propsHash": "a317033453f6da6abd7c77e0761a15d8125f2716bc8dc71552c7a318c660792a",
+        "type": "AWS::ECS::Cluster"
+      },
+      "byoFoundationEcsSg": {
+        "lexicon": "aws",
+        "propsHash": "b50a913b7a8676f7ce568329b0567a9bc8953e2a6e20626f15b34063931b0ee9",
+        "type": "AWS::EC2::SecurityGroup"
+      },
+      "byoFoundationFrontendTargetGroup": {
+        "lexicon": "aws",
+        "propsHash": "e1b070c51f2e1165963f97331dbfbde1a1f6f884ecda643f5d18dd9598897780",
+        "type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+      },
+      "byoFoundationHttpsListener": {
+        "lexicon": "aws",
+        "propsHash": "91efe25dc19563556b7927ac5a202f016310a4e11c0bdfb0bf41ab65747f2cc0",
+        "type": "AWS::ElasticLoadBalancingV2::Listener"
+      },
+      "byoFoundationNlb": {
+        "lexicon": "aws",
+        "propsHash": "bc38ac6845d62704f75a5c49da3676c8630710304de9bb7c8ca3d478f574daff",
+        "type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+      },
+      "byoFoundationNlbListener": {
+        "lexicon": "aws",
+        "propsHash": "70f62593e793445780608a449dd722bbc82eb91a4bb14475af16af5fda4dbf56",
+        "type": "AWS::ElasticLoadBalancingV2::Listener"
+      },
+      "byoFoundationNlbTargetGroup": {
+        "lexicon": "aws",
+        "propsHash": "d054f6c2387546bd8b8e2bc28f1a59525ef2d677cdb33035ed72af1d38d4914e",
+        "type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+      },
+      "byoFoundationVpcEndpointService": {
+        "lexicon": "aws",
+        "propsHash": "22c49520f5f4ecd789b485c1d72829030cc1c38523771a605becd3a01d4c6ad2",
+        "type": "AWS::EC2::VPCEndpointService"
+      },
+      "byoFrontendExecutionRole": {
+        "lexicon": "aws",
+        "propsHash": "7ab8fc31eba73603ca25f73dd75423ea1f7b5f0bbaf63acc03dd21862c0b6226",
+        "type": "AWS::IAM::Role"
+      },
+      "byoFrontendLogGroup": {
+        "lexicon": "aws",
+        "propsHash": "e193f03cc8045fdfabafba0263fba2a7bd1198986f5a8f1c1b021f1f4d8cef46",
+        "type": "AWS::Logs::LogGroup"
+      },
+      "byoFrontendLogsKmsKey": {
+        "lexicon": "aws",
+        "propsHash": "6304202330a86d2af1ca4d6e50eaa0d4597c6d6f4b26c97167f910770d0e2ea5",
+        "type": "AWS::KMS::Key"
+      },
+      "byoFrontendService": {
+        "lexicon": "aws",
+        "propsHash": "d1e6438920cbea5f6e96d88ce9aeeb75c700e2e98ba9b7e2ecf2f93bda261a6c",
+        "type": "AWS::ECS::Service"
+      },
+      "byoFrontendTaskDefinition": {
+        "lexicon": "aws",
+        "propsHash": "b9fc06b1c23db7b11a1b34de162c174faafbe0ea8d9ab655f526faca42aaa616",
+        "type": "AWS::ECS::TaskDefinition"
+      },
+      "cognitoM2mClient": {
+        "lexicon": "aws",
+        "propsHash": "f20139dc8f15dd2ef81b09b27da31bb5ae41bc1d8ca592785a92d928fded5764",
+        "type": "AWS::Cognito::UserPoolClient"
+      },
+      "cognitoResourceServer": {
+        "lexicon": "aws",
+        "propsHash": "cd1958e028f4e759aa9e17ee500e6fe6b0d147485db195dfaf380d525b43dd06",
+        "type": "AWS::Cognito::UserPoolResourceServer"
+      },
+      "cognitoUserPool": {
+        "lexicon": "aws",
+        "propsHash": "9445eb3890ba2dc05009b06697693c4087aa5fc6189de5d6d81a5bbeed7a17f3",
+        "type": "AWS::Cognito::UserPool"
+      },
+      "cognitoUserPoolDomain": {
+        "lexicon": "aws",
+        "propsHash": "74a2ccad7f5b9bb050090aa35510c151bb83c4ff1270f9917ae3c77d9ab32b99",
+        "type": "AWS::Cognito::UserPoolDomain"
+      },
+      "dbRdsConnectionSecret": {
+        "lexicon": "aws",
+        "propsHash": "3d9a210618f8c3e511a5df0358504e2480bc83fd9190cc3736e8e4bce2ea2973",
+        "type": "AWS::SecretsManager::Secret"
+      },
+      "dbRdsCredentialsSecret": {
+        "lexicon": "aws",
+        "propsHash": "c4139018741ac1b882dfd9fa3f3e95128751e05588cf9262af4dbbf547806672",
+        "type": "AWS::SecretsManager::Secret"
+      },
+      "dbRdsInstance": {
+        "lexicon": "aws",
+        "propsHash": "a3a09c6686f9640a84cf90e1a1e492a408c165bd2420b6cb84aad7128e5c245e",
+        "type": "AWS::RDS::DBInstance"
+      },
+      "dbRdsMonitoringRole": {
+        "lexicon": "aws",
+        "propsHash": "1aaad6dfd0e271bdbc8670b017be0e5982d7e0336364e618fcb3c3e95245c283",
+        "type": "AWS::IAM::Role"
+      },
+      "dbRdsSecurityGroup": {
+        "lexicon": "aws",
+        "propsHash": "6dc5d0b451acad541b0610c8e209129240daf83b046f5e73cd713679715a7816",
+        "type": "AWS::EC2::SecurityGroup"
+      },
+      "dbRdsSubnetGroup": {
+        "lexicon": "aws",
+        "propsHash": "e9dd9ecb7bfec46d2048fa92fdf32f77749e1299bfb41087fea9e5bcf33d354f",
+        "type": "AWS::RDS::DBSubnetGroup"
+      },
+      "dbSecretsKmsKey": {
+        "lexicon": "aws",
+        "propsHash": "6f1f4eb3475599b2ce5f863b542d625956a5c1ea4f226c205baf1cdfe9df9676",
+        "type": "AWS::KMS::Key"
+      },
+      "dbSecretsKmsKeyAlias": {
+        "lexicon": "aws",
+        "propsHash": "445fd800910e2271f4b59c3c2021e0d5d1d54298738a1c82548b12bbf296b6f2",
+        "type": "AWS::KMS::Alias"
+      },
+      "ecsClusterArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "ecsClusterArnEcho": {
+        "lexicon": "aws",
+        "propsHash": "be28a53a0520318ff4c719dcf27694e4b5efd43885db09d09ee90225e310d1ed",
+        "type": "AWS::SSM::Parameter"
+      },
+      "ecsSecurityGroupId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "ecsSecurityGroupIdEcho": {
+        "lexicon": "aws",
+        "propsHash": "ad632abc469c4cf63a42ba59d1000434be0970247159b84a2c591adefb04b99a",
+        "type": "AWS::SSM::Parameter"
+      },
+      "ExamplesByoLoomBackendoServiceName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooCognitoDiscoveryUrl": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooCognitoDomain": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooCognitoIssuer": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooCognitoTokenUrl": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooCognitoUserPoolArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooCognitoUserPoolId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooM2MClientId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomCognitooResourceServerIdentifier": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomDboConnectEndpoint": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomDboRdsCredentialsSecretArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomDboRdsDbName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomDboRdsEndpoint": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomDboRdsPort": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomDboRdsSecretArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoLoomFrontendoServiceName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoAgentRoleArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoAlbArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoAlbDnsName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoAlbSecurityGroupId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoArtifactBucket": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoBackendRepositoryUri": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoBackendTargetGroupArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoDomainName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoEcrKmsKeyArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoEcsClusterArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoEcsSecurityGroupId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoFrontendRepositoryUri": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoFrontendTargetGroupArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "ExamplesByoSharedFoundationoHttpsListenerArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "foundationAgentRole": {
+        "lexicon": "aws",
+        "propsHash": "3975051c42b664d79448b58d13c409355cb1d7cc220d6990b0f72e74da6bf0f1",
+        "type": "AWS::IAM::Role"
+      },
+      "foundationAlb": {
+        "lexicon": "aws",
+        "propsHash": "14e666ca035927447c82ec7779a4d71ac9ce8f84f48ba4393bb7e4a40bb08d57",
+        "type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
+      },
+      "foundationAlbSg": {
+        "lexicon": "aws",
+        "propsHash": "ddd05b9cb10ea4cb2710fcab255b14a9678af94e37c28d0f1b0ed53158885360",
+        "type": "AWS::EC2::SecurityGroup"
+      },
+      "foundationArtifactBucket": {
+        "lexicon": "aws",
+        "propsHash": "d1d532fca64a17dfc5133d60757d1a61a5d8244191e32d9dd3ec59faf67abd08",
+        "type": "AWS::S3::Bucket"
+      },
+      "foundationArtifactBucketPolicy": {
+        "lexicon": "aws",
+        "propsHash": "8f738dea05e68e98a745a72bcaba59a1a5b5219c75fa7edec0f7e28a0ac09735",
+        "type": "AWS::S3::BucketPolicy"
+      },
+      "foundationBackendListenerRule": {
+        "lexicon": "aws",
+        "propsHash": "639451702336f3a5744c6a16db46890f13752b11f727ca663f3869c34ee78bd3",
+        "type": "AWS::ElasticLoadBalancingV2::ListenerRule"
+      },
+      "foundationBackendRepo": {
+        "lexicon": "aws",
+        "propsHash": "8733ef9aa03d9bf87d146d61f01b690a0a8465e0b738736f1db21a9abba117f6",
+        "type": "AWS::ECR::Repository"
+      },
+      "foundationBackendTargetGroup": {
+        "lexicon": "aws",
+        "propsHash": "b35477a46d1198201c559dd23a683462ac03b2fe43de0df7968958833c3d0b25",
+        "type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+      },
+      "foundationEcsCluster": {
+        "lexicon": "aws",
+        "propsHash": "5dba8560f23d92e45f63c085fd5b0d8542e85dd16f6f5f4120452f8d3adc1700",
+        "type": "AWS::ECS::Cluster"
+      },
+      "foundationEcsSg": {
+        "lexicon": "aws",
+        "propsHash": "02b64f122af28aa68d08e3561b4c6c2d1534c4956f1a95afa1c69456987e6791",
+        "type": "AWS::EC2::SecurityGroup"
+      },
+      "foundationFrontendRepo": {
+        "lexicon": "aws",
+        "propsHash": "a053f7c8355e9bf16d10676508e91887fb87701810cc8077ff5ce8d310677b5b",
+        "type": "AWS::ECR::Repository"
+      },
+      "foundationFrontendTargetGroup": {
+        "lexicon": "aws",
+        "propsHash": "8b128dc79110fe0824c36e248ff45543ea8de4aee11e7a4dcef3b5cca60eeac2",
+        "type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+      },
+      "foundationHttpsListener": {
+        "lexicon": "aws",
+        "propsHash": "deac4cbedbfe3fe4e6586a3fac3cfb6a3f6a027358a1858c7341c1579c52b6ac",
+        "type": "AWS::ElasticLoadBalancingV2::Listener"
+      },
+      "foundationKmsAlias": {
+        "lexicon": "aws",
+        "propsHash": "4dedc7b1961433183000e33f17a82cd550d6773a5318568ad7740fc708146944",
+        "type": "AWS::KMS::Alias"
+      },
+      "foundationKmsKey": {
+        "lexicon": "aws",
+        "propsHash": "7e2ce877994be64d66029552c4c5df1ec0ae0fdb7bd1467692715e6290cc334a",
+        "type": "AWS::KMS::Key"
+      },
+      "frontendExecutionRole": {
+        "lexicon": "aws",
+        "propsHash": "d164c0d28e05328e0e7bcf5d24269331b3d69a565122e921bd856df11c03e5da",
+        "type": "AWS::IAM::Role"
+      },
+      "frontendLogGroup": {
+        "lexicon": "aws",
+        "propsHash": "771ac76a5c37f40aea5be89b346a175eb565f7f3c73259039f53fe69d4c7a59b",
+        "type": "AWS::Logs::LogGroup"
+      },
+      "frontendLogsKmsKey": {
+        "lexicon": "aws",
+        "propsHash": "3a666b93fbf14cca59e148a0a3946a0c317c5f8f85e3dbfbb130700abb919672",
+        "type": "AWS::KMS::Key"
+      },
+      "frontendRepositoryUri": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "frontendRepositoryUriEcho": {
+        "lexicon": "aws",
+        "propsHash": "c76378e8b6e44507d49669efcda2eb97d662009ecc2c7739b8075fa0227d1705",
+        "type": "AWS::SSM::Parameter"
+      },
+      "frontendService": {
+        "lexicon": "aws",
+        "propsHash": "7b5caa128ecf8fec9e6df93fb093424fd72b063f9dc5c4d6943cc9bf2baeece1",
+        "type": "AWS::ECS::Service"
+      },
+      "frontendTargetGroupArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "frontendTargetGroupArnEcho": {
+        "lexicon": "aws",
+        "propsHash": "07a547b7e331b4092dc0599c80697e15f808c5890c5aaec57386980a96af1954",
+        "type": "AWS::SSM::Parameter"
+      },
+      "frontendTaskDefinition": {
+        "lexicon": "aws",
+        "propsHash": "e58714c43638ce0fb5422a46aa16f11f7924c2992d062cc39a8f50b60b610943",
+        "type": "AWS::ECS::TaskDefinition"
+      },
+      "httpsListenerArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "httpsListenerArnEcho": {
+        "lexicon": "aws",
+        "propsHash": "d5337c7424cc68fd8a8dd60237b21108d428970a566f337346cb33290fb48f6e",
+        "type": "AWS::SSM::Parameter"
+      },
+      "LoomAgentspArtifactBucket": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomAgentspEcsSecurityGroupId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomAgentspPrivateSubnetIds": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "loomBackend": {
+        "lexicon": "docker",
+        "propsHash": "0ce23f0e409378cf427fd236d35a07c25e93abbb57aec2625fc766be3746d764",
+        "type": "Docker::Compose::Service"
+      },
+      "LoomBackendoServiceName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomBackendpArtifactBucket": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomBackendpEcsClusterArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomBackendpEcsSecurityGroupId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomBackendpImageUri": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomBackendpPrivateSubnetIds": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomBackendpTargetGroupArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomCognitooCognitoDiscoveryUrl": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomCognitooCognitoDomain": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomCognitooCognitoIssuer": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomCognitooCognitoTokenUrl": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomCognitooCognitoUserPoolArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomCognitooCognitoUserPoolId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomCognitooM2MClientId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomCognitooResourceServerIdentifier": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomDboConnectEndpoint": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomDboRdsCredentialsSecretArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomDboRdsDbName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomDboRdsEndpoint": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomDboRdsPort": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomDboRdsSecretArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomDbpEcsSecurityGroupId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomDbpPrivateSubnetIds": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "loomFrontend": {
+        "lexicon": "docker",
+        "propsHash": "a54df70c45fce98dc2db787bce0de370b6c6ef279d9a6e3863a13ff3f2720762",
+        "type": "Docker::Compose::Service"
+      },
+      "LoomFrontendoServiceName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "LoomFrontendpEcsClusterArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomFrontendpEcsSecurityGroupId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomFrontendpImageUri": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "LoomFrontendpTargetGroupArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "loomNet": {
+        "lexicon": "docker",
+        "propsHash": "ad4e403377a2703f8efe1dd98c9fffd83e259c9547a4d1f202a7364737aa52cc",
+        "type": "Docker::Compose::Network"
+      },
+      "loomProxy": {
+        "lexicon": "docker",
+        "propsHash": "20f38045c8a151b200645dd975d5586b2def446cde1c52582863a674791c2a4d",
+        "type": "Docker::Compose::Service"
+      },
+      "oAssistantCodeInterpreterRoleArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oAssistantEndpointArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oAssistantGatewayUrl": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oAssistantMemoryArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oAssistantRuntimeArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oAssistantRuntimeVersion": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oAssistantWorkloadIdentityArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oCertificateArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oEcsClusterName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oHostedZoneId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oPrivateSubnetIds": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oPublicSubnetIds": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oSecretsKmsKeyArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oUserClientId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "oVpcId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "pAssistantImageUri": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pCognitoDiscoveryUrl": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pCognitoTokenUrl": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pCognitoUserPoolId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pDatabaseSecretArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pDomainName": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pEcrKmsKeyArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pEcsClusterName": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pHarnessAgentImageUri": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pPublicSubnetIds": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pRdsEndpoint": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pRdsPort": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pSecretsKmsKeyArn": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "pVpcId": {
+        "lexicon": "aws",
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "type": "AWS::CloudFormation::Parameter"
+      },
+      "SharedFoundationoAgentRoleArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoAlbArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoAlbDnsName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoAlbSecurityGroupId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoArtifactBucket": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoBackendRepositoryUri": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoBackendTargetGroupArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoDomainName": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoEcrKmsKeyArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoEcsClusterArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoEcsSecurityGroupId": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoFrontendRepositoryUri": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoFrontendTargetGroupArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      "SharedFoundationoHttpsListenerArn": {
+        "propsHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    }
+  },
+  "environment": "dev",
+  "lexicon": "docker",
+  "resources": {},
+  "timestamp": "2026-07-16T14:29:55.407Z"
+}
