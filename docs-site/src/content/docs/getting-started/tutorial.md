@@ -3,9 +3,14 @@ title: Tutorial
 description: From a clean clone to a browsable Loom on your laptop, to the light tier on a real AWS account, to production. One codebase, tier and target as parameters.
 ---
 
-This repo *is* the tutorial. Every command below runs against the real
-composites and components in `src/`, not a toy example. Follow it through and
-you have a working Loom deployment.
+Every command below runs against the real composites and components in `src/`.
+Follow it top to bottom and you have a working Loom deployment.
+
+You can run these commands yourself, or hand them to your agent: the repo ships a
+[loomster skill](/loomster/getting-started/overview/#drive-it-with-your-agent)
+(`skills/loomster/SKILL.md`) that gives an agent the whole capability map, and
+chant serves an MCP server (`chant serve mcp`) for inspecting and building the
+graph. "Stand up Loom locally" is a reasonable first thing to ask it.
 
 Two things vary, and they're independent:
 
