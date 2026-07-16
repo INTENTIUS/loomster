@@ -344,7 +344,14 @@ function buildCore(naming: LoomNaming, namingParams: LoomNamingParams, tier: Tie
   });
   const userPoolIdRef = Ref(userPool) as unknown as string;
 
-  const domainPrefix = naming.name("auth", { service: "cognitoDomain" });
+  // Cognito reserves "aws", "amazon", and "cognito" in a hosted-UI domain
+  // prefix — real Cognito rejects any prefix containing them with
+  // "Invalid request provided" (Floci does not enforce this; found on a real
+  // us-east-2 deploy). The component name "loom-cognito" injects "cognito", so
+  // strip the reserved words and collapse the resulting hyphens. The
+  // uniqueness suffix from the naming helper is preserved.
+  const rawDomainPrefix = naming.name("auth", { service: "cognitoDomain" });
+  const domainPrefix = rawDomainPrefix.replace(/cognito|amazon|aws/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "");
   const userPoolDomain = new UserPoolDomain({ Domain: domainPrefix, UserPoolId: userPoolIdRef });
 
   const resourceServerIdentifier = provision.resourceServerIdentifier ?? naming.name("resource-server");

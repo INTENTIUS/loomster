@@ -45,6 +45,14 @@ describe("LoomCognito — provision, light tier", () => {
     expect((props.Scopes[0] as any).props.ScopeName).toBe("invoke");
   });
 
+  test("hosted-UI domain prefix contains none of Cognito's reserved words (aws/amazon/cognito) — real Cognito rejects them", () => {
+    const instance = LoomCognito(baseProvisionProps());
+    const domain: string = (instance.userPoolDomain as any).props.Domain;
+    expect(domain).not.toMatch(/cognito|amazon|aws/);
+    // still lowercase alphanumeric + hyphens, no leading/trailing/double hyphen
+    expect(domain).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  });
+
   test("MFA off, advanced security AUDIT, deletion protection INACTIVE", () => {
     const instance = LoomCognito(baseProvisionProps());
     const props = (instance.userPool as any).props;
