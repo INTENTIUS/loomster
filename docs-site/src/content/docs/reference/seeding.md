@@ -36,6 +36,22 @@ LOOM_API_BASE_URL=https://loom.example.com npm run seed   # a deployed target
 `http://localhost:8080`). Every write is existence-guarded, so re-running is safe
 — the Op skips anything already present.
 
+## Validating a deploy
+
+`npm run validate` (or `just validate`) checks a running Loom screen by screen:
+it hits each screen's data endpoint and asserts it returns 200 and holds what the
+active profile seeds. It exits non-zero if any screen fails, so "validated" means
+every screen loads with the right data, not a spot-check.
+
+```sh
+npm run validate                                  # demo profile, local-up app
+LOOM_SEED_PROFILE=foundation npm run validate     # production floor
+LOOM_API_BASE_URL=https://loom.example.com npm run validate
+```
+
+Run it against a fresh deploy and the Security screens fail (no role, no
+authorizer); run `npm run seed`, then validate again and every screen passes.
+
 ## What it does not seed
 
 Memory resources and agents are left to you: creating them provisions real AWS
