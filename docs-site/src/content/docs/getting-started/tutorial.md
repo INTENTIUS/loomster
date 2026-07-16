@@ -387,8 +387,6 @@ Written down rather than papered over:
   light tier has.
 - Agents need Bedrock AgentCore, which has no local emulator and isn't enabled in
   every account. See steps 1 and 2.
-- `loom-backend` / `loom-frontend` always provision their own ECS execution and
-  task IAM roles. No `reference-existing` seam for those yet.
 
 The full seam-by-seam edges are in [Adoption](/loomster/guides/adoption/).
 

@@ -85,9 +85,24 @@ export type LogRetentionDays = 1 | 3 | 5 | 7 | 14 | 30 | 60 | 90 | 120 | 150 | 1
 // Props
 // ─────────────────────────────────────────────────────────────────────────
 
+/**
+ * IAM roles seam (chant#898 / loomster#66) — `provision` (default) builds the
+ * execution + task roles; `reference-existing` uses ARNs a platform/security
+ * team already owns, creating no Role resources of its own. Mirrors
+ * shared-foundation's `agentRole` seam. A referenced execution role must carry
+ * ECR-pull + logs-write; a referenced task role must carry whatever the app
+ * needs (the same statements `buildRoles` provisions).
+ */
+export type LoomBackendIamRolesSeam =
+  | { mode?: "provision" }
+  | { mode: "reference-existing"; executionRoleArn: string; taskRoleArn: string };
+
 export interface LoomBackendProps {
   /** Naming/tagging parameter source (chant#897) — one call derives every physical name + tag below. */
   naming: LoomNamingParams;
+
+  /** Bring-your-own execution + task IAM roles (loomster#66). Defaults to `provision`. */
+  iamRoles?: LoomBackendIamRolesSeam;
 
   // ── Cross-stack wiring (chant#889) ──────────────────────────────────────
   // Plain values here — the Ref()/stackOutput() indirection that actually
@@ -437,8 +452,10 @@ function buildAutoscaling(
 export type LoomBackendResult = {
   logsKmsKey: InstanceType<typeof KmsKey>;
   logGroup: InstanceType<typeof LogGroup>;
-  executionRole: InstanceType<typeof Role>;
-  taskRole: InstanceType<typeof Role>;
+  // Present only when iamRoles.mode is "provision" (loomster#66); absent when
+  // reference-existing (the ARNs come from props, no Role resource is created).
+  executionRole?: InstanceType<typeof Role>;
+  taskRole?: InstanceType<typeof Role>;
   taskDefinition: InstanceType<typeof TaskDefinition>;
   service: InstanceType<typeof EcsService>;
   scalableTarget?: InstanceType<typeof ScalableTarget>;
@@ -465,7 +482,14 @@ export const LoomBackend = Composite<LoomBackendProps, LoomBackendResult>((props
   const { logsKmsKey, logGroup } = buildLogs(naming, tags, logRetentionDays, defs);
 
   // ── IAM (execution role + task role) ─────────────────────────────────
-  const { executionRole, taskRole } = buildRoles(naming, tags, logGroup, props, defs);
+  // provision (default) builds both roles; reference-existing uses the given
+  // ARNs and creates nothing (loomster#66), mirroring shared-foundation's
+  // agentRole seam — the ternary keeps the `new Role(...)` inside buildRoles at
+  // that function's top level, never in control flow (EVL002).
+  const iamRolesMode = props.iamRoles?.mode ?? "provision";
+  const rolesResult = iamRolesMode === "provision"
+    ? buildRoles(naming, tags, logGroup, props, defs)
+    : undefined;
 
   // ── Task definition ───────────────────────────────────────────────────
   const environment: InstanceType<typeof TaskDefinition_KeyValuePair>[] = [
@@ -519,8 +543,9 @@ export const LoomBackend = Composite<LoomBackendProps, LoomBackendResult>((props
   });
 
   const taskDefinitionFamily = naming.name("backend-task");
-  const executionRoleArn = executionRole.Arn as string;
-  const taskRoleArn = taskRole.Arn as string;
+  const referencedRoles = props.iamRoles?.mode === "reference-existing" ? props.iamRoles : undefined;
+  const executionRoleArn = rolesResult ? (rolesResult.executionRole.Arn as string) : referencedRoles!.executionRoleArn;
+  const taskRoleArn = rolesResult ? (rolesResult.taskRole.Arn as string) : referencedRoles!.taskRoleArn;
   const runtimePlatform = new TaskDefinition_RuntimePlatform({
     CpuArchitecture: props.cpuArchitecture ?? "X86_64",
     OperatingSystemFamily: "LINUX",
@@ -576,8 +601,7 @@ export const LoomBackend = Composite<LoomBackendProps, LoomBackendResult>((props
   return {
     logsKmsKey,
     logGroup,
-    executionRole,
-    taskRole,
+    ...(rolesResult ?? {}),
     taskDefinition,
     service,
     ...(autoscaling ?? {}),

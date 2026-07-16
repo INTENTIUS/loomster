@@ -24,7 +24,7 @@
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
 import type { LoomNamingParams, Tier } from "../lib/naming";
-import type { LogRetentionDays } from "../composites/loom-backend";
+import type { LogRetentionDays, LoomBackendIamRolesSeam } from "../composites/loom-backend";
 
 const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
 
@@ -107,3 +107,17 @@ export const litellmProxyBaseUrl = process.env.LOOM_LITELLM_PROXY_BASE_URL;
 export const litellmDiscoveryBaseUrl = process.env.LOOM_LITELLM_DISCOVERY_BASE_URL;
 export const litellmProxyApiKeySecretArn = process.env.LOOM_LITELLM_PROXY_API_KEY_SECRET_ARN;
 export const litellmProxyApiKeySecretKmsKeyArn = process.env.LOOM_LITELLM_PROXY_API_KEY_SECRET_KMS_KEY_ARN;
+
+/**
+ * Bring-your-own execution + task IAM roles (loomster#66). Set both
+ * LOOM_BACKEND_EXECUTION_ROLE_ARN and LOOM_BACKEND_TASK_ROLE_ARN to reference
+ * roles a platform/security team owns; otherwise the composite provisions them.
+ */
+export const iamRoles: LoomBackendIamRolesSeam | undefined =
+  process.env.LOOM_BACKEND_EXECUTION_ROLE_ARN && process.env.LOOM_BACKEND_TASK_ROLE_ARN
+    ? {
+        mode: "reference-existing",
+        executionRoleArn: process.env.LOOM_BACKEND_EXECUTION_ROLE_ARN,
+        taskRoleArn: process.env.LOOM_BACKEND_TASK_ROLE_ARN,
+      }
+    : undefined;

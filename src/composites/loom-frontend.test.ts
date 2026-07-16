@@ -165,3 +165,19 @@ describe("LoomFrontend — serializes to valid CloudFormation", () => {
     expect(template.Resources.loomFrontendLogGroup.Type).toBe("AWS::Logs::LogGroup");
   });
 });
+
+describe("LoomFrontend — reference-existing execution role (loomster#66)", () => {
+  const executionRoleArn = "arn:aws:iam::111111111111:role/platform-loom-fe-exec";
+
+  test("creates no execution Role resource; the task def uses the provided ARN", () => {
+    const instance = LoomFrontend(baseProps({
+      iamRole: { mode: "reference-existing", executionRoleArn },
+    }));
+    expect(Object.keys(instance.members)).not.toContain("executionRole");
+    expect((instance.taskDefinition as any).props.ExecutionRoleArn).toBe(executionRoleArn);
+  });
+
+  test("provision (default) still creates the execution role", () => {
+    expect(Object.keys(LoomFrontend(baseProps()).members)).toContain("executionRole");
+  });
+});
