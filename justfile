@@ -66,6 +66,13 @@ gitlab-validate:
     npx chant build --components --generate gitlab -o .gitlab-ci.yml
     git diff --exit-code .gitlab-ci.yml
 
+# Regenerate .github/workflows/components.yml from the discovered components
+# and diff it against the committed copy — fails if they've drifted. The same
+# drift is gated in CI by src/github-pipeline.test.ts's no-drift test.
+github-validate:
+    npx chant build --components --generate github -o .github/workflows/components.yml
+    git diff --exit-code .github/workflows/components.yml
+
 # Run a chant-generated GitLab pipeline in Docker (gitlab-ci-local; on-demand,
 # needs Docker) — see test/gitlab-runtime-e2e.sh. Not part of `check`.
 gitlab-runtime-e2e:
