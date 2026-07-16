@@ -36,6 +36,9 @@ and restore are about.
   manual snapshot on demand, and copies it cross-region for disaster recovery
   when `LOOM_DR_REGION` is set (with `LOOM_DR_KMS_KEY_ID` for an encrypted DB).
   `.github/workflows/backup.yml` runs it daily, inert until opted in.
+- **Cognito user export.** `chant run loom-cognito-export` exports the pool's
+  users, groups, and memberships (the records a re-synth can't restore) to
+  stdout, and to S3 when `LOOM_BACKUP_BUCKET` is set.
 
 ## Restoring today
 
@@ -100,11 +103,6 @@ These are tracked in `INTENTIUS/loomster#72`.
 
 - **Restore isn't automated past "new instance."** The cutover (repoint, redeploy,
   decommission) is manual. A gated `loom-restore` Op would drive it.
-- **No Cognito user backup.** A pool loss loses users. An exported `list-users`
-  dump would cover the records the pool config can't.
-- **No documented RPO / RTO per tier.** The recovery-point and recovery-time
-  expectations differ across `light`, `production`, and `production-ha`, and a
-  cross-region copy would change them again.
 
 ## Related
 
