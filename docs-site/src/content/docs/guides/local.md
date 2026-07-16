@@ -1,19 +1,19 @@
 ---
 title: Run Loom on your laptop
-description: The light tier runs a browsable, authenticated Loom locally against Floci — what works, what's a dev shortcut, and what can't run without real AWS.
+description: The light tier runs a browsable, authenticated Loom locally against Floci. What works, what's a dev shortcut, and what can't run without real AWS.
 ---
 
-`just local-up` stands up a **browsable, authenticated Loom on a laptop** — no
+`just local-up` stands up a **browsable, authenticated Loom on a laptop**, with no
 AWS account. [Floci](https://floci.io), a local AWS emulator, provides the
 managed pieces (RDS, Cognito, S3, ECR); the app tier (frontend, backend, and a
 reverse proxy standing in for the ALB) runs from a chant-generated
-`docker-compose.yml`, wired to Floci. You get the full web app — real Postgres,
+`docker-compose.yml`, wired to Floci. You get the full web app. Real Postgres,
 real API, logged in as an admin `local-dev` user. The one thing you can't do
 locally is *run an agent* (Bedrock AgentCore has no local emulator).
 
 ## Prerequisites
 
-- **Docker** — the only requirement. No AWS account, no cloud calls.
+- **Docker**, the only requirement. No AWS account, no cloud calls.
 - This repo, `npm install`.
 
 ## Bring it up
@@ -31,7 +31,7 @@ finishes:
 open http://localhost:8080
 ```
 
-You land in the Loom UI as `local-dev` (admin, all scopes) — no login step.
+You land in the Loom UI as `local-dev` (admin, all scopes), with no login step.
 Browse the catalog, settings, memories, credentials, costs; everything the API
 serves from Postgres is live.
 
@@ -54,18 +54,18 @@ just local-down    # tear down the app stack and Floci
 
 ## Auth is a dev bypass
 
-Floci's Cognito can't mint validatable JWTs — it returns opaque tokens, and the
+Floci's Cognito can't mint validatable JWTs. It returns opaque tokens, and the
 Cognito validator fetches its JWKS from real AWS for a pool that only exists in
 Floci. So the local tier leaves `LOOM_COGNITO_USER_POOL_ID` unset, which engages
 **Loom's own dev bypass** (`backend/app/dependencies/auth.py`): with no Cognito
 pool and no external IdP, every request is a `local-dev` user with the admin
-groups and all scopes. This is Loom's sanctioned local-dev path — it exercises
+groups and all scopes. This is Loom's sanctioned local-dev path. It exercises
 the real auth code and short-circuits only the identity check. Production uses
 the real Cognito pool and real JWT validation.
 
 ## Agents don't run locally
 
-Bedrock AgentCore — the runtime Loom deploys and invokes agents on — has no Floci
+Bedrock AgentCore, the runtime Loom deploys and invokes agents on, has no Floci
 emulator. chant still synthesizes the AgentCore resources (they're valid
 CloudFormation), but there's no runtime behind them. The app degrades gracefully:
 the agents catalog lists and manages agent *definitions* from Postgres like
@@ -82,5 +82,5 @@ chant. The harness (`scripts/local/local-up.sh`) is thin glue that resolves the
 runtime values and calls `chant` and `docker compose`.
 
 Before you rely on anything you see locally, read
-[Local caveats](/loomster/reference/local-caveats/) — the local run diverges from
+[Local caveats](/loomster/reference/local-caveats/). The local run diverges from
 real AWS in specific, load-bearing ways.

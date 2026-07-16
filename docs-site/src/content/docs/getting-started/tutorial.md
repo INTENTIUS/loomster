@@ -1,6 +1,6 @@
 ---
 title: Tutorial
-description: From a clean clone to a browsable Loom on your laptop, to the light tier on a real AWS account, to production — one codebase, tier and target as parameters.
+description: From a clean clone to a browsable Loom on your laptop, to the light tier on a real AWS account, to production. One codebase, tier and target as parameters.
 ---
 
 This repo *is* the tutorial. Every command below runs against the real
@@ -9,26 +9,26 @@ you have a working Loom deployment.
 
 Two things vary, and they're independent:
 
-- **Tier** — `light` / `production` / `production-ha`. Sizes one Loom: HTTP vs.
+- **Tier**. `light` / `production` / `production-ha`. Sizes one Loom: HTTP vs.
   HTTPS + PrivateLink, single-AZ RDS vs. Multi-AZ + RDS Proxy + rotation, one
   agent vs. two.
-- **Target** — [Floci](https://floci.io) (a local AWS emulator, no account, no
-  cost) or a real AWS account.
+- **Target**. Either [Floci](https://floci.io) (a local AWS emulator, no account,
+  no cost) or a real AWS account.
 
 Nothing in the source changes between them. This tutorial walks three points on
 those two axes, in order of how much they cost you:
 
-1. **Light on Floci** — browse a real Loom on your laptop, no AWS account.
-2. **Light on real AWS** — the same tier, deployed to an account for real. The
+1. **Light on Floci**. Browse a real Loom on your laptop, no AWS account.
+2. **Light on real AWS**, the same tier deployed to an account for real. The
    cheapest self-contained real deployment.
-3. **Production** — HTTPS, a custom domain, PrivateLink, Multi-AZ, a gated apply.
+3. **Production**. HTTPS, a custom domain, PrivateLink, Multi-AZ, a gated apply.
 
 ## Prerequisites
 
 - Node.js 22+ and npm.
-- Docker — for the local run and for building Loom's images. Not needed to
+- Docker, for the local run and for building Loom's images. Not needed to
   synthesize, typecheck, lint, or test.
-- The AWS CLI on `PATH` — the apply path shells out to it, against Floci or real
+- The AWS CLI on `PATH`. The apply path shells out to it, against Floci or real
   AWS with the same binary.
 
 ```
@@ -38,7 +38,7 @@ npm install
 ```
 
 `npm install` pulls published `@intentius/chant` and its lexicons from npm.
-There's no sibling checkout and no codegen step — a fresh clone builds on its
+There's no sibling checkout and no codegen step. A fresh clone builds on its
 own.
 
 ## Orientation
@@ -68,19 +68,19 @@ that consumes `shared-foundation`'s outputs, proving they resolve for a real
 consumer. It ships with the repo and rides the deploy waves; ignore it when
 counting Loom's own moving parts.
 
-Every physical name and cost tag comes from one call —
-`loomNaming(params, component)` — keyed
+Every physical name and cost tag comes from one call,
+`loomNaming(params, component)`, keyed
 `{project}-{env}-{instance}-{component}-{resource}`. Two of those segments are
 the dials you'll set:
 
 - **`LOOM_TIER`** sizes one Loom (the tier column above).
 - **`LOOM_INSTANCE`** is the tenant/boundary segment. Two instance values are two
-  collision-free Looms in the same account and region — the topology axis, see
-  [Org topology](#org-topology).
+  collision-free Looms in the same account and region. That's the topology axis,
+  see [Org topology](#org-topology).
 
 ## 1. Browse Loom on your laptop
 
-The fastest way to see Loom running. No AWS account, no cost — just Docker.
+The fastest way to see Loom running. No AWS account, no cost, just Docker.
 
 ```
 just local-up
@@ -95,7 +95,7 @@ chant-generated `docker-compose`. When it settles:
 open http://localhost:8080
 ```
 
-You land in the Loom UI as an admin `local-dev` user — no login step. The web
+You land in the Loom UI as an admin `local-dev` user, no login step. The web
 app runs for real: a genuine Postgres behind the backend API, the real schema
 migrations, the real routers (catalog, settings, costs, memories, credentials,
 and the rest). Browse all of it.
@@ -105,7 +105,7 @@ just local-down    # tear down the app stack and Floci
 ```
 
 Two things don't run locally, both because they can't: **agents** (Bedrock
-AgentCore has no local emulator — agent *definitions* are manageable, but deploy
+AgentCore has no local emulator. Agent *definitions* are manageable, but deploy
 and invoke need real AWS) and anything that depends on real AWS behavior (IAM
 enforcement, KMS crypto, CloudWatch telemetry). The full list is in [Local
 caveats](/loomster/reference/local-caveats/). For everything else, what you see
@@ -117,12 +117,12 @@ breakdown of what's real, what's a dev shortcut, and how the local run is wired.
 ## 2. Deploy the light tier to real AWS
 
 The light tier is the cheapest real deployment: HTTP-only, single-AZ RDS, one
-agent, and — this is the point — **it provisions its own network**. Hand it no
+agent, and, this is the point, **it provisions its own network**. Hand it no
 VPC and `shared-foundation` builds one. No platform-team subnets, no ACM
 certificate, no domain. This is the tier you deploy first to see Loom stand up on
 a real account.
 
-Point the AWS CLI at your account (a profile, SSO, or exported credentials — the
+Point the AWS CLI at your account (a profile, SSO, or exported credentials, the
 usual way), then:
 
 ```
@@ -136,7 +136,7 @@ npx chant run --components all --env dev
 
 `--components all` runs every component in the dependency order from the graph,
 threading each stack's outputs into the next (the cluster ARN, the DB secret,
-the Cognito pool, and the rest) — no parameter files, no copy-paste between
+the Cognito pool, and the rest). No parameter files, no copy-paste between
 applies. It builds and publishes the frontend and backend images by digest and
 applies each stack.
 
@@ -149,14 +149,14 @@ aws elbv2 describe-load-balancers \
 ```
 
 Loom comes up on a real ALB, backed by real RDS and Cognito. This is the tier
-that has been deployed end to end to a live account — the web app served, the
+that has been deployed end to end to a live account. The web app served, the
 data plane real.
 
 Two things to know going in:
 
 - **The agents wave needs Bedrock AgentCore enabled in your account and region.**
   It's the last wave, so if AgentCore isn't available, that stack errors *after*
-  the web app is already up and serving — the browsable Loom doesn't depend on
+  the web app is already up and serving. The browsable Loom doesn't depend on
   it. Everything through `loom-backend` stands up regardless.
 - **Building images on Apple Silicon?** Set `LOOM_CPU_ARCHITECTURE=ARM64` before
   the run. Fargate task definitions default to `X86_64`; an arm64 image on an
@@ -170,9 +170,9 @@ chant run loom-teardown --temporal        # gated, deletes only what this deploy
 ```
 
 Teardown is deliberately conservative: it deletes only stacks this deployment
-created and pauses for approval first. It leaves three things on purpose — an
+created and pauses for approval first. It leaves three things on purpose, an
 RDS **snapshot** (the DB's `DeletionPolicy`), the **S3 artifact bucket**, and the
-**ECR repositories** — so a teardown never destroys data or images you might
+**ECR repositories**, so a teardown never destroys data or images you might
 want back. Empty and delete those by hand when you're sure. For a throwaway light
 experiment you can also delete the CloudFormation stacks directly; the same
 three survive and want the same manual cleanup.
@@ -182,11 +182,11 @@ three survive and want the same manual cleanup.
 `production` and `production-ha` are the same source with a different tier. What
 the output gains: HTTPS with an ACM certificate and a Route53 alias, PrivateLink
 (an NLB plus a VPC endpoint service), the RDS Proxy and a credential-rotation
-schedule, and — on `production-ha` — Multi-AZ RDS and a second, no-code agent
+schedule, and, on `production-ha`, Multi-AZ RDS and a second, no-code agent
 alongside the low-code one.
 
 The trade for that is real inputs. Unlike light, production **does not provision
-a network** — PrivateLink needs private subnets a from-scratch VPC never has — so
+a network**. PrivateLink needs private subnets a from-scratch VPC never has, so
 you bring your own:
 
 ```
@@ -202,7 +202,7 @@ export LOOM_DB_PASSWORD=<a real secret>
 `shared-foundation` fails fast with a tier-specific message if the network vars
 are missing on a production tier, rather than surfacing a generic error deep in
 synthesis. Most teams don't let an application stack provision its own VPC, ACM
-cert, or IAM roles anyway — see [Adoption](/loomster/guides/adoption/) for how
+cert, or IAM roles anyway. See [Adoption](/loomster/guides/adoption/) for how
 every one of those is a `reference-existing` parameter.
 
 **The apply is gated.** `.github/workflows/deploy.yml` stays inert until you opt
@@ -210,9 +210,9 @@ in: set the repo variable `DEPLOY` to `true`, and provision a GitHub environment
 named `production` holding the AWS credentials the job assumes. It then runs the
 same `chant run --components all` orchestrator you ran by hand in step 2. For the
 first real apply, run that sequence yourself behind your own change process, then
-let the pipeline take over — the components don't change either way.
+let the pipeline take over. The components don't change either way.
 
-Beyond standing the stacks up, production gets the durable lifecycle Ops — gated
+Beyond standing the stacks up, production gets the durable lifecycle Ops, gated
 upgrade, credential rotation, teardown, and a scheduled observe/reconcile pair.
 See [Lifecycle](#lifecycle) below.
 
@@ -237,18 +237,18 @@ and hand over ids. Every referenceable piece here exposes a
 `provision | reference-existing | omit` choice through parameters, with
 reference-existing network and IAM as the first-class case, not a fallback:
 
-- **Network** — `LOOM_VPC_ID` / `LOOM_PUBLIC_SUBNET_IDS` / `LOOM_PRIVATE_SUBNET_IDS`
+- **Network**. `LOOM_VPC_ID` / `LOOM_PUBLIC_SUBNET_IDS` / `LOOM_PRIVATE_SUBNET_IDS`
   wire the ALB, ECS tasks, and RDS into ids a platform team already owns.
-- **Identity** — `LOOM_COGNITO_MODE=reference-existing` points this Loom at an
+- **Identity**. `LOOM_COGNITO_MODE=reference-existing` points this Loom at an
   existing pool, creating zero Cognito resources. This is also the multi-boundary
   pattern (see [Org topology](#org-topology)).
-- **KMS / ECR / ACM / Route53 / the agent IAM role** — each has its own mode,
+- **KMS / ECR / ACM / Route53 / the agent IAM role**, each with its own mode,
   independent of the others.
 
 None of this forks a composite. `src/examples/byo/` is a runnable proof: every
 seam across all five composites set to `reference-existing`, against one set of
 platform-owned resources, with no edits under `src/composites/`. The full
-seam-by-seam matrix — every default and what replacing it requires — is in
+seam-by-seam matrix, every default and what replacing it requires, is in
 [Adoption](/loomster/guides/adoption/).
 
 ## Org topology
@@ -256,11 +256,11 @@ seam-by-seam matrix — every default and what replacing it requires — is in
 Loom is one control plane with logical, group-based multi-tenancy, not hard
 isolation between teams. Two topologies:
 
-- **Single-boundary** — one Loom, many Cognito groups. RBAC plus the
+- **Single-boundary**. One Loom, many Cognito groups. RBAC plus the
   `loom:group` / `loom:application` / `loom:owner` tags `loom-cognito` attaches
   give each team a scoped view without a second deployment. Right when every team
   fits inside one compliance and account boundary.
-- **Multi-boundary** — many Looms, one per account, prod-vs-nonprod, or
+- **Multi-boundary**, many Looms, one per account, prod-vs-nonprod, or
   compliance domain, each a different `LOOM_INSTANCE`. A shared org-level Cognito
   pool (or an external OIDC IdP fronted the same way) is referenced by every
   instance via `LOOM_COGNITO_MODE=reference-existing`, with groups and scopes
@@ -286,7 +286,7 @@ Standing the stacks up is the start. Beyond the component deploys:
 | Teardown | `chant run loom-teardown` | Yes, owned-only | Whichever tier is live |
 
 The observe and reconcile Ops are stateless, so they run one-shot on the local
-executor (`npm run watch` / `npm run reconcile`) or on a schedule — either a
+executor (`npm run watch` / `npm run reconcile`) or on a schedule, either a
 plain GitHub Actions cron or each Op's own Temporal schedule.
 
 The upgrade, rotate, and teardown Ops need a durable approval gate and
@@ -298,13 +298,13 @@ chant run loom-upgrade-production --temporal        # pauses at "Approve"
 chant run signal loom-upgrade-production approve-loom-upgrade-production
 ```
 
-`loom-upgrade-light` is the exception — additive only, nothing to gate, so it
+`loom-upgrade-light` is the exception. Additive only, nothing to gate, so it
 runs on the local executor with no Temporal server.
 
 ## Generated CI
 
 `chant build --components --generate gitlab` synthesizes `.gitlab-ci.yml` from
-the same component graph the CLI reads — one stage per parallel-safe wave, one
+the same component graph the CLI reads. One stage per parallel-safe wave, one
 job per component, `needs:` mirroring `dependsOn`, cross-stack outputs threaded
 as job artifacts:
 
@@ -314,7 +314,7 @@ just gitlab-validate      # regenerate and diff against the committed copy
 ```
 
 No hand-written pipeline to keep in sync with `dependsOn`. `just
-gitlab-runtime-e2e` proves the generated pipeline actually executes — it runs
+gitlab-runtime-e2e` proves the generated pipeline actually executes. It runs
 the real `.gitlab-ci.yml` in Docker against Floci, deploying the light tier's
 infrastructure components end to end including the cross-stack output handoff
 between waves. It needs Docker and isn't part of gating CI.
@@ -328,23 +328,23 @@ variables each one needs.
 
 `npm run estimate-cost` shells out to [Infracost](https://www.infracost.io)
 against the synthesized templates, one estimate per component. chant carries no
-pricing data — this is plumbing. Without Infracost installed and authenticated,
+pricing data. This is plumbing. Without Infracost installed and authenticated,
 every component prints a skip notice and the script exits `0`, never failing the
 build.
 
-## Positioning, honestly
+## Positioning
 
 Loom's own deploy today is a manual, multi-step SAM process behind a
-`DEPLOYMENT.md` — clone three repos, run `sam build` / `sam deploy` per stack, in
-order, by hand. That's the baseline this replaces. Some of the difference is a
-real improvement; some of what sounds like a win is CloudFormation-vs-Terraform,
-or no difference at all. Which is which:
+`DEPLOYMENT.md`. You clone three repos and run `sam build` / `sam deploy` per
+stack, in order, by hand. That's the baseline this replaces. Some of the
+difference is a real improvement. Some of what sounds like a win is
+CloudFormation-vs-Terraform, or no difference at all. Which is which:
 
 **Real wins**
 
 - **Author-time type-check and lint of cross-resource references.** A wrong stack
   output name or an unresolved `Ref` is a build failure before anything
-  synthesizes — not a `ROLLBACK_COMPLETE` found against a live stack.
+  synthesizes, not a `ROLLBACK_COMPLETE` found against a live stack.
 - **Cross-stack wiring without hand-written glue.** `loom-backend` alone resolves
   nine inputs across three upstream stacks via `stackOutput(...)`, with no
   parameter file and no copy-paste between applies.
@@ -352,19 +352,19 @@ or no difference at all. Which is which:
   by hand. `chant graph --components` prints the exact order `chant run` and the
   generated pipeline both run.
 - **Build-once, promote-by-digest.** The images build once and are referenced by
-  digest through every later stage — never a build-per-environment that drifts
+  digest through every later stage, never a build-per-environment that drifts
   from what was tested.
 - **Tiering as config, not three forked copies.** One composite each,
   parameterized by tier.
-- **Generated CI** from the same graph the CLI reads — not a second source of
+- **Generated CI** from the same graph the CLI reads, not a second source of
   truth to keep in sync.
 - **A local emulator for the light tier.** Floci gives a no-account, no-cost path
   to run the whole thing before touching an account, and the CloudFormation
-  doesn't change between Floci and real AWS — only the endpoint does.
+  doesn't change between Floci and real AWS. Only the endpoint does.
 
 **Parity, not wins**
 
-- **"No state file."** CloudFormation manages state as a service — true of vanilla
+- **"No state file."** CloudFormation manages state as a service, true of vanilla
   SAM too. A real advantage over a Terraform-style state file, but not something
   chant adds on top of SAM.
 - **Walk-away.** chant emits standard CloudFormation and stops. SAM does the same.
@@ -379,9 +379,9 @@ Written down rather than papered over:
   against Loom's `v1.6.0` templates, but not yet applied to a live account. The
   light tier has.
 - Agents need Bedrock AgentCore, which has no local emulator and isn't enabled in
-  every account — see steps 1 and 2.
+  every account. See steps 1 and 2.
 - `loom-backend` / `loom-frontend` always provision their own ECS execution and
-  task IAM roles — no `reference-existing` seam for those yet.
+  task IAM roles. No `reference-existing` seam for those yet.
 
 The full seam-by-seam edges are in [Adoption](/loomster/guides/adoption/).
 

@@ -1,10 +1,10 @@
 ---
 title: Naming & Tagging
-description: How every Loom composite derives its physical resource names and cost-allocation tags from one shared parameter source — segment order, per-service length/char limits, uniqueness strategy, and lint enforcement.
+description: How every Loom composite derives its physical resource names and cost-allocation tags from one shared parameter source. Segment order, per-service length/char limits, uniqueness strategy, and lint enforcement.
 ---
 
 Every Loom composite derives its physical resource names and cost-allocation
-tags from one shared parameter source — `src/lib/naming.ts`'s
+tags from one shared parameter source, `src/lib/naming.ts`'s
 `loomNaming(params, component)`. Nothing is hardcoded: no names, ARNs, regions,
 account ids, or sizes in any composite.
 
@@ -14,13 +14,13 @@ account ids, or sizes in any composite.
 {project}-{env}-{instance}-{component}-{resource}
 ```
 
-- **`project`** — the deployment family, e.g. `loom`.
-- **`env`** — `dev` / `staging` / `prod`, etc.
-- **`instance`** — the tenant/boundary segment. Mandatory. This is what lets N
+- **`project`** is the deployment family, e.g. `loom`.
+- **`env`** is `dev` / `staging` / `prod`, etc.
+- **`instance`** is the tenant/boundary segment. Mandatory. This is what lets N
   Loom instances coexist in one AWS account or spread across many without
   collision (the multi-boundary topology).
-- **`component`** — the composite's own name, e.g. `loom-db`, `shared-foundation`.
-- **`resource`** — the specific resource within the component, e.g. `instance`,
+- **`component`** is the composite's own name, e.g. `loom-db`, `shared-foundation`.
+- **`resource`** is the specific resource within the component, e.g. `instance`,
   `uploads`, `domain`.
 
 Segments are joined with `-`, lowercased, and sanitized: anything outside
@@ -44,21 +44,21 @@ relevant `service` to `name()` and the helper applies the right one:
 | `ecrRepo` | Repository name: ≤256 chars | Truncate + hash tail (rarely triggers) |
 | `default` | No AWS-specific constraint known | No suffix, no truncation |
 
-The truncation hash is computed over the **full untruncated name**, so two
+The truncation hash is computed over the **full untruncated name**. Two
 different long names that share a common prefix still land on distinct truncated
-values — truncation never silently collapses two distinct resources onto the same
-physical name.
+values, so truncation never silently collapses two distinct resources onto the
+same physical name.
 
 The uniqueness suffix on `s3Bucket` / `cognitoDomain` is a short hash of
-`accountId:region` (falling back to `region` alone when the account id is unknown
-at author time, as with a reference-existing seam). It's deterministic: the same
-account/region pair always produces the same suffix, and two different accounts or
-regions always produce different ones.
+`accountId:region`, falling back to `region` alone when the account id is unknown
+at author time (as with a reference-existing seam). It's deterministic. The same
+account/region pair always produces the same suffix, and two different accounts
+or regions always produce different ones.
 
 ## Tags
 
 `tags(extra?)` returns the exact cost-allocation set attached to every taggable
-resource, from the same param source as `name()` — one source, two consumers:
+resource, from the same param source as `name()`. One source, two consumers:
 
 ```ts
 { component, tier, env, owner, instance }
@@ -71,7 +71,7 @@ that wants to set its own `owner`).
 
 `logicalId(component, resource)` produces a stable PascalCase id (e.g.
 `logicalId("loom-db", "instance")` yields `"LoomDbInstance"`), deliberately **not**
-derived from env/instance/tier — a CloudFormation logical id only needs to be
+derived from env/instance/tier. A CloudFormation logical id only needs to be
 unique within one template, not across deployments. Use it for both the
 resource's logical id and the corresponding `stackOutput(...)` key, so cross-stack
 wiring resolves by convention.
@@ -81,8 +81,8 @@ wiring resolves by convention.
 `.chant/rules/no-hardcoded-name.ts` (rule `LOOM001`) scans every `*.component.ts`
 file and everything under `src/composites/` and `src/components/` for a string
 literal on a known AWS physical-name CloudFormation property (`BucketName`,
-`DBInstanceIdentifier`, `LoadBalancerName`, `Domain`, and the rest) and flags it —
-the value should come from `loomNaming(...).name(...)` instead. Run `just lint`
+`DBInstanceIdentifier`, `LoadBalancerName`, `Domain`, and the rest) and flags it.
+The value should come from `loomNaming(...).name(...)` instead. Run `just lint`
 (`chant lint .`) to check.
 
 ## Example
@@ -109,6 +109,6 @@ const instanceId = naming.name("instance", { service: "rdsInstance" });
 // { component: "loom-db", tier: "production", env: "prod", owner: "platform-team", instance: "a" }
 const tags = naming.tags();
 
-// "LoomDbInstance" — stable across envs/instances
+// "LoomDbInstance", stable across envs/instances
 const outputKey = logicalId("loom-db", "instance");
 ```
