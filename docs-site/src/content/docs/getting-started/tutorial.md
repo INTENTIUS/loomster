@@ -325,8 +325,9 @@ The stateless lifecycle concerns (`watch` / `reconcile` / `cost-report` /
 per-workflow variable. The README's "Scheduled CI" section has the exact
 variables each one needs.
 
-GitLab is the most mature generated-pipeline target, GitHub carries the deploy
-and scheduled workflows, and Forgejo is on the roadmap. [CI
+GitHub and GitLab both have the full generated-pipeline lifecycle (committed,
+drift-validated, runtime-tested), GitHub additionally carries the deploy and
+scheduled workflows, and Forgejo is on the roadmap. [CI
 providers](/loomster/guides/ci/) covers where each stands.
 
 ## Cost (optional)

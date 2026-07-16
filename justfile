@@ -78,6 +78,11 @@ github-validate:
 gitlab-runtime-e2e:
     bash test/gitlab-runtime-e2e.sh
 
+# Run the chant-generated GitHub Actions workflow in Docker (act; on-demand,
+# needs Docker + act) — see test/github-runtime-e2e.sh. Not part of `check`.
+github-runtime-e2e:
+    bash test/github-runtime-e2e.sh
+
 # Everything CI-relevant.
 check: build lint test
 
