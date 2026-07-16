@@ -4,8 +4,8 @@
 # Floci provides the AWS-managed pieces (RDS/Cognito/S3/ECR) via chant; the app
 # tier (frontend/backend/proxy) runs from the chant-generated docker-compose
 # (`src/local/compose.ts` -> `chant build --lexicon docker`), wired to Floci by
-# a generated `.env`. Agents are out of scope locally (Bedrock AgentCore has no
-# Floci emulation) — see the local-tier docs.
+# a generated `.env`. Agents deploy locally too — the Floci image (loomster#98)
+# emulates Bedrock AgentCore's control plane — though invoke is a canned stub.
 #
 # Not gating CI; on-demand, needs Docker. `just local-up` / `just local-down`.
 set -euo pipefail
@@ -81,6 +81,6 @@ echo "==> [7/7] docker compose up"
 docker compose --project-name loom-local -f "$OUT/docker-compose.yml" --env-file "$OUT/.env" up -d --force-recreate
 
 echo ""
-echo "Loom is coming up at http://localhost:8080  (agents disabled locally — no AgentCore)"
+echo "Loom is coming up at http://localhost:8080  (agents deploy against the AgentCore-enabled Floci; invoke is a stub)"
 echo "  logs:  docker compose -p loom-local -f $OUT/docker-compose.yml logs -f"
 echo "  down:  just local-down"
