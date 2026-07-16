@@ -31,3 +31,6 @@ export const reconcileAttr = new SearchAttribute({ name: "Reconcile", type: "Key
 
 /** ReconcileOp (`onDrift: "pull-request"`): the opened PR's URL, from `reconcilePr`'s `prUrl`. */
 export const prAttr = new SearchAttribute({ name: "PR", type: "Keyword" });
+
+/** loom-backup: `Backup = "true"` marks every backup workflow run. */
+export const backupAttr = new SearchAttribute({ name: "Backup", type: "Keyword" });

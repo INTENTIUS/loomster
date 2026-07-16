@@ -32,6 +32,10 @@ and restore are about.
   running migrations (`ops/lib/rds-safety.ts`), and on rollback restores the
   latest manual snapshot to a **new** instance. It deliberately stops before
   cutover.
+- **On-demand and scheduled backup.** `chant run loom-backup` takes a labelled
+  manual snapshot on demand, and copies it cross-region for disaster recovery
+  when `LOOM_DR_REGION` is set (with `LOOM_DR_KMS_KEY_ID` for an encrypted DB).
+  `.github/workflows/backup.yml` runs it daily, inert until opted in.
 
 ## Restoring today
 
@@ -86,20 +90,14 @@ failure is handled, and both restore paths are manual today until the restore Op
 - **RTO** is ~1–2 minutes for a `production-ha` infrastructure failover, and
   otherwise the time to run the manual restore-and-cutover runbook above. A
   first-class `loom-restore` Op (#80) would shorten and de-risk that.
-- **A regional or account loss is not survivable today.** The cross-region /
-  cross-account snapshot copy (#79) is what changes that.
+- **A regional or account loss** is survivable only where the `loom-backup` Op's
+  DR copy is configured (`LOOM_DR_REGION`). Without it, the snapshots live in one
+  region.
 
 ## Gaps
 
-These are tracked in `INTENTIUS/loomster#72`. Today's backup and restore exist
-only inside the upgrade Op; there is no dedicated backup/restore Op and no
-disaster-recovery copy.
+These are tracked in `INTENTIUS/loomster#72`.
 
-- **No first-class backup Op.** Snapshots happen only as a side effect of an
-  upgrade. A `loom-backup` Op (on-demand plus a per-tier schedule) would take and
-  retain snapshots independently.
-- **No cross-region / cross-account copy.** A regional or account-level loss is
-  not survivable without `copy-db-snapshot` to a second location.
 - **Restore isn't automated past "new instance."** The cutover (repoint, redeploy,
   decommission) is manual. A gated `loom-restore` Op would drive it.
 - **No Cognito user backup.** A pool loss loses users. An exported `list-users`
