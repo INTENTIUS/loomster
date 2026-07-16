@@ -3,7 +3,7 @@ title: loomster
 description: Typed, tiered infrastructure-as-code for awslabs/loom on chant.
 template: splash
 hero:
-  tagline: Typed, tiered infrastructure-as-code for awslabs/loom on chant — component-based, tiered (light / production / production-ha), with generated CI and a naming scheme that lets multiple Loom instances coexist in one or many AWS accounts without collision.
+  tagline: Typed, tiered infrastructure-as-code for awslabs/loom on chant — six components, three tiers, generated CI, and a naming scheme that lets many Loom instances coexist in one or many AWS accounts without collision.
   actions:
     - text: Read the Tutorial
       link: /loomster/getting-started/tutorial/
@@ -18,39 +18,76 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 ## What this is
 
-Typed infrastructure-as-code for running [Loom](https://github.com/awslabs/loom), built to the same bar as a production stack. Loom's own deploy today is a manual multi-step SAM process behind a `DEPLOYMENT.md`; chant types it, lints it, dedupes the cross-stack glue, orders it, tiers it, and generates the pipeline.
+Typed infrastructure-as-code for running [Loom](https://github.com/awslabs/loom),
+built to the same bar as a production stack. Loom's own deploy today is a manual,
+multi-step SAM process behind a `DEPLOYMENT.md`; chant types it, lints it, dedupes
+the cross-stack glue, orders it, tiers it, and generates the pipeline.
 
-Six components, deployed in dependency order (`shared-foundation`, `loom-cognito`, `loom-db`, `loom-frontend`, `loom-backend`, `loom-agents`), pinned to Loom `v1.6.0`.
+Six components, deployed in dependency order (`shared-foundation`, `loom-cognito`,
+`loom-db`, `loom-frontend`, `loom-backend`, `loom-agents`), pinned to Loom
+`v1.6.0`.
 
-**What's proven today:** the full stack builds Loom's real images and deploys end to end on a local emulator ([Floci](https://floci.io), light tier) — 7/7 stacks `CREATE_COMPLETE` — and the synthesized CloudFormation is fidelity-audited against Loom's own `v1.6.0` templates. **Not yet proven:** a real-AWS run; `production` / `production-ha` synthesize and pass the audit but haven't been deployed against a live account. This is the path toward a production Loom deployment, not one a team has run for real yet — the [Overview](/loomster/getting-started/overview/)'s "Known gaps" section has the edges.
+## See it in one command
 
-## Same philosophy, two layers
+```
+just local-up   # browsable, authenticated Loom on your laptop — Docker, no AWS account
+```
 
-Loom's own [launch post](https://aws.amazon.com/blogs/opensource/building-secure-ai-agents-at-scale-introducing-loom-for-aws/) states its deployment model plainly: no code is generated at runtime and deployed into any environment — only configuration changes, and the control plane manages that configuration. That is also chant's pitch, one layer down the stack:
+Floci (a local AWS emulator) provides RDS, Cognito, S3, and ECR; the app runs
+from a chant-generated compose, browsable at `localhost:8080`. The web app runs
+for real — only agents need real AWS. See
+[Run Loom on your laptop](/loomster/guides/local/).
 
-- Loom scans the agent code once, ahead of any deployment. chant lints and type-checks a stack at author time, before anything synthesizes.
-- Loom never generates agent code at runtime. chant never generates infrastructure code at deploy time either — `chant build` emits a CloudFormation template once, and every environment applies that same template.
-- Loom redeploys by changing config, not by hand-editing a running agent. chant redeploys by changing tier, instance, or an adoption seam's mode, not by forking a composite per environment.
+**Where it runs today:** the full stack runs on Floci, and the **light tier is
+deployed end to end to a real AWS account** — Loom served on a real ALB, backed by
+real RDS and Cognito. `production` / `production-ha` synthesize and pass the
+fidelity audit against Loom's `v1.6.0` templates, but haven't been applied to a
+live account yet. The [Overview](/loomster/getting-started/overview/) has the full
+picture.
 
-Same discipline, applied to the layer underneath the one Loom's own blog post is about.
+## Same discipline, one layer down
+
+Loom's own [launch post](https://aws.amazon.com/blogs/opensource/building-secure-ai-agents-at-scale-introducing-loom-for-aws/)
+states its model plainly: no code is generated at runtime and deployed into any
+environment — only configuration changes, and the control plane manages that
+configuration. That is chant's pitch too, one layer beneath:
+
+- Loom scans the agent code once, ahead of any deployment. chant type-checks and
+  lints a stack at author time, before anything synthesizes.
+- Loom never generates agent code at runtime. chant never generates
+  infrastructure code at deploy time — `chant build` emits a CloudFormation
+  template once, and every environment applies that same template.
+- Loom redeploys by changing config, not by hand-editing a running agent. chant
+  redeploys by changing tier, instance, or an adoption seam's mode.
 
 ## Tier and topology, two independent dials
 
-Every physical name and cost-allocation tag traces back to one call — `loomNaming(params, component)` — keyed `{project}-{env}-{instance}-{component}-{resource}`. Two axes matter, and they're independent of each other:
+Every physical name and cost tag traces back to one call —
+`loomNaming(params, component)`, keyed
+`{project}-{env}-{instance}-{component}-{resource}`. Two axes, independent of each
+other:
 
-- **Tier** (`light` / `production` / `production-ha`) sizes *one* Loom — HTTP vs. HTTPS+PrivateLink, single-AZ RDS vs. Multi-AZ + RDS Proxy + rotation, one AgentCore agent vs. two.
-- **Instance** is the tenant/boundary segment — the topology axis. Two different instance values are two collision-free Looms in the same account and region.
+- **Tier** (`light` / `production` / `production-ha`) sizes one Loom — HTTP vs.
+  HTTPS + PrivateLink, single-AZ RDS vs. Multi-AZ + RDS Proxy + rotation, one
+  agent vs. two.
+- **Instance** is the tenant/boundary segment — the topology axis. Two instance
+  values are two collision-free Looms in the same account and region.
 
-**Rule of thumb: groups inside a boundary, a new Loom per boundary.** See the [Tutorial](/loomster/getting-started/tutorial/)'s "Org topology" section for the full single-boundary vs. multi-boundary decision.
+**Rule of thumb: groups inside a boundary, a new Loom per boundary.** See the
+[Tutorial](/loomster/getting-started/tutorial/#org-topology)'s Org topology
+section.
 
 <CardGrid stagger>
 	<Card title="Tutorial" icon="rocket">
-		Light tier on Floci (no AWS account), production/production-ha on real AWS behind a gated apply, tier/topology selection, adoption seams, lifecycle Ops, and an honest positioning section. [Start here](/loomster/getting-started/tutorial/).
+		From a browsable local Loom to the light tier on real AWS to production — one codebase, tier and target as parameters. [Start here](/loomster/getting-started/tutorial/).
+	</Card>
+	<Card title="Run Loom on your laptop" icon="laptop">
+		`just local-up` — a browsable, authenticated Loom against Floci, no AWS account. What's real, what's a dev shortcut, and how it's wired. [The local guide](/loomster/guides/local/).
 	</Card>
 	<Card title="Adoption" icon="puzzle">
-		Every composite exposes a `provision | reference-existing | omit` choice where meaningful — bring your own VPC, KMS key, ACM cert, Route53 zone, ECR repos, agent IAM role, RDS/Postgres endpoint, or Cognito pool. [The full matrix](/loomster/guides/adoption/).
+		Every composite exposes a `provision | reference-existing | omit` choice where meaningful — bring your own VPC, KMS key, ACM cert, Route53 zone, ECR repos, agent IAM role, Postgres endpoint, or Cognito pool. [The full matrix](/loomster/guides/adoption/).
 	</Card>
 	<Card title="Naming & Tagging" icon="document">
-		One shared parameter source for every physical resource name and cost-allocation tag — segment order, per-service length/char limits, uniqueness strategy, and lint enforcement. [Read the convention](/loomster/reference/naming/).
+		One shared parameter source for every physical resource name and cost-allocation tag — segment order, per-service limits, uniqueness strategy, and lint enforcement. [Read the convention](/loomster/reference/naming/).
 	</Card>
 </CardGrid>
