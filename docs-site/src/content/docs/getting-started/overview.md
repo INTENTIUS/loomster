@@ -24,9 +24,8 @@ it, tiers it, and generates the pipeline.
 - `production` / `production-ha` synthesize and pass the fidelity audit against
   Loom's `v1.6.0` templates, but haven't been applied to a live account yet.
 
-This page is the map. The [Tutorial](/loomster/getting-started/tutorial/) is the
-hands-on walkthrough, from a browsable local Loom to the light tier on real AWS
-to production.
+The [Tutorial](/loomster/getting-started/tutorial/) is the hands-on walkthrough,
+from a browsable local Loom to the light tier on real AWS to production.
 
 ## Components
 

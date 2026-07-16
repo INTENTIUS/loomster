@@ -15,11 +15,11 @@ reconcile, cost-report, audit).
 
 All three providers are at parity: each has a committed, drift-validated,
 unit-tested, runtime-proven component pipeline plus a gated deploy and scheduled
-lifecycle workflows. GitHub remains the project's own host, so its operational
+lifecycle workflows. GitHub is the project's own host, so its operational
 workflows are the reference; GitLab and Forgejo carry the same shapes in their
-own dialects. This page says exactly what each provides.
+own dialects.
 
-## Where each provider stands
+## Support by provider
 
 | Capability | GitHub | GitLab | Forgejo |
 |---|---|---|---|
@@ -29,11 +29,11 @@ own dialects. This page says exactly what each provides.
 | Gated deploy pipeline | shipped (`deploy.yml`) | shipped (`.gitlab-ci.yml` deploy job) | shipped (`.forgejo/workflows/deploy.yml`) |
 | Scheduled lifecycle (watch/reconcile/cost/audit) | shipped (4 workflows) | shipped (schedule-gated jobs) | shipped (4 workflows) |
 
-All three providers are now at parity.
+All three providers are at parity.
 
 ## GitHub
 
-GitHub is the live host, and it carries the operational surface.
+GitHub is the project's own host and carries the operational workflows.
 
 - **Gated deploy.** `.github/workflows/deploy.yml` runs `chant run --components all`
   behind an opt-in gate (repo variable `DEPLOY` plus a `production` environment).
@@ -52,12 +52,10 @@ GitHub is the live host, and it carries the operational surface.
   end to end including the cross-stack artifact handoff between jobs. On-demand,
   needs Docker and `act`, not part of gating CI.
 
-GitHub now has the full generated-pipeline lifecycle, matching GitLab, on top of
-the deploy and scheduled workflows it already carried.
-
 ## GitLab
 
-GitLab has the most mature generated-pipeline lifecycle.
+GitLab uses a single `.gitlab-ci.yml`, so the generated pipeline and the
+operational jobs share one file.
 
 - **Generated + committed.** `npm run generate:gitlab` writes
   `.gitlab/components.yml`. The root `.gitlab-ci.yml` `include`s it (on push/MR,
@@ -77,13 +75,12 @@ GitLab has the most mature generated-pipeline lifecycle.
   also tier-gated). Mirrors the GitHub crons.
 
 The component pipeline runs on push and is skipped on schedule (a conditional
-`include`), so a scheduled lifecycle run never triggers a deploy. GitLab now has
-the full lifecycle, matching GitHub.
+`include`), so a scheduled lifecycle run never triggers a deploy.
 
 ## Forgejo (Codeberg / Gitea)
 
 Forgejo Actions is a GitHub-Actions dialect (`runs-on: docker`, actions resolved
-from `code.forgejo.org`), and it's at the same level as the other two.
+from `code.forgejo.org`).
 
 - **Generated + committed.** `npm run generate:forgejo` writes the committed
   `.forgejo/workflows/components.yml`.

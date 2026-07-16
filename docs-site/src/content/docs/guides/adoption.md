@@ -8,9 +8,9 @@ the rest, all through parameters, with no forking of any composite's source.
 Every referenceable piece of Loom's infrastructure exposes a
 `provision | reference-existing | omit` choice, where `omit` makes sense at all;
 some pieces are load-bearing and only choose between `provision` and
-`reference-existing`. The seams ship with each composite; this page is the map
-across all of them, plus a runnable example (`src/examples/byo/`) and a
-verification test (`src/examples/byo/adoption.test.ts`) proving they compose.
+`reference-existing`. The seams ship with each composite. A runnable example
+(`src/examples/byo/`) and a verification test
+(`src/examples/byo/adoption.test.ts`) prove they compose.
 
 ## Reference-existing network + IAM is the primary case
 
@@ -91,7 +91,7 @@ Written down rather than papered over:
 
 - **No bastion composite.** Nothing here models a bastion host, and Loom's own
   upstream template doesn't define one either. There's nothing to reference or
-  omit, and this page doesn't invent one to check a box.
+  omit.
 - **A fully-`reference-existing` `loom-db` / `loom-cognito` stack has zero
   resources of its own**, by design. `chant build --lexicon aws` on a directory
   with no lexicon-tagged declarable at all (not even a `Parameter`) fails its own

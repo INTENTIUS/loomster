@@ -152,7 +152,7 @@ Loom comes up on a real ALB, backed by real RDS and Cognito. This is the tier
 that has been deployed end to end to a live account. The web app served, the
 data plane real.
 
-Two things to know going in:
+Two caveats:
 
 - **The agents wave needs Bedrock AgentCore enabled in your account and region.**
   It's the last wave, so if AgentCore isn't available, that stack errors *after*
@@ -345,7 +345,7 @@ Loom's own deploy today is a manual, multi-step SAM process behind a
 `DEPLOYMENT.md`. You clone three repos and run `sam build` / `sam deploy` per
 stack, in order, by hand. That's the baseline this replaces. Some of the
 difference is a real improvement. Some of what sounds like a win is
-CloudFormation-vs-Terraform, or no difference at all. Which is which:
+CloudFormation-vs-Terraform, or no difference at all.
 
 **Real wins**
 
@@ -379,8 +379,6 @@ CloudFormation-vs-Terraform, or no difference at all. Which is which:
   produces the template, not the output format.
 
 ## Known gaps
-
-Written down rather than papered over:
 
 - `production` / `production-ha` have been synthesized and fidelity-audited
   against Loom's `v1.6.0` templates, but not yet applied to a live account. The
