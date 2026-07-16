@@ -127,11 +127,14 @@ describe("chant build --components --generate gitlab — Loom component set", ()
     }
   });
 
-  test("the committed .gitlab-ci.yml at the repo root matches a fresh generate (no drift)", async () => {
+  test("the committed .gitlab/components.yml matches a fresh generate (no drift)", async () => {
     const result = await generateComponentsPipeline(".", "gitlab", { env: "production" });
     expect(result.success).toBe(true);
 
-    const committed = readFileSync(resolve(".gitlab-ci.yml"), "utf-8");
+    // The generated component pipeline lives in .gitlab/components.yml, included
+    // by the hand-written root .gitlab-ci.yml (which adds the gated deploy and
+    // scheduled lifecycle jobs — see the root file).
+    const committed = readFileSync(resolve(".gitlab/components.yml"), "utf-8");
     expect(committed).toBe(result.yaml);
   });
 });

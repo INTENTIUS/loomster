@@ -164,15 +164,24 @@ tooling (known once `vendor/loom` is checked out); override it via
 
 ## Generated CI
 
-`chant build --components --generate gitlab` synthesizes `.gitlab-ci.yml` from the
-same component graph `chant graph --components` reads. One stage per
+`chant build --components --generate gitlab` synthesizes the component pipeline
+from the same component graph `chant graph --components` reads. One stage per
 parallel-safe wave, one job per component, `needs:` mirroring `dependsOn`,
-cross-stack outputs threaded as job artifacts.
+cross-stack outputs threaded as job artifacts. It's written to
+`.gitlab/components.yml`; the root `.gitlab-ci.yml` `include`s it and adds a gated
+`deploy` job and the scheduled lifecycle jobs (the component pipeline is skipped
+on schedule pipelines, so a scheduled run never triggers a deploy).
 
 ```
-npm run generate:gitlab   # writes .gitlab-ci.yml
+npm run generate:gitlab   # writes .gitlab/components.yml
 just gitlab-validate      # regenerate + diff against the committed copy (fails on drift)
 ```
+
+GitHub gets the same treatment via `npm run generate:github` (committed
+`.github/workflows/components.yml`, `just github-validate`, `just
+github-runtime-e2e` via `act`). See
+[CI providers](https://intentius.io/loomster/guides/ci/) for how GitHub, GitLab,
+and Forgejo compare.
 
 Every generated job is a thin trigger (`chant run --components <name>`) that
 assumes `chant`, its deps, and `dist/*.template.json` already exist. Neither is
@@ -182,9 +191,10 @@ custom runner image with `chant` + `awscli` preinstalled, or `beforeScript:
 ["npm ci", "npm run synth"]` plus an `awscli` install on a stock image.
 
 `just gitlab-runtime-e2e` proves the generated pipeline actually executes. It
-runs the real `.gitlab-ci.yml` in Docker (via `gitlab-ci-local`) against Floci,
-deploying the light tier's infrastructure components end to end including the
-cross-stack output handoff between waves. Needs Docker; not part of gating CI.
+runs the generated component pipeline in Docker (via `gitlab-ci-local`) against
+Floci, deploying the light tier's infrastructure components end to end including
+the cross-stack output handoff between waves. Needs Docker; not part of gating CI.
+The GitHub equivalent is `just github-runtime-e2e` (via `act`).
 
 ## Scheduled CI
 

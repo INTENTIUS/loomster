@@ -63,8 +63,8 @@ audit:
 # Regenerate .gitlab-ci.yml from the discovered components (chant#892) and
 # diff it against the committed copy — fails if they've drifted.
 gitlab-validate:
-    npx chant build --components --generate gitlab -o .gitlab-ci.yml
-    git diff --exit-code .gitlab-ci.yml
+    npx chant build --components --generate gitlab -o .gitlab/components.yml
+    git diff --exit-code .gitlab/components.yml
 
 # Regenerate .github/workflows/components.yml from the discovered components
 # and diff it against the committed copy — fails if they've drifted. The same

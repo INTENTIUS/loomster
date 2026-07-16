@@ -1,73 +1,82 @@
-stages:
-  - wave-1
-  - wave-2
-  - wave-3
-  - wave-4
+# Root GitLab pipeline. It wires together three things a team on GitLab needs:
+#
+#  1. The generated component pipeline (.gitlab/components.yml) — one job per
+#     component, wave-ordered by `needs:`. Regenerate it with
+#     `npm run generate:gitlab`; src/gitlab-pipeline.test.ts guards it against
+#     drift. It is included on normal (push / MR / web) pipelines and SKIPPED on
+#     schedule pipelines, so a scheduled lifecycle run never triggers a deploy.
+#  2. A gated deploy job (inert until DEPLOY=true; a manual button, never on a
+#     schedule), mirroring .github/workflows/deploy.yml.
+#  3. The scheduled lifecycle jobs (watch / reconcile / cost-report / audit),
+#     each inert until its own variable is set and run only on schedules,
+#     mirroring the GitHub crons.
+#
+# See https://intentius.io/loomster/guides/ci/ for how each provider compares.
 
-loom-cognito:
-  stage: wave-1
-  image: node:22-slim
-  script:
-    - chant run --components loom-cognito --env production --dump-outputs loom-cognito.outputs.json
-  artifacts:
-    paths:
-      - loom-cognito.outputs.json
+include:
+  - local: .gitlab/components.yml
+    rules:
+      - if: '$CI_PIPELINE_SOURCE != "schedule"'
 
-shared-foundation:
-  stage: wave-1
-  image: node:22-slim
-  script:
-    - chant run --components shared-foundation --env production --dump-outputs shared-foundation.outputs.json
-  artifacts:
-    paths:
-      - shared-foundation.outputs.json
+variables:
+  LOOM_ENV: dev
+  LOOM_TIER: light
 
-downstream-stub:
-  stage: wave-2
-  image: node:22-slim
+# ── Gated deploy (mirrors deploy.yml) ────────────────────────────────────────
+# Inert until the DEPLOY variable is set. Never runs on a schedule, and always a
+# manual button rather than automatic. Provide AWS credentials as protected/
+# masked CI/CD variables (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY).
+deploy:
+  stage: .post
+  image: node:22
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
+    - if: '$DEPLOY == "true"'
+      when: manual
+    - when: never
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq awscli git >/dev/null 2>&1
+    - npm ci --no-audit --no-fund
+    - npm run vendor
   script:
-    - chant run --components downstream-stub --env production --seed-outputs shared-foundation.outputs.json
-  needs:
-    - shared-foundation
+    - npx chant run --components all --env "$LOOM_ENV"
 
-loom-db:
-  stage: wave-2
-  image: node:22-slim
-  script:
-    - chant run --components loom-db --env production --seed-outputs shared-foundation.outputs.json --dump-outputs loom-db.outputs.json
-  needs:
-    - shared-foundation
-  artifacts:
-    paths:
-      - loom-db.outputs.json
+# ── Scheduled lifecycle (mirrors watch/reconcile/cost-report/audit.yml) ───────
+# A hidden base for the shared setup. Each concrete job runs only on a schedule
+# and only when its own SCHEDULED_* variable is set to "true".
+.lifecycle:
+  stage: .pre
+  image: node:22
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq awscli git >/dev/null 2>&1
+    - npm ci --no-audit --no-fund
 
-loom-frontend:
-  stage: wave-2
-  image: node:22-slim
+watch:
+  extends: .lifecycle
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_WATCH == "true"'
   script:
-    - chant run --components loom-frontend --env production --seed-outputs shared-foundation.outputs.json
-  needs:
-    - shared-foundation
+    - npm run watch
 
-loom-backend:
-  stage: wave-3
-  image: node:22-slim
+reconcile:
+  extends: .lifecycle
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_RECONCILE == "true" && ($LOOM_TIER == "production" || $LOOM_TIER == "production-ha")'
   script:
-    - chant run --components loom-backend --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-db.outputs.json --seed-outputs loom-cognito.outputs.json --dump-outputs loom-backend.outputs.json
-  needs:
-    - loom-cognito
-    - loom-db
-    - shared-foundation
-  artifacts:
-    paths:
-      - loom-backend.outputs.json
+    - npm run reconcile
 
-loom-agents:
-  stage: wave-4
-  image: node:22-slim
+cost-report:
+  extends: .lifecycle
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_COST_REPORT == "true"'
   script:
-    - chant run --components loom-agents --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-cognito.outputs.json --seed-outputs loom-backend.outputs.json
-  needs:
-    - loom-backend
-    - loom-cognito
-    - shared-foundation
+    - npm run synth
+    - npm run estimate-cost
+
+audit:
+  extends: .lifecycle
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_AUDIT == "true"'
+  script:
+    - npm run audit
