@@ -55,12 +55,17 @@ pieces. The result is a browsable, authenticated Loom with no AWS account. See
 | Tier | Floci | Real AWS |
 |---|---|---|
 | `light` | Full stack, 7/7 stacks `CREATE_COMPLETE`, including the code-config agents wave against the AgentCore-enabled image | Deployed end to end — the real ALB served the Loom SPA, backed by real RDS and Cognito, backend passed the ECS health-gate. The agents wave has not been applied to a live account. |
-| `production` | Not applied | Not applied |
-| `production-ha` | Not applied | Not applied |
+| `production` | Full stack, 7/7 `CREATE_COMPLETE` against a BYO VPC — RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend autoscaling, and both agent runtimes (assistant code-config + harness) | Not applied |
+| `production-ha` | Full stack, 7/7 `CREATE_COMPLETE` — as production, plus Multi-AZ RDS, secret rotation, and a 2-task backend floor | Not applied |
 
-`production` and `production-ha` synthesize and pass the fidelity audit against
-Loom's `v1.6.0` CloudFormation, but neither has been applied to Floci or a live
-account. Treat them as reviewed-and-ready, not proven. The agents wave is proven
-on Floci at the `light` tier; real agent execution (invoke) still needs AgentCore
-on a live account, since the emulator's invoke path is a canned stub. See
-[Local caveats](/loomster/reference/local-caveats/).
+Both production tiers deploy end to end on Floci against a bring-your-own VPC
+(the tier guard requires `LOOM_VPC_ID` + subnets and a `LOOM_DOMAIN_NAME`; a
+provisioned VPC is light-only). Every tier-distinguishing resource creates. Two
+things Floci can't reflect: it runs RDS as a single container, so `MultiAZ` is
+requested in the template but reported `false` by the API; and the app data path
+(ALB → ECS) isn't emulated, so the runtime health-gate is real-AWS-only.
+
+Neither production tier has been applied to a **live account** yet — that's the
+remaining step for a real HA proof. Real agent execution (invoke) also still
+needs AgentCore on a live account, since the emulator's invoke path is a canned
+stub. See [Local caveats](/loomster/reference/local-caveats/).
