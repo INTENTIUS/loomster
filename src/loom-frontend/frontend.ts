@@ -28,4 +28,6 @@ export const frontend = LoomFrontend({
   memory: params.memory,
   desiredCount: params.desiredCount,
   logRetentionDays: params.logRetentionDays,
+
+  iamRole: params.iamRole,
 });

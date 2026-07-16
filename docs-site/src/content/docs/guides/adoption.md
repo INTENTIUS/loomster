@@ -25,11 +25,12 @@ first-class for both, not a fallback:
   exists for a from-scratch light/local synth, and the composite refuses it on
   `production` / `production-ha` (there's no provisioned path to PrivateLink's
   required private subnets).
-- **IAM**, partially covered. `shared-foundation`'s `agentRole` seam (the
-  AgentCore execution role scoped to that stack's own artifact bucket, ECR KMS,
-  and logs) is `provision | reference-existing | omit`, same as every other
-  `shared-foundation` seam. `loom-backend`'s execution/task roles and
-  `loom-frontend`'s execution role are **not yet seamed**. See "Known gaps".
+- **IAM**, first-class across the board. `shared-foundation`'s `agentRole` seam
+  (the AgentCore execution role scoped to that stack's own artifact bucket, ECR
+  KMS, and logs) is `provision | reference-existing | omit`. `loom-backend`'s
+  execution + task roles and `loom-frontend`'s execution role are
+  `provision | reference-existing` too (`LOOM_BACKEND_EXECUTION_ROLE_ARN` /
+  `LOOM_BACKEND_TASK_ROLE_ARN`, `LOOM_FRONTEND_EXECUTION_ROLE_ARN`).
 
 ## Shared Cognito pool / external IdP across multiple Looms
 
@@ -64,7 +65,8 @@ boundary.
 | `loom-db` | `dbIngress` (provision mode only) | `cidr` \| `security-group` | `cidr` (Loom's own `10.0.0.0/8`) | `sourceSecurityGroupId` — typically `shared-foundation`'s own ECS task SG |
 | `loom-cognito` | `identity` | `provision` \| `reference-existing` \| `omit` | `provision` | `userPoolId`, `domain`, `resourceServerIdentifier`, `m2mClientId`; optionally `userPoolArn`/`userClientId`/`issuer`/`discoveryUrl`/`tokenUrl` (derived when omitted) |
 | `loom-cognito` | `groups` / demo seed | opt-in only | empty (`resourceGroups: []`), demo seed `undefined` | A team's own org structure — Loom's upstream 12 groups / 22 demo users are never defaulted in |
-| `loom-backend` / `loom-frontend` | execution/task IAM roles | **always provisioned — no seam yet** | n/a | See "Known gaps" |
+| `loom-backend` | execution + task IAM roles | `provision` \| `reference-existing` | `provision` | both `executionRoleArn` + `taskRoleArn` (`LOOM_BACKEND_EXECUTION_ROLE_ARN` / `LOOM_BACKEND_TASK_ROLE_ARN`) — a referenced execution role needs ECR-pull + logs-write; the task role needs whatever the app calls |
+| `loom-frontend` | execution IAM role | `provision` \| `reference-existing` | `provision` | `executionRoleArn` (`LOOM_FRONTEND_EXECUTION_ROLE_ARN`) — needs ECR-pull + logs-write; no task role (matches Loom's template) |
 | `loom-backend` / `loom-frontend` | Cross-stack inputs (cluster ARN, target-group ARN, DB secret ARN, Cognito pool id, image URI) | plain composite props | n/a (all required or explicitly optional per prop) | Any value from any source — a `stackOutput(...)`-resolved CFN Parameter (the concrete stacks' convention) or a literal known at author time (`src/examples/byo/`'s convention) |
 | `loom-agents` | agent execution role | via `shared-foundation`'s `agentRole` seam | provisioned | `agentRoleArn` (see the `agentRole` row above) — the composite creates no other referenceable resource of its own |
 | CI | Generated pipeline vs. BYO-CI | `chant build --components --generate gitlab` \| hand off the Build Archive | generated | Point existing CI at the Build Archive instead of running the generated pipeline — see `examples/adopt-alb-services/` in the chant repo |
@@ -87,13 +89,6 @@ resources of its own serializes to valid CloudFormation with no dangling `Ref` o
 
 Written down rather than papered over:
 
-- **`loom-backend` / `loom-frontend` execution/task IAM roles.** Both composites
-  always provision their own roles. There's no `reference-existing` seam for
-  them, unlike every upstream piece they depend on (network, KMS, ECR, data,
-  identity, and `shared-foundation`'s own `agentRole`). A team that needs
-  pre-existing roles can't get them through params today; this would take a seam
-  added to those two composites, matching the shape `agentRole` already
-  establishes.
 - **No bastion composite.** Nothing here models a bastion host, and Loom's own
   upstream template doesn't define one either. There's nothing to reference or
   omit, and this page doesn't invent one to check a box.

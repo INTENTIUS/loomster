@@ -21,6 +21,7 @@
 import { Parameter } from "@intentius/chant-lexicon-aws";
 import type { LoomNamingParams, Tier } from "../lib/naming";
 import type { LogRetentionDays } from "../composites/loom-backend";
+import type { LoomFrontendIamRoleSeam } from "../composites/loom-frontend";
 
 const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
 
@@ -60,6 +61,16 @@ export const cpuArchitecture: "X86_64" | "ARM64" | undefined =
   process.env.LOOM_CPU_ARCHITECTURE === "ARM64" ? "ARM64"
     : process.env.LOOM_CPU_ARCHITECTURE === "X86_64" ? "X86_64"
       : undefined;
+/**
+ * Bring-your-own execution IAM role (loomster#66). Set
+ * LOOM_FRONTEND_EXECUTION_ROLE_ARN to reference a role a platform/security team
+ * owns; otherwise the composite provisions it.
+ */
+export const iamRole: LoomFrontendIamRoleSeam | undefined =
+  process.env.LOOM_FRONTEND_EXECUTION_ROLE_ARN
+    ? { mode: "reference-existing", executionRoleArn: process.env.LOOM_FRONTEND_EXECUTION_ROLE_ARN }
+    : undefined;
+
 export const cpu = process.env.LOOM_FRONTEND_CPU;
 export const memory = process.env.LOOM_FRONTEND_MEMORY;
 export const desiredCount = process.env.LOOM_FRONTEND_DESIRED_COUNT ? Number(process.env.LOOM_FRONTEND_DESIRED_COUNT) : undefined;

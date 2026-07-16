@@ -257,3 +257,27 @@ describe("LoomBackend — serializes to valid CloudFormation", () => {
     expect(policyProps.ScalingTargetId).toEqual({ Ref: "loomBackendScalableTarget" });
   });
 });
+
+describe("LoomBackend — reference-existing IAM roles (loomster#66)", () => {
+  const executionRoleArn = "arn:aws:iam::111111111111:role/platform-loom-exec";
+  const taskRoleArn = "arn:aws:iam::111111111111:role/platform-loom-task";
+
+  test("creates no execution/task Role resources; the task def uses the provided ARNs", () => {
+    const instance = LoomBackend(baseProps({
+      iamRoles: { mode: "reference-existing", executionRoleArn, taskRoleArn },
+    }));
+    const names = Object.keys(instance.members);
+    expect(names).not.toContain("executionRole");
+    expect(names).not.toContain("taskRole");
+
+    const taskDefProps = (instance.taskDefinition as any).props;
+    expect(taskDefProps.ExecutionRoleArn).toBe(executionRoleArn);
+    expect(taskDefProps.TaskRoleArn).toBe(taskRoleArn);
+  });
+
+  test("provision (default) still creates both roles", () => {
+    const names = Object.keys(LoomBackend(baseProps()).members);
+    expect(names).toContain("executionRole");
+    expect(names).toContain("taskRole");
+  });
+});

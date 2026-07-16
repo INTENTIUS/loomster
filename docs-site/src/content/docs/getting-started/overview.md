@@ -125,8 +125,6 @@ Written down rather than papered over:
   need AgentCore enabled in the account. Everything else in the app runs locally.
   See [Run Loom on your laptop](/loomster/guides/local/) and
   [Local caveats](/loomster/reference/local-caveats/).
-- `loom-backend` / `loom-frontend` always provision their own ECS execution and
-  task IAM roles. No `reference-existing` seam for those yet.
 - No bastion composite, and Loom's own upstream template doesn't define one either.
 
 The full seam-by-seam detail is in [Adoption](/loomster/guides/adoption/).

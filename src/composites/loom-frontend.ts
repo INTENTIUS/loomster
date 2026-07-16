@@ -59,9 +59,23 @@ import type { LogRetentionDays } from "./loom-backend";
 // Props
 // ─────────────────────────────────────────────────────────────────────────
 
+/**
+ * Execution-role seam (chant#898 / loomster#66) — `provision` (default) builds
+ * the ECS execution role; `reference-existing` uses an ARN a platform/security
+ * team already owns, creating no Role of its own. The frontend has no task role
+ * (matching Loom's own template). A referenced execution role must carry
+ * ECR-pull + logs-write.
+ */
+export type LoomFrontendIamRoleSeam =
+  | { mode?: "provision" }
+  | { mode: "reference-existing"; executionRoleArn: string };
+
 export interface LoomFrontendProps {
   /** Naming/tagging parameter source (chant#897) — one call derives every physical name + tag below. */
   naming: LoomNamingParams;
+
+  /** Bring-your-own execution IAM role (loomster#66). Defaults to `provision`. */
+  iamRole?: LoomFrontendIamRoleSeam;
 
   // ── Cross-stack wiring (chant#889) ──────────────────────────────────────
   // Plain values here — the Ref()/stackOutput() indirection that actually
@@ -177,10 +191,49 @@ function buildLogs(naming: LoomNaming, tags: TagList, retentionDays: LogRetentio
   return { logsKmsKey, logGroup };
 }
 
+/**
+ * The ECS execution role (ECR pull + logs write). Extracted so it can be built
+ * conditionally via a ternary (loomster#66's reference-existing seam) without a
+ * `new Role(...)` in control flow — the `new` stays at this function's top level
+ * (EVL002), same shape as loom-backend's `buildRoles`.
+ */
+function buildFrontendExecutionRole(
+  naming: LoomNaming,
+  tags: TagList,
+  logGroup: InstanceType<typeof LogGroup>,
+  execDefaults: Partial<ConstructorParameters<typeof Role>[0]> | undefined,
+): { executionRole: InstanceType<typeof Role> } {
+  const logGroupArn = logGroup.Arn as string;
+  const logGroupArnWildcard = Sub`${logGroupArn}:*`;
+  // Hoist naming.name(...) to consts before the constructors — EVL001 forbids a
+  // non-literal call inline in a resource property (matches buildRoles).
+  const executionRoleName = naming.name("exec-role");
+  const ecrPullPolicyName = naming.name("ecr-pull-policy");
+  const logsPolicyName = naming.name("logs-policy");
+  const executionRole = new Role(mergeDefaults({
+    RoleName: executionRoleName,
+    AssumeRolePolicyDocument: ECS_TASKS_ASSUME_ROLE_POLICY,
+    Policies: [
+      new Role_Policy({ PolicyName: ecrPullPolicyName, PolicyDocument: ECR_PULL_POLICY_DOCUMENT as unknown as string }),
+      new Role_Policy({
+        PolicyName: logsPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [{ Effect: "Allow", Action: ["logs:CreateLogStream", "logs:PutLogEvents"], Resource: [logGroupArn, logGroupArnWildcard] }],
+        } as unknown as string,
+      }),
+    ],
+    Tags: tags,
+  }, execDefaults));
+  return { executionRole };
+}
+
 export type LoomFrontendResult = {
   logsKmsKey: InstanceType<typeof KmsKey>;
   logGroup: InstanceType<typeof LogGroup>;
-  executionRole: InstanceType<typeof Role>;
+  // Present only when iamRole.mode is "provision" (loomster#66); absent when
+  // reference-existing (the ARN comes from props, no Role resource is created).
+  executionRole?: InstanceType<typeof Role>;
   taskDefinition: InstanceType<typeof TaskDefinition>;
   service: InstanceType<typeof EcsService>;
 };
@@ -202,24 +255,13 @@ export const LoomFrontend = Composite<LoomFrontendProps, LoomFrontendResult>((pr
   const { logsKmsKey, logGroup } = buildLogs(naming, tags, logRetentionDays, defs);
 
   // ── IAM (execution role only — no task role, matches Loom's own template) ──
-  const logGroupArn = logGroup.Arn as string;
-  const logGroupArnWildcard = Sub`${logGroupArn}:*`;
-  const executionRoleName = naming.name("exec-role");
-  const executionRole = new Role(mergeDefaults({
-    RoleName: executionRoleName,
-    AssumeRolePolicyDocument: ECS_TASKS_ASSUME_ROLE_POLICY,
-    Policies: [
-      new Role_Policy({ PolicyName: naming.name("ecr-pull-policy"), PolicyDocument: ECR_PULL_POLICY_DOCUMENT as unknown as string }),
-      new Role_Policy({
-        PolicyName: naming.name("logs-policy"),
-        PolicyDocument: {
-          Version: "2012-10-17",
-          Statement: [{ Effect: "Allow", Action: ["logs:CreateLogStream", "logs:PutLogEvents"], Resource: [logGroupArn, logGroupArnWildcard] }],
-        } as unknown as string,
-      }),
-    ],
-    Tags: tags,
-  }, defs?.executionRole));
+  // provision (default) builds it; reference-existing uses the given ARN and
+  // creates nothing (loomster#66) — the ternary keeps `new Role` at the helper's
+  // top level, never in control flow (EVL002).
+  const iamRoleMode = props.iamRole?.mode ?? "provision";
+  const roleResult = iamRoleMode === "provision"
+    ? buildFrontendExecutionRole(naming, tags, logGroup, defs?.executionRole)
+    : undefined;
 
   // ── Task definition ───────────────────────────────────────────────────
   const containerDefinition = new TaskDefinition_ContainerDefinition({
@@ -239,7 +281,9 @@ export const LoomFrontend = Composite<LoomFrontendProps, LoomFrontendResult>((pr
   });
 
   const taskDefinitionFamily = naming.name("frontend-task");
-  const executionRoleArn = executionRole.Arn as string;
+  const executionRoleArn = roleResult
+    ? (roleResult.executionRole.Arn as string)
+    : (props.iamRole as { executionRoleArn: string }).executionRoleArn;
   const runtimePlatform = new TaskDefinition_RuntimePlatform({
     CpuArchitecture: props.cpuArchitecture ?? "X86_64",
     OperatingSystemFamily: "LINUX",
@@ -284,5 +328,5 @@ export const LoomFrontend = Composite<LoomFrontendProps, LoomFrontendResult>((pr
     Tags: tags,
   }, defs?.service));
 
-  return { logsKmsKey, logGroup, executionRole, taskDefinition, service };
+  return { logsKmsKey, logGroup, ...(roleResult ?? {}), taskDefinition, service };
 }, "LoomFrontend");

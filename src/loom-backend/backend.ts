@@ -55,4 +55,6 @@ export const backend = LoomBackend({
   desiredCount: params.desiredCount,
   maxCount: params.maxCount,
   logRetentionDays: params.logRetentionDays,
+
+  iamRoles: params.iamRoles,
 });
