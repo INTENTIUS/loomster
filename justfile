@@ -105,6 +105,17 @@ production-floci-e2e:
 production-ha-floci-e2e:
     bash test/production-floci-e2e.sh production-ha
 
+# LIVE production E2E against a real AWS account — real ALB/RDS/PrivateLink/ACM +
+# Bedrock AgentCore, live assertions, gated teardown. Needs real creds + a delegated
+# custom domain (run `npm run dns-setup` first). Real cost. See the
+# operations/production-live-e2e runbook and test/production-live-e2e.sh.
+production-live-e2e:
+    bash test/production-live-e2e.sh production
+
+# Same, for production-ha (Multi-AZ RDS + rotation — materially more cost).
+production-ha-live-e2e:
+    bash test/production-live-e2e.sh production-ha
+
 # Everything CI-relevant.
 check: build lint test
 

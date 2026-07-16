@@ -25,6 +25,7 @@
     "cognito-export": "chant run loom-cognito-export",
     "restore": "chant run loom-restore",
     "restore-drill": "chant run loom-restore-drill",
+    "dns-setup": "chant run loom-dns-setup",
     "seed": "chant run loom-seed",
     "validate": "tsx scripts/validate/run.ts",
     "estimate-cost": "bash scripts/estimate-cost.sh",

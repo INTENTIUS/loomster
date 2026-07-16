@@ -40,3 +40,6 @@ export const restoreAttr = new SearchAttribute({ name: "Restore", type: "Keyword
 
 /** loom-restore-drill: `RestoreDrill = "true"` marks every restore-drill workflow run. */
 export const restoreDrillAttr = new SearchAttribute({ name: "RestoreDrill", type: "Keyword" });
+
+/** loom-dns-setup: `DnsSetup = "true"` marks every dns-setup workflow run. */
+export const dnsSetupAttr = new SearchAttribute({ name: "DnsSetup", type: "Keyword" });
