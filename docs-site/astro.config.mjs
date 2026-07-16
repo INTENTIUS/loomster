@@ -19,9 +19,17 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Adoption',
+					items: [
+						{ label: 'Overview & the matrix', slug: 'adoption/overview' },
+						{ label: 'Network & IAM', slug: 'adoption/network-and-iam' },
+						{ label: 'DNS & certificates', slug: 'adoption/dns' },
+						{ label: 'Identity & topology', slug: 'adoption/identity' },
+					],
+				},
+				{
 					label: 'Guides',
 					items: [
-						{ label: 'Adoption', slug: 'guides/adoption' },
 						{ label: 'Run Loom on your laptop', slug: 'guides/local' },
 						{ label: 'CI providers', slug: 'guides/ci' },
 						{ label: 'Backup & restore', slug: 'guides/backup-restore' },

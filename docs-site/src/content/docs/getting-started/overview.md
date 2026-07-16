@@ -87,4 +87,4 @@ Written down rather than papered over:
   and [Local caveats](/loomster/reference/local-caveats/).
 - No bastion composite, and Loom's own upstream template doesn't define one either.
 
-The full seam-by-seam detail is in [Adoption](/loomster/guides/adoption/).
+The full seam-by-seam detail is in [Adoption](/loomster/adoption/overview/).

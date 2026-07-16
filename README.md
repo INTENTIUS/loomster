@@ -13,7 +13,7 @@ it, tiers it, and generates the pipeline.
 
 **Docs:** [Tutorial](https://intentius.io/loomster/getting-started/tutorial/) ·
 [Overview](https://intentius.io/loomster/getting-started/overview/) ·
-[Adoption](https://intentius.io/loomster/guides/adoption/) ·
+[Adoption](https://intentius.io/loomster/adoption/overview/) ·
 [Run it locally](https://intentius.io/loomster/guides/local/) ·
 [Tiers & targets](https://intentius.io/loomster/reference/tiers/) ·
 [Screens](https://intentius.io/loomster/reference/screens/) ·
@@ -260,7 +260,7 @@ meaningful. Bring your own VPC, KMS key, ACM cert, Route53 zone, ECR repos, agen
 IAM role, Postgres endpoint, or Cognito pool (including one pool shared across
 instances), all through parameters, no composite forked. `src/examples/byo/`
 deploys against pre-existing everything with zero composite edits. See
-[Adoption](https://intentius.io/loomster/guides/adoption/) for the full matrix.
+[Adoption](https://intentius.io/loomster/adoption/overview/) for the full matrix.
 
 ## Cost estimate (optional)
 

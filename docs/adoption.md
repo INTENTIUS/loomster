@@ -1,9 +1,13 @@
 # Adoption
 
-The adoption matrix lives in the docs site, kept as the single source:
+Adoption is now a top-level section on the docs site, kept as the single source:
 
-**https://intentius.io/loomster/guides/adoption/**
+**https://intentius.io/loomster/adoption/overview/**
 
-The full seam-by-seam matrix — `provision | reference-existing | omit` for every
-referenceable piece of Loom's infrastructure — plus the runnable
-bring-your-own-everything example and the known gaps.
+How a team adopts Loom-on-chant — keep, replace, or omit each piece of
+infrastructure through parameters, never forking a composite. The section:
+
+- [Overview & the seam matrix](https://intentius.io/loomster/adoption/overview/)
+- [Network & IAM](https://intentius.io/loomster/adoption/network-and-iam/)
+- [DNS & certificates](https://intentius.io/loomster/adoption/dns/)
+- [Identity & topology](https://intentius.io/loomster/adoption/identity/)

@@ -31,7 +31,7 @@ Constant across every tier: the six components, cross-stack wiring, cost tags,
 the naming scheme, and always-on secret encryption (no opt-out). Adoption seams
 (`provision | reference-existing | omit`) are also tier-independent — a `light`
 deploy can reference an existing VPC, a `production` deploy can provision one. See
-[Adoption](/loomster/guides/adoption/).
+[Adoption](/loomster/adoption/overview/).
 
 Each tier also comes with seeded application defaults so a fresh deploy is usable
 out of the box: `light` defaults to a `demo` seed profile, the production tiers to
