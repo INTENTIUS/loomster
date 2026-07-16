@@ -95,6 +95,14 @@ describe("LoomBackend — light tier", () => {
     expect("LOOM_DATABASE_URL").not.toMatch(/password|secret|token|api[_-]?key|credential/i);
   });
 
+  test("secrets audit (#47): light tier (databaseUrlPlain, no litellm key) emits ZERO Secrets — nothing for Floci's ECS to fail to inject", () => {
+    const instance = LoomBackend(baseProps({ databaseUrlPlain: "postgresql+psycopg2://loom:pw@ep:5432/loom" }));
+    const container = ((instance.taskDefinition as any).props.ContainerDefinitions[0] as any).props;
+    // The DB URL is the only required secret and rides plain Environment on light;
+    // LOOM_LITELLM_PROXY_API_KEY is optional (absent unless a key ARN is configured).
+    expect(container.Secrets).toEqual([]);
+  });
+
   test("network configuration uses the given private subnets + SG, no public IP", () => {
     const instance = LoomBackend(baseProps());
     const props = (instance.service as any).props;
