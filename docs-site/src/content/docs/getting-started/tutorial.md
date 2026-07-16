@@ -259,7 +259,7 @@ and serve on the ALB's own DNS name — the same thing the light tier does.
 `shared-foundation` fails fast with a tier-specific message if the network vars
 are missing on a production tier, rather than surfacing a generic error deep in
 synthesis. Most teams don't let an application stack provision its own VPC, DNS
-zone, ACM cert, or IAM roles anyway. See [Adoption](/loomster/guides/adoption/)
+zone, ACM cert, or IAM roles anyway. See [Adoption](/loomster/adoption/overview/)
 for how every one of those is a `reference-existing` parameter.
 
 **The apply is gated.** `.github/workflows/deploy.yml` stays inert until you opt
@@ -306,7 +306,7 @@ None of this forks a composite. `src/examples/byo/` is a runnable proof: every
 seam across all five composites set to `reference-existing`, against one set of
 platform-owned resources, with no edits under `src/composites/`. The full
 seam-by-seam matrix, every default and what replacing it requires, is in
-[Adoption](/loomster/guides/adoption/).
+[Adoption](/loomster/adoption/overview/).
 
 ## Org topology
 
@@ -444,7 +444,7 @@ CloudFormation-vs-Terraform, or no difference at all.
   execution needs Bedrock AgentCore on a live account (not enabled everywhere).
   See steps 1 and 2.
 
-The full seam-by-seam edges are in [Adoption](/loomster/guides/adoption/).
+The full seam-by-seam edges are in [Adoption](/loomster/adoption/overview/).
 
 ## Where to go next
 
@@ -452,7 +452,7 @@ The full seam-by-seam edges are in [Adoption](/loomster/guides/adoption/).
 - [Screens](/loomster/reference/screens/) — what every screen shows after a deploy, and what's seeded.
 - [Seeded defaults](/loomster/reference/seeding/) — the seed profiles and how to run them.
 - [Local caveats](/loomster/reference/local-caveats/) — where local diverges from real AWS.
-- [Adoption](/loomster/guides/adoption/) — the full bring-your-own-everything matrix.
+- [Adoption](/loomster/adoption/overview/) — the full bring-your-own-everything matrix.
 - [CI providers](/loomster/guides/ci/) — GitHub, GitLab, and Forgejo support.
 - [Backup & restore](/loomster/guides/backup-restore/) — data protection and the restore runbook.
 - [Naming & tagging](/loomster/reference/naming/) — the naming convention in full.
