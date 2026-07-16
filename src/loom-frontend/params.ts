@@ -53,6 +53,13 @@ export const pPublicSubnetIds = new Parameter("String", { description: "Comma-se
 export const pImageUri = new Parameter("String", { description: "Published frontend image (build-once, promote-by-digest — @Publish.uri)" });
 
 // ── Sizing (chant#890 tier defaults live in the composite; overrides here) ──
+// Fargate CPU architecture (LOOM_CPU_ARCHITECTURE), shared with loom-backend.
+// Default (unset) → the composite's X86_64. Set ARM64 for Apple-Silicon-built
+// images or Graviton — must match how the image is built.
+export const cpuArchitecture: "X86_64" | "ARM64" | undefined =
+  process.env.LOOM_CPU_ARCHITECTURE === "ARM64" ? "ARM64"
+    : process.env.LOOM_CPU_ARCHITECTURE === "X86_64" ? "X86_64"
+      : undefined;
 export const cpu = process.env.LOOM_FRONTEND_CPU;
 export const memory = process.env.LOOM_FRONTEND_MEMORY;
 export const desiredCount = process.env.LOOM_FRONTEND_DESIRED_COUNT ? Number(process.env.LOOM_FRONTEND_DESIRED_COUNT) : undefined;

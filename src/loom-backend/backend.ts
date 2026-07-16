@@ -49,6 +49,7 @@ export const backend = LoomBackend({
   litellmProxyApiKeySecretArn: params.litellmProxyApiKeySecretArn,
   litellmProxyApiKeySecretKmsKeyArn: params.litellmProxyApiKeySecretKmsKeyArn,
 
+  cpuArchitecture: params.cpuArchitecture,
   cpu: params.cpu,
   memory: params.memory,
   desiredCount: params.desiredCount,

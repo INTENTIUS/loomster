@@ -49,6 +49,14 @@ describe("LoomFrontend — light tier", () => {
     expect(props.Memory).toBe("512");
   });
 
+  test("RuntimePlatform defaults to X86_64/LINUX; ARM64 when set (#62)", () => {
+    const def = (LoomFrontend(baseProps()).taskDefinition as any).props.RuntimePlatform.props;
+    expect(def.CpuArchitecture).toBe("X86_64");
+    expect(def.OperatingSystemFamily).toBe("LINUX");
+    const arm = (LoomFrontend(baseProps({ cpuArchitecture: "ARM64" })).taskDefinition as any).props.RuntimePlatform.props;
+    expect(arm.CpuArchitecture).toBe("ARM64");
+  });
+
   test("container never runs privileged and always has a LogConfiguration (WAW047/WAW048)", () => {
     const instance = LoomFrontend(baseProps());
     const props = (instance.taskDefinition as any).props;

@@ -23,6 +23,7 @@ export const frontend = LoomFrontend({
 
   publicSubnetIds: Split(SUBNET_LIST_DELIMITER, Ref(params.pPublicSubnetIds)) as unknown as string[],
 
+  cpuArchitecture: params.cpuArchitecture,
   cpu: params.cpu,
   memory: params.memory,
   desiredCount: params.desiredCount,
