@@ -9,10 +9,17 @@ knowing chant.
 
 ## Drive it with your agent
 
-The repo is built to be operated by an agent from the first command. `skills/loomster/SKILL.md`
-is the capability map — every lifecycle verb, the golden paths, and the guardrails
-that keep a deploy from locking itself out. chant also serves an MCP server
-(`chant serve mcp`, stdio) for inspecting and building the graph. Ask your agent to
+Clone it and your agent already knows how to operate it:
+
+```
+git clone https://github.com/INTENTIUS/loomster
+cd loomster && npm install
+```
+
+The checkout ships `skills/loomster/SKILL.md`, the capability map an agent reads on
+its own — every lifecycle verb, the golden paths, and the guardrails that keep a
+deploy from locking itself out. chant also serves an MCP server (`chant serve mcp`,
+stdio) for inspecting and building the graph. From the checkout, ask your agent to
 "stand up Loom locally" and it knows what to run.
 
 **Docs:** [Tutorial](https://intentius.io/loomster/getting-started/tutorial/) ·
