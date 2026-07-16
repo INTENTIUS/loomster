@@ -20,11 +20,17 @@ export default defineConfig({
 				},
 				{
 					label: 'Guides',
-					items: [{ label: 'Adoption', slug: 'guides/adoption' }],
+					items: [
+						{ label: 'Adoption', slug: 'guides/adoption' },
+						{ label: 'Run Loom on your laptop', slug: 'guides/local' },
+					],
 				},
 				{
 					label: 'Reference',
-					items: [{ label: 'Naming & Tagging', slug: 'reference/naming' }],
+					items: [
+						{ label: 'Naming & Tagging', slug: 'reference/naming' },
+						{ label: 'Local caveats', slug: 'reference/local-caveats' },
+					],
 				},
 			],
 		}),
