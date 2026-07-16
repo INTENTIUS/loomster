@@ -283,6 +283,7 @@ Standing the stacks up is the start. Beyond the component deploys:
 | Reconcile (cloud-to-code PR, owned-only) | `npm run reconcile` | No — opens a PR, never mutates the cloud | `production` / `production-ha` |
 | Upgrade (snapshot, migrate, promote-by-digest) | `chant run loom-upgrade-<tier>` | On production tiers | Whichever tier is live |
 | Rotate (Cognito M2M client, RDS credential, ACM cert) | `chant run loom-rotate-production[-ha]` | Every phase | `production` / `production-ha` |
+| Backup (RDS snapshot + DR copy) | `chant run loom-backup` | No | Every tier |
 | Teardown | `chant run loom-teardown` | Yes, owned-only | Whichever tier is live |
 
 The observe and reconcile Ops are stateless, so they run one-shot on the local

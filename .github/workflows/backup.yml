@@ -1,0 +1,48 @@
+name: backup
+
+# Scheduled CI-cron trigger for the loom-backup Op — a labelled RDS snapshot
+# (and a cross-region DR copy when LOOM_DR_REGION is set). A thin trigger only:
+# this job's one real step is `npm run backup` (`chant run loom-backup`). The
+# backup is additive and non-destructive, so it runs on the local executor with
+# no gate — see ops/loom-backup.op.ts.
+#
+# CI-cron is one trigger host among several — a team may run this instead of, or
+# alongside, a Temporal schedule. Every tier backs up.
+#
+# Inert until a team opts in: set the repo variable SCHEDULED_BACKUP to 'true'
+# and provide the `production` environment's AWS credentials (same one deploy.yml
+# uses). For a DR copy, also set the LOOM_DR_REGION (and, for an encrypted DB,
+# LOOM_DR_KMS_KEY_ID) repo variables.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: ${{ vars.SCHEDULED_BACKUP == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: backup
+        run: npm run backup
+        env:
+          LOOM_ENV: ${{ vars.LOOM_ENV || 'dev' }}
+          LOOM_TIER: ${{ vars.LOOM_TIER || 'light' }}
+          LOOM_DR_REGION: ${{ vars.LOOM_DR_REGION }}
+          LOOM_DR_KMS_KEY_ID: ${{ vars.LOOM_DR_KMS_KEY_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

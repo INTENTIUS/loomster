@@ -144,6 +144,7 @@ rollback, or on the local executor where they don't.
 | `loom-upgrade-light` | Snapshot RDS, migrate, promote-by-digest. | No — local executor |
 | `loom-upgrade-production[-ha]` | Same, plus an approval gate and an RDS-restore rollback. | Yes |
 | `loom-rotate-production[-ha]` | Rotate the Cognito M2M client, the RDS credential, and (custom-domain tiers) the ALB's ACM cert. | Yes |
+| `loom-backup` | Labelled RDS snapshot, plus a cross-region DR copy when `LOOM_DR_REGION` is set. Additive. | No — local executor |
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes. No foreign deletes. | Yes |
 
 ```
@@ -197,6 +198,7 @@ cron can't give. Each workflow stays inert until a team opts in.
 | `reconcile.yml` | `loom-reconcile` | hourly | `vars.SCHEDULED_RECONCILE == 'true'` **and** `vars.LOOM_TIER` is `production`/`production-ha` |
 | `cost-report.yml` | `npm run synth && npm run estimate-cost` | weekly | `vars.SCHEDULED_COST_REPORT == 'true'` |
 | `audit.yml` | `loom-audit` | daily | `vars.SCHEDULED_AUDIT == 'true'` |
+| `backup.yml` | `loom-backup` | daily | `vars.SCHEDULED_BACKUP == 'true'` |
 
 All four also declare `workflow_dispatch` for an on-demand run.
 `watch.yml`/`reconcile.yml` additionally need the `production` environment (they
