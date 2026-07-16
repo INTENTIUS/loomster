@@ -7,9 +7,9 @@ import { phase, stackOutput, type Component } from "@intentius/chant/components"
  * `wait-for-stack` are both existing aws-lexicon capabilities — no bespoke
  * verb (same shape `examples/bedrock-agentcore-agent/agent.component.ts`,
  * chant#882, establishes). `archetype: "infra"` — no Build/Publish phase:
- * both agent images are supplied out-of-band (see
- * `../composites/loom-agents.ts`'s file header — this repo has no
- * agent-specific ECR repo to publish into).
+ * the agent artifacts are supplied out-of-band (see
+ * `../composites/loom-agents.ts`'s file header — the Strands agent zip and
+ * the harness's stock image both already exist).
  *
  * `dependsOn` orders agents last: `shared-foundation` (chant#886, the
  * artifact bucket + ECS security group agents reuse), `loom-cognito`
@@ -30,15 +30,16 @@ import { phase, stackOutput, type Component } from "@intentius/chant/components"
  * installs the agent's `requirements.txt` and zips `agents/strands_agent/
  * src/` into an S3 object) and deploys it to Bedrock AgentCore Runtime via
  * `agentRuntimeArtifact.codeConfiguration` (a Python zip/code artifact,
+ * `runtime: PYTHON_3_13`,
  * `entryPoint: ["opentelemetry-instrument", "src/handler.py"]`) — never
- * `containerConfiguration`. So `assistantImageUri` staying an "already
- * exists, supplied out-of-band" `Parameter` (see
- * `../loom-agents/params.ts`) isn't a gap this repo could close by vendoring
- * a Dockerfile that doesn't exist upstream; it would need a different
- * capability (build a zip artifact, publish to S3, most likely a new
- * `agent-artifact-build`-shaped verb) to genuinely close, which is out of
- * #20's scope. `harnessImageUri`'s "stock/managed image" is unaffected
- * either way — it was never Loom source to vendor in the first place.
+ * `containerConfiguration`. The composite models this directly through
+ * `AgentCoreAgent`'s `code` artifact source (chant#973): `pAssistantCodePrefix`
+ * (see `../loom-agents/params.ts`) is the zip's `code.s3.prefix` within the
+ * shared-foundation artifact bucket. What stays out-of-band is only the zip
+ * *build+upload* — pip-install the agent's `requirements.txt` and push the
+ * archive to that prefix — which would need a new `agent-artifact-build`-shaped
+ * verb to close (out of #20's scope). `harnessImageUri`'s "stock/managed
+ * image" is unaffected either way — it was never Loom source to vendor.
  */
 export const loomAgents: Component = {
   name: "loom-agents",

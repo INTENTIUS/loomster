@@ -14,14 +14,15 @@
  * `LOOM_PRIVATE_SUBNET_IDS` env var (chant#928/loomster#35) — comma-joined
  * (CloudFormation Outputs can't be lists), split back apart in `./agents.ts`.
  *
- * The two agent image URIs (`pAssistantImageUri`/`pHarnessAgentImageUri`)
- * are also `Parameter`s, but unlike `pImageUri` in `../loom-backend/params.ts`
- * neither is wired through a `"@Publish.uri"` build/publish phase — this
- * stack composes no Build/Publish phase of its own (see
- * `../composites/loom-agents.ts`'s file header: there is no agent-specific
- * ECR repo to publish into). Both images are "already exists in ECR,
- * supplied out-of-band" values — a real deploy passes them as CloudFormation
- * parameter overrides.
+ * The assistant's code prefix (`pAssistantCodePrefix`) and the harness image
+ * (`pHarnessAgentImageUri`) are also `Parameter`s, but unlike `pImageUri` in
+ * `../loom-backend/params.ts` neither is wired through a `"@Publish.uri"`
+ * build/publish phase — this stack composes no Build/Publish phase of its own
+ * (see `../composites/loom-agents.ts`'s file header: there is no agent-specific
+ * ECR repo, and the Strands agent ships as an S3 zip built out-of-band by
+ * Loom's own `build_agent_artifact()`, not a container). Both are "already
+ * exists, supplied out-of-band" values — a real deploy passes them as
+ * CloudFormation parameter overrides.
  */
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
@@ -72,8 +73,14 @@ export const pDomainName = new Parameter("String", { description: "Loom's own re
 export const pCognitoTokenUrl = new Parameter("String", { description: "Cognito OAuth2 token endpoint — the AgentCore Identity RFC 8693 token-exchange substrate (loom-cognito oCognitoTokenUrl)", defaultValue: "" });
 export const pCognitoDiscoveryUrl = new Parameter("String", { description: "Cognito OIDC discovery URL (loom-cognito oCognitoDiscoveryUrl)", defaultValue: "" });
 
-// ── Agent images (chant#893) — supplied out-of-band, no Build/Publish phase here ──
-export const pAssistantImageUri = new Parameter("String", { description: "Published low-code Strands agent image (built/pushed out-of-band — see README)" });
+// ── Agent artifacts (chant#893/#973) — supplied out-of-band, no Build/Publish phase here ──
+// The low-code Strands agent ships as an S3 zip run on a managed Python
+// runtime (AgentCore codeConfiguration), matching Loom's own build_agent_artifact()
+// upload — this is its `code.s3.prefix` within shared-foundation's artifact bucket.
+export const pAssistantCodePrefix = new Parameter("String", {
+  description: "S3 key of the low-code Strands agent zip within the artifact bucket (AgentCore codeConfiguration prefix; built/uploaded out-of-band — see README)",
+  defaultValue: process.env.LOOM_ASSISTANT_CODE_PREFIX ?? "strands_agent/agent.zip",
+});
 export const pHarnessAgentImageUri = new Parameter("String", { description: "No-code AgentCore-harness agent image — config-only, stock/managed image (production/production-ha only)", defaultValue: "" });
 
 // ── Sizing / policy knobs (chant#890 tier defaults live in the composite; overrides here) ──

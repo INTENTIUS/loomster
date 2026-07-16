@@ -24,7 +24,7 @@ export const agents = LoomAgents({
   cognitoTokenUrl: Ref(params.pCognitoTokenUrl) as unknown as string,
   cognitoDiscoveryUrl: Ref(params.pCognitoDiscoveryUrl) as unknown as string,
 
-  assistantImageUri: Ref(params.pAssistantImageUri) as unknown as string,
+  assistantCodePrefix: Ref(params.pAssistantCodePrefix) as unknown as string,
   harnessImageUri: Ref(params.pHarnessAgentImageUri) as unknown as string,
 
   privateSubnetIds: Split(SUBNET_LIST_DELIMITER, Ref(params.pPrivateSubnetIds)) as unknown as string[],

@@ -13,19 +13,19 @@
  *
  * **Two agent flavors** (chant#893 blog-refinement comment):
  * - **low-code** — a Strands Python agent (Loom's own
- *   `agents/strands_agent`). One per deployment, every tier. Its image is
- *   built/published out-of-band: this repo has no agent-specific ECR repo
- *   to publish into (shared-foundation, chant#886, only provisions
- *   frontend/backend repos), so `assistantImageUri` is a plain "already
- *   exists in ECR" value — the same boundary the sibling
- *   `examples/bedrock-agentcore-agent` (chant#882) draws around
- *   `containerUri`. Turns out this isn't only an ECR-repo gap: vendoring
- *   real Loom v1.6.0 source (#20) found `agents/strands_agent/` has no
- *   `Dockerfile` upstream at all — Loom's own backend builds this agent as a
- *   zip code artifact at runtime (`build_agent_artifact()` in
- *   `backend/app/services/deployment.py`) and deploys it via Bedrock
- *   AgentCore Runtime's `codeConfiguration`, never a container image. See
- *   `../components/loom-agents.component.ts`'s own docstring for the detail.
+ *   `agents/strands_agent`). One per deployment, every tier. It ships as a
+ *   **zip code artifact**, not a container: vendoring real Loom v1.6.0 source
+ *   (#20) found `agents/strands_agent/` has no `Dockerfile` upstream at all —
+ *   Loom's own backend zips this agent and uploads it to S3
+ *   (`build_agent_artifact()` in `backend/app/services/deployment.py`), then
+ *   deploys it via Bedrock AgentCore Runtime's `codeConfiguration`
+ *   (`code.s3.{bucket,prefix}`, `runtime: PYTHON_3_13`,
+ *   `entryPoint: ["opentelemetry-instrument", "src/handler.py"]`), never a
+ *   container image. This composite mirrors that exactly through
+ *   `AgentCoreAgent`'s `code` artifact source (chant#973): the assistant zip
+ *   already exists in the artifact bucket (built/uploaded out-of-band, the
+ *   same boundary the container path drew — this repo has no agent build
+ *   phase), addressed by `artifactBucket` + `assistantCodePrefix`.
  * - **no-code** — a config-only AgentCore-managed-harness agent: no custom
  *   code, a stock/managed image supplied via `harnessImageUri`. Present only
  *   on production/production-ha (the "full" agent set, chant#890).
@@ -108,9 +108,15 @@ export interface LoomAgentsProps {
   /** loom-cognito `oCognitoDiscoveryUrl` — threaded into each agent's environment for the agent's own OIDC token validation. */
   cognitoDiscoveryUrl?: string;
 
-  // ── Published container images — built/published out-of-band (see file header) ──
-  /** Low-code Strands agent's image. Every tier deploys this one agent. */
-  assistantImageUri: string;
+  // ── Agent artifacts — built/uploaded out-of-band (see file header) ──
+  /**
+   * S3 key of the low-code Strands agent's zip within `artifactBucket` — the
+   * `code.s3.prefix` Loom's own `create_runtime` passes (its
+   * `build_agent_artifact()` uploads under `strands_agent/.../agent.zip`).
+   * Runs on a managed Python runtime via AgentCore `codeConfiguration`, no
+   * container image. Every tier deploys this one agent.
+   */
+  assistantCodePrefix: string;
   /** No-code AgentCore-harness agent's image — config-only, a stock/managed image. Required only on production/production-ha; ignored on light. */
   harnessImageUri?: string;
 
@@ -168,6 +174,15 @@ export type LoomAgentsResult = {
   /** AgentCore Code Interpreter sandbox execution role for the harness agent (production/production-ha, unless `codeInterpreter: false`). */
   harnessAgentCodeInterpreterRole?: InstanceType<typeof Role>;
 };
+
+// Loom's fixed AgentCore code-config contract for the Strands agent
+// (`create_runtime` in vendor/loom/backend/app/services/deployment.py) — the
+// managed runtime + entry point are Loom's own, not per-deploy config, so they
+// live here as constants (the same way `bedrockModelArns` defaults to an AWS
+// contract literal below, not from the naming helper — LOOM001 governs
+// physical names/tags, not upstream API contract values).
+const ASSISTANT_RUNTIME = "PYTHON_3_13" as const;
+const ASSISTANT_ENTRY_POINT = ["opentelemetry-instrument", "src/handler.py"] as const;
 
 type TagList = Array<{ Key: string; Value: string }>;
 
@@ -392,7 +407,15 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
   const assistantOverrides = defaults?.assistant ?? {};
   const assistantProps: AgentCoreAgentProps = {
     name: naming.name("assistant"),
-    containerUri: props.assistantImageUri,
+    // Code artifact, not a container — the Strands agent zip in the artifact
+    // bucket, run on a managed Python runtime (matches Loom's own
+    // create_runtime, see file header + ASSISTANT_RUNTIME/ENTRY_POINT above).
+    code: {
+      s3Bucket: props.artifactBucket,
+      s3Prefix: props.assistantCodePrefix,
+      runtime: ASSISTANT_RUNTIME,
+      entryPoint: [...ASSISTANT_ENTRY_POINT],
+    },
     networkMode,
     vpcSubnetIds,
     vpcSecurityGroupIds,
