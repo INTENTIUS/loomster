@@ -33,6 +33,8 @@ export interface LoomLocalProxyOptions {
   network?: string;
   /** Path (relative to the compose file) the harness writes the generated nginx config to. Default: "./nginx.local.conf". */
   configPath?: string;
+  /** Extra nginx `location` blocks injected into the server (e.g. the local demo's static A2A agent card). Kept separate from the ALB-mirror routing above. */
+  extraLocations?: string[];
 }
 
 /** nginx listens on this port inside the container; the host port (`listenPort`) publishes to it. */
@@ -42,7 +44,7 @@ const CONTAINER_LISTEN_PORT = 8080;
  * Apply defaults per field with `??` (not a `{ ...DEFAULTS, ...opts }` spread —
  * chant's EVL004 forbids spreading a non-const, and `opts` is a parameter).
  */
-function resolved(opts: LoomLocalProxyOptions): Required<LoomLocalProxyOptions> {
+function resolved(opts: LoomLocalProxyOptions): Required<Omit<LoomLocalProxyOptions, "extraLocations">> {
   return {
     listenPort: opts.listenPort ?? 8080,
     backendService: opts.backendService ?? "loom-backend",
@@ -62,6 +64,7 @@ export function buildProxyRoutingConfig(opts: LoomLocalProxyOptions = {}): strin
   const o = resolved(opts);
   const backend = `http://${o.backendService}:${o.servicePort}`;
   const frontend = `http://${o.frontendService}:${o.servicePort}`;
+  const extra = (opts.extraLocations ?? []).map((l) => `    ${l}`);
   return [
     "events {}",
     "http {",
@@ -70,6 +73,7 @@ export function buildProxyRoutingConfig(opts: LoomLocalProxyOptions = {}): strin
     "    # Mirrors Loom's ALB listener rule: /api/* and /health -> backend, default -> frontend SPA.",
     `    location /api/ { proxy_pass ${backend}; proxy_set_header Host $host; }`,
     `    location = /health { proxy_pass ${backend}; }`,
+    ...extra,
     `    location / { proxy_pass ${frontend}; proxy_set_header Host $host; }`,
     "  }",
     "}",

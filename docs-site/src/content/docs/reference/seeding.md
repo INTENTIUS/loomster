@@ -21,7 +21,7 @@ Selected by tier, overridable with `LOOM_SEED_PROFILE`:
 | Profile | Default for | Seeds |
 |---|---|---|
 | `foundation` | `production`, `production-ha` | The agent execution role (imported) + a Cognito authorizer. Enough to deploy an agent. No cost-incurring content. |
-| `demo` | `light` | Foundation, plus demo content (a sample MCP server) so the Catalog and MCP screens aren't empty. |
+| `demo` | `light` | Foundation, plus demo content in every Catalog section — a sample MCP server, a memory, a deployed agent, and (given a reachable endpoint) an A2A agent — so the Catalog isn't empty. |
 | `none` | — | Nothing beyond Loom's own database init. |
 
 ## Everything is branded `loomster`
@@ -65,10 +65,12 @@ LOOM_API_BASE_URL=https://loom.example.com npm run validate
 Run it against a fresh deploy and the Security screens fail (no role, no
 authorizer); run `npm run seed`, then validate again and every screen passes.
 
-## What it does not seed
+## Demo content and cost
 
-Memory resources and agents are left to you: creating them provisions real AWS
-resources (an AgentCore memory, a runtime), which costs money on a live account.
-The `demo` profile stops at a sample MCP server. MCP servers, A2A agents,
-memories, and agents are the demo-admin steps (Loom's `ONBOARDING.md`, Steps
-3–6), added from the UI when you want them.
+The `demo` profile deploys a real agent and creates a memory — free on the
+Floci emulator, but real (billable) resources on a live account. That's why it's
+the default only on `light`; the production tiers default to `foundation`, which
+seeds none of it. The A2A agent needs a reachable endpoint that serves an agent
+card: `just local-up` serves one from its proxy and sets `LOOM_DEMO_A2A_URL`
+automatically; elsewhere, set `LOOM_DEMO_A2A_URL` to a real A2A agent or the A2A
+section is left for you to fill from the UI (Loom's `ONBOARDING.md`, Step 4).

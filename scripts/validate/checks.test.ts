@@ -49,11 +49,22 @@ describe("per-screen checks", () => {
     expect(run("MCP Servers", "foundation", res(200, [])).ok).toBe(true);
   });
 
-  test("A2A / Memory / Agents pass on any array (just need to render)", () => {
+  test("Catalog sections (A2A / Memory / Agents) must be non-empty on demo, tolerant on foundation", () => {
     for (const screen of ["A2A Agents", "Memory", "Agents (Builder)"]) {
-      expect(run(screen, "demo", res(200, [])).ok).toBe(true);
-      expect(run(screen, "demo", res(200, {})).ok).toBe(false);
+      expect(run(screen, "demo", res(200, [])).ok).toBe(false); // demo: empty section fails
+      expect(run(screen, "foundation", res(200, [])).ok).toBe(true); // foundation: empty is fine
+      expect(run(screen, "demo", res(200, {})).ok).toBe(false); // not an array
     }
+  });
+
+  test("Agents on demo: a live agent passes, all-FAILED fails (catches a broken deploy)", () => {
+    expect(run("Agents (Builder)", "demo", res(200, [{ status: "READY" }])).ok).toBe(true);
+    expect(run("Agents (Builder)", "demo", res(200, [{ status: "CREATING" }])).ok).toBe(true);
+    const r = run("Agents (Builder)", "demo", res(200, [{ status: "FAILED" }, { status: "FAILED" }]));
+    expect(r.ok).toBe(false);
+    expect(r.detail).toContain("FAILED");
+    // a live one alongside failed ones still passes
+    expect(run("Agents (Builder)", "demo", res(200, [{ status: "FAILED" }, { status: "READY" }])).ok).toBe(true);
   });
 
   test("runtime-only screens pass on a 200 regardless of body", () => {

@@ -92,19 +92,41 @@ export const SCREEN_CHECKS: ScreenCheck[] = [
     }),
   },
   {
+    // The Catalog aggregates agents + memories + MCP + A2A; on the demo profile
+    // every one of those sections must be non-empty, or the Catalog reads as
+    // broken. So A2A/Memory/Agents require >=1 on demo (not just "renders").
     screen: "A2A Agents",
     path: "/api/a2a/agents",
-    check: (_p, res) => on200(res, () => (isArray(res.body) ? pass(`${res.body.length} A2A agents`) : fail("not an array"))),
+    check: (p, res) => on200(res, () => {
+      if (!isArray(res.body)) return fail("not an array");
+      if (p === "demo") return res.body.length >= 1 ? pass(`${res.body.length} A2A agents`) : fail("demo profile: no A2A agent seeded (Catalog section empty)");
+      return pass(`${res.body.length} A2A agents`);
+    }),
   },
   {
     screen: "Memory",
     path: "/api/memories",
-    check: (_p, res) => on200(res, () => (isArray(res.body) ? pass(`${res.body.length} memories`) : fail("not an array"))),
+    check: (p, res) => on200(res, () => {
+      if (!isArray(res.body)) return fail("not an array");
+      if (p === "demo") return res.body.length >= 1 ? pass(`${res.body.length} memories`) : fail("demo profile: no memory seeded (Catalog section empty)");
+      return pass(`${res.body.length} memories`);
+    }),
   },
   {
     screen: "Agents (Builder)",
     path: "/api/agents",
-    check: (_p, res) => on200(res, () => (isArray(res.body) ? pass(`${res.body.length} agents`) : fail("not an array"))),
+    check: (p, res) => on200(res, () => {
+      if (!isArray(res.body)) return fail("not an array");
+      if (p !== "demo") return pass(`${res.body.length} agents`);
+      // demo: require a real agent that isn't dead — catches a broken deploy,
+      // where the agent lands FAILED instead of READY/CREATING.
+      const live = res.body.filter((a) => {
+        const s = (a as { status?: string }).status;
+        return s === "READY" || s === "CREATING";
+      });
+      if (live.length >= 1) return pass(`${live.length}/${res.body.length} agents live (READY/CREATING)`);
+      return fail(res.body.length ? "demo profile: agents exist but all FAILED (deploy is broken)" : "demo profile: no agent seeded (Catalog section empty)");
+    }),
   },
   { screen: "Costs", path: "/api/dashboard/costs", check: (_p, res) => on200(res, () => pass("renders")) },
   { screen: "Admin (audit)", path: "/api/admin/audit/summary", check: (_p, res) => on200(res, () => pass("renders")) },

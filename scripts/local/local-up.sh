@@ -70,15 +70,28 @@ LOOM_ALLOWED_ORIGINS=http://localhost:8080
 EOF
 echo "    RDS=floci:${RDS_PORT}/${RDS_DB}  AWS_ENDPOINT=http://floci:4566"
 
-echo "==> [6/7] generate compose + nginx config (chant)"
+echo "==> [6/8] generate compose + nginx config (chant)"
 npx tsx scripts/local/gen-nginx.ts
 npx chant build src/local --lexicon docker -o "$OUT/docker-compose.yml" >/dev/null
 
-echo "==> [7/7] docker compose up"
+echo "==> [7/8] docker compose up"
 # --force-recreate so a re-run always applies the freshly written .env; plain
 # `up -d` leaves already-running containers on their old (possibly stale)
 # environment, which is exactly how a stale endpoint survives a re-run.
 docker compose --project-name loom-local -f "$OUT/docker-compose.yml" --env-file "$OUT/.env" up -d --force-recreate
+
+echo "==> [8/8] seed demo defaults (loom-seed)"
+# Wait for the backend to accept requests, then seed via Loom's own API so the
+# app is usable out of the box: security role + authorizer + a loomster tag
+# profile, and every Catalog section (agent, memory, MCP, A2A). The A2A agent
+# registers against the static card the proxy serves (see gen-nginx.ts), reached
+# by the backend at http://loomProxy:8080/a2a-demo.
+for i in $(seq 1 30); do
+  [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health 2>/dev/null)" = "200" ] && break
+  sleep 2
+done
+LOOM_SEED_PROFILE=demo LOOM_API_BASE_URL=http://localhost:8080 LOOM_DEMO_A2A_URL=http://loomProxy:8080/a2a-demo \
+  npm run seed 2>&1 | grep -E "loom-seed:" || echo "  (seed step skipped — run 'npm run seed' manually)"
 
 echo ""
 echo "Loom is coming up at http://localhost:8080  (agents deploy against the AgentCore-enabled Floci; invoke is a stub)"

@@ -89,7 +89,9 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `  echo "loom-seed: created cognito authorizer -> $POOL_ID"`,
     `fi`,
     `if [ "$PROFILE" != "demo" ]; then echo "loom-seed: foundation seed complete"; exit 0; fi`,
-    // ── demo: a sample MCP server so the MCP + Catalog screens are non-empty ──
+    // ── demo: populate every Catalog section (agents, memories, MCP, A2A) via
+    //    Loom's own API, so the demo Catalog is non-empty across the board ──
+    // MCP server (create doesn't validate the endpoint, so a placeholder is fine).
     `MCP_NAME="Loomster Echo MCP"`,
     `if curl -fsS "$BASE/api/mcp/servers" | jq -e --arg n "$MCP_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
     `  echo "loom-seed: demo MCP server already present"`,
@@ -97,6 +99,43 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `  curl -fsS -X POST "$BASE/api/mcp/servers" -H 'Content-Type: application/json' \\`,
     `    -d "{\\"name\\":\\"$MCP_NAME\\",\\"description\\":\\"Loomster sample MCP server (seeded demo content)\\",\\"endpoint_url\\":\\"https://example.invalid/mcp\\",\\"transport_type\\":\\"streamable_http\\",\\"auth_type\\":\\"none\\",\\"tags\\":$BRAND_TAGS}" >/dev/null \\`,
     `    && echo "loom-seed: seeded demo MCP server" || echo "loom-seed: demo MCP server skipped" >&2`,
+    `fi`,
+    // Memory resource (create provisions an AgentCore memory — free on the emulator).
+    `MEM_NAME="loomster_demo_memory"`,
+    `if curl -fsS "$BASE/api/memories" | jq -e --arg n "$MEM_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
+    `  echo "loom-seed: demo memory already present"`,
+    `else`,
+    `  curl -fsS -X POST "$BASE/api/memories" -H 'Content-Type: application/json' \\`,
+    `    -d "{\\"name\\":\\"$MEM_NAME\\",\\"description\\":\\"Loomster demo memory (seeded demo content)\\",\\"event_expiry_duration\\":30,\\"tags\\":$BRAND_TAGS}" >/dev/null \\`,
+    `    && echo "loom-seed: seeded demo memory" || echo "loom-seed: demo memory skipped" >&2`,
+    `fi`,
+    // Agent (deploy) — the imported role runs it; model id is discovered from the
+    // catalog. Loom requires an identifier-style name (no hyphens).
+    `AGENT_NAME="loomster_demo_agent"`,
+    `if curl -fsS "$BASE/api/agents" | jq -e --arg n "$AGENT_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
+    `  echo "loom-seed: demo agent already present"`,
+    `else`,
+    `  MODEL=$(curl -fsS "$BASE/api/agents/models" 2>/dev/null | jq -r '[.. | .model_id? // empty] | .[0] // empty')`,
+    `  if [ -z "$MODEL" ]; then echo "loom-seed: no model available, skipping demo agent" >&2; else`,
+    `    curl -fsS -X POST "$BASE/api/agents" -H 'Content-Type: application/json' \\`,
+    `      -d "{\\"source\\":\\"deploy\\",\\"name\\":\\"$AGENT_NAME\\",\\"description\\":\\"Loomster demo assistant (seeded demo content)\\",\\"model_id\\":\\"$MODEL\\",\\"role_arn\\":\\"$ROLE_ARN\\",\\"protocol\\":\\"HTTP\\",\\"network_mode\\":\\"PUBLIC\\",\\"tags\\":$BRAND_TAGS}" >/dev/null \\`,
+    `      && echo "loom-seed: deploying demo agent (async)" || echo "loom-seed: demo agent skipped" >&2`,
+    `  fi`,
+    `fi`,
+    // A2A agent — registration fetches the agent card from the base URL, so it
+    // needs a reachable A2A endpoint (LOOM_DEMO_A2A_URL). local-up serves one via
+    // its proxy; without it, the A2A section is left for you to register.
+    `if [ -n "\${LOOM_DEMO_A2A_URL:-}" ]; then`,
+    `  A2A_NAME="Loomster Demo A2A"`,
+    `  if curl -fsS "$BASE/api/a2a/agents" | jq -e --arg n "$A2A_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
+    `    echo "loom-seed: demo A2A agent already present"`,
+    `  else`,
+    `    curl -fsS -X POST "$BASE/api/a2a/agents" -H 'Content-Type: application/json' \\`,
+    `      -d "{\\"name\\":\\"$A2A_NAME\\",\\"base_url\\":\\"$LOOM_DEMO_A2A_URL\\",\\"tags\\":$BRAND_TAGS}" >/dev/null \\`,
+    `      && echo "loom-seed: seeded demo A2A agent" || echo "loom-seed: demo A2A agent skipped (card fetch failed at $LOOM_DEMO_A2A_URL)" >&2`,
+    `  fi`,
+    `else`,
+    `  echo "loom-seed: LOOM_DEMO_A2A_URL unset — skipping A2A demo agent (needs a reachable A2A endpoint)" >&2`,
     `fi`,
     `echo "loom-seed: demo seed complete"`,
   ].join("\n");

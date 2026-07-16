@@ -37,11 +37,28 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain("skipping authorizer");
   });
 
-  test("foundation stops before demo content; demo continues to the sample MCP server", () => {
+  test("foundation stops before demo content; demo populates every Catalog section", () => {
     const script = seedDefaultsScript(refs);
     expect(script).toContain('if [ "$PROFILE" != "demo" ]; then echo "loom-seed: foundation seed complete"; exit 0; fi');
+    // every Catalog section: MCP, memory, agent, A2A
     expect(script).toContain("POST \"$BASE/api/mcp/servers\"");
     expect(script).toContain("Loomster Echo MCP");
+    expect(script).toContain("POST \"$BASE/api/memories\"");
+    expect(script).toContain("POST \"$BASE/api/agents\"");
+    expect(script).toContain('\\"source\\":\\"deploy\\"');
+    expect(script).toContain("POST \"$BASE/api/a2a/agents\"");
+  });
+
+  test("A2A is registered only when a reachable endpoint (LOOM_DEMO_A2A_URL) is provided", () => {
+    const script = seedDefaultsScript(refs);
+    expect(script).toContain('if [ -n "${LOOM_DEMO_A2A_URL:-}" ]; then');
+    expect(script).toContain("needs a reachable A2A endpoint");
+  });
+
+  test("the demo agent uses a valid (hyphen-free) name and a discovered model", () => {
+    const script = seedDefaultsScript(refs);
+    expect(script).toContain('AGENT_NAME="loomster_demo_agent"');
+    expect(script).toContain("api/agents/models");
   });
 
   test("everything it creates is branded loomster", () => {
