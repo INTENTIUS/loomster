@@ -84,11 +84,17 @@ const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // runtime Verify runs. (Held in a const so the `deploy` spread references a
 // const, not a ternary — chant's EVL004 lint rule.)
 const onRealAws = !process.env.AWS_ENDPOINT_URL;
+// Full tiers serve HTTPS-only on the custom domain (no HTTP listener on the prod
+// ALB), so probe `https://<domain>/health`; light uses the ALB's own HTTP DNS
+// name. Found live (loomster#125) — see loom-frontend.component.ts for the detail.
+const fullTier = namingParams.tier !== "light";
+const domain = process.env.LOOM_DOMAIN_NAME;
+const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput("shared-foundation", "oAlbDnsName");
 const verifyPhases = onRealAws
   ? [
       phase("Verify", [
         { kind: "wait-steady-state", service: serviceName, cluster: clusterArn },
-        { kind: "health-gate", host: stackOutput("shared-foundation", "oAlbDnsName"), path: "/health" },
+        { kind: "health-gate", host: healthGateHost, path: "/health" },
       ]),
     ]
   : [];
