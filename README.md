@@ -55,12 +55,26 @@ gate (`just check`).
 ## Develop
 
 ```
-just install   # npm install (resolves the file:-linked chant + aws lexicon)
+just install   # npm install (published @intentius/chant* from npm)
 just build     # typecheck (helper, composites, project-local lint rules)
 just lint      # chant lint . — core rules + .chant/rules/ project-local rules
 just test      # vitest run
 just check     # all of the above
 ```
+
+## Run it locally
+
+```
+just local-up     # browsable, authenticated Loom on a laptop (needs Docker, no AWS account)
+just local-down   # tear it down
+```
+
+Floci provides the AWS-managed pieces (RDS/Cognito/S3/ECR) via chant; the app
+tier runs from a chant-generated `docker-compose`, browsable at
+`http://localhost:8080`. The web app runs for real (Postgres, API, admin
+`local-dev` user); only agents can't run locally (Bedrock AgentCore has no Floci
+emulation). See the [Run Loom on your laptop](https://intentius.io/loomster/guides/local/)
+guide and the [Local caveats](https://intentius.io/loomster/reference/local-caveats/).
 
 ## Naming & tagging
 
