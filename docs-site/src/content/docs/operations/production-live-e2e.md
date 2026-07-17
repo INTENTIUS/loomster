@@ -94,11 +94,15 @@ artifact bucket and ECR repos are retained — empty and delete them by hand. Th
 hosted zone costs about $0.50/month; keep it for the next run or delete it once you
 remove the provider-side delegation.
 
-Three teardown snags on the prod tiers, in order:
+Teardown snags on the prod tiers, in order:
 
 - **RDS deletion protection.** Production enables it (a correct default), so
   `loom-db` delete fails with "Cannot delete protected DB Instance." Disable it first:
   `aws rds modify-db-instance --db-instance-identifier <id> --no-deletion-protection --apply-immediately`.
+- **Cognito deletion protection.** Same story for the user pool — `loom-cognito`
+  delete fails with "deletion protection is activated." Disable it:
+  `aws cognito-idp update-user-pool --user-pool-id <id> --deletion-protection INACTIVE`,
+  then delete the stack.
 - **Subnet-group / instance race.** `dbRdsSubnetGroup` can fail to delete while the
   instance is still draining ("still using it"). Wait for the instance to be gone,
   then re-run the stack delete.
