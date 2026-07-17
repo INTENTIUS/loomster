@@ -7,7 +7,7 @@
  * so none of chant's EVL rules apply to it.
  */
 
-import { Ref, Split, Select } from "@intentius/chant-lexicon-aws";
+import { Ref, Split, Select, templateTransform } from "@intentius/chant-lexicon-aws";
 import { LoomDb, type DataSeam } from "../composites/loom-db";
 import { SUBNET_LIST_DELIMITER, toCommaList } from "../composites/shared-foundation";
 import * as params from "./params";
@@ -81,3 +81,15 @@ function buildData(): DataSeam {
 }
 
 export const db = LoomDb({ naming: params.namingParams, data: buildData() });
+
+// The production-ha rotation schedule uses a Secrets Manager HostedRotationLambda,
+// which CloudFormation only accepts when the template declares the
+// `AWS::SecretsManager-2020-07-23` transform (loomster#129). The composite builds
+// that rotation exactly when the tier is production-ha and the data tier is
+// provisioned, so declare the transform under the same condition. `undefined`
+// otherwise (chant discovery tolerates a conditional `undefined` export, like the
+// tier-gated outputs in ./outputs.ts).
+export const rotationTransform =
+  params.namingParams.tier === "production-ha" && params.dataMode === "provision"
+    ? templateTransform("AWS::SecretsManager-2020-07-23")
+    : undefined;
