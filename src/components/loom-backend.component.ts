@@ -1,4 +1,5 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
+import { sn } from "../lib/stack-name";
 import { loomNaming } from "../lib/naming";
 import { namingParams } from "../loom-backend/params";
 
@@ -69,7 +70,7 @@ import { namingParams } from "../loom-backend/params";
 
 const naming = loomNaming(namingParams, "loom-backend");
 const serviceName = naming.name("backend-svc");
-const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
+const clusterArn = stackOutput(sn("shared-foundation"), "oEcsClusterArn");
 // Verify runs the runtime health checks: the service reaches steady state
 // (`wait-steady-state`, guarding Floci's missing `deployments` field via
 // chant#937), then an HTTP health check through the shared ALB (`health-gate`,
@@ -89,7 +90,7 @@ const onRealAws = !process.env.AWS_ENDPOINT_URL;
 // name. Found live (loomster#125) — see loom-frontend.component.ts for the detail.
 const fullTier = namingParams.tier !== "light";
 const domain = process.env.LOOM_DOMAIN_NAME;
-const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput("shared-foundation", "oAlbDnsName");
+const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput(sn("shared-foundation"), "oAlbDnsName");
 const verifyPhases = onRealAws
   ? [
       phase("Verify", [
@@ -117,29 +118,29 @@ export const loomBackend: Component = {
       { kind: "docker-build", context: "vendor/loom", dockerfile: "backend/Dockerfile", into: "archive" },
     ]),
     phase("Publish", [
-      { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oBackendRepositoryUri") },
+      { kind: "publish-image", from: "archive", to: stackOutput(sn("shared-foundation"), "oBackendRepositoryUri") },
     ]),
     phase("Apply", [
       {
         kind: "cfn-deploy",
-        stack: "loom-backend",
+        stack: sn("loom-backend"),
         template: "dist/loom-backend.template.json",
         inputs: {
           pEcsClusterArn: clusterArn,
-          pEcsClusterName: stackOutput("shared-foundation", "oEcsClusterName"),
-          pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
-          pTargetGroupArn: stackOutput("shared-foundation", "oBackendTargetGroupArn"),
-          pArtifactBucket: stackOutput("shared-foundation", "oArtifactBucket"),
-          pEcrKmsKeyArn: stackOutput("shared-foundation", "oEcrKmsKeyArn"),
-          pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
-          pDatabaseSecretArn: stackOutput("loom-db", "oRdsSecretArn"),
-          pSecretsKmsKeyArn: stackOutput("loom-db", "oSecretsKmsKeyArn"),
+          pEcsClusterName: stackOutput(sn("shared-foundation"), "oEcsClusterName"),
+          pEcsSecurityGroupId: stackOutput(sn("shared-foundation"), "oEcsSecurityGroupId"),
+          pTargetGroupArn: stackOutput(sn("shared-foundation"), "oBackendTargetGroupArn"),
+          pArtifactBucket: stackOutput(sn("shared-foundation"), "oArtifactBucket"),
+          pEcrKmsKeyArn: stackOutput(sn("shared-foundation"), "oEcrKmsKeyArn"),
+          pPrivateSubnetIds: stackOutput(sn("shared-foundation"), "oPrivateSubnetIds"),
+          pDatabaseSecretArn: stackOutput(sn("loom-db"), "oRdsSecretArn"),
+          pSecretsKmsKeyArn: stackOutput(sn("loom-db"), "oSecretsKmsKeyArn"),
           // Light-tier plain DB URL (#46): resolved endpoint/port from loom-db.
           // Harmless (defaulted, unused) on production/production-ha, which keep
           // the Secrets-Manager DB-URL secret.
-          pRdsEndpoint: stackOutput("loom-db", "oRdsEndpoint"),
-          pRdsPort: stackOutput("loom-db", "oRdsPort"),
-          pCognitoUserPoolId: stackOutput("loom-cognito", "oCognitoUserPoolId"),
+          pRdsEndpoint: stackOutput(sn("loom-db"), "oRdsEndpoint"),
+          pRdsPort: stackOutput(sn("loom-db"), "oRdsPort"),
+          pCognitoUserPoolId: stackOutput(sn("loom-cognito"), "oCognitoUserPoolId"),
           pImageUri: "@Publish.uri",
         },
       },

@@ -19,9 +19,11 @@ describe("loom-teardown.op — gated, owned-only, marker-scoped, no foreign dele
     const teardownPhase = config.phases.find((p) => p.name === "Teardown")!;
     expect(teardownPhase.parallel).toBeFalsy();
     expect(teardownPhase.steps).toHaveLength(TEARDOWN_ORDER.length);
-    for (const [i, stackName] of TEARDOWN_ORDER.entries()) {
+    // Stack names are namespaced by project+env+instance (loomster#140). The Op reads
+    // namingParamsFromEnv; with no env set the defaults are loom / dev / a.
+    for (const [i, component] of TEARDOWN_ORDER.entries()) {
       const step = teardownPhase.steps[i] as { args?: { cmd?: string } };
-      expect(step.args?.cmd).toContain(`--stack-name "${stackName}"`);
+      expect(step.args?.cmd).toContain(`--stack-name "loom-dev-a-${component}"`);
     }
   });
 

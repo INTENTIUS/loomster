@@ -41,6 +41,10 @@ REGION="${AWS_REGION:-us-east-2}"
 export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
 export LOOM_TIER="$TIER"
 export LOOM_ENV="${LOOM_ENV:-prod}" LOOM_INSTANCE="${LOOM_INSTANCE:-a}"
+# CFN stack names are namespaced by project+env+instance (loomster#140), so N
+# deployments coexist in one account. `sn <component>` -> the full stack name.
+SN_PREFIX="${LOOM_PROJECT:-loom}-${LOOM_ENV}-${LOOM_INSTANCE}"
+sn() { echo "${SN_PREFIX}-$1"; }
 export LOOM_CPU_ARCHITECTURE="${LOOM_CPU_ARCHITECTURE:-ARM64}"
 export LOOM_ASSISTANT_CODE_PREFIX="${LOOM_ASSISTANT_CODE_PREFIX:-strands_agent/agent.zip}"
 # Harness agent is opt-in (loomster#128): only a real, existing container image
@@ -103,10 +107,10 @@ teardown() {
   [ "${LOOM_E2E_TEARDOWN:-0}" = "1" ] || { echo "leaving resources up (LOOM_E2E_TEARDOWN!=1)"; return; }
   echo "=== teardown ==="
   for s in downstream-stub loom-agents loom-backend loom-frontend loom-db loom-cognito shared-foundation; do
-    aws cloudformation delete-stack --stack-name "$s" 2>/dev/null || true
+    aws cloudformation delete-stack --stack-name "$SN_PREFIX-$s" 2>/dev/null || true
   done
   for s in downstream-stub loom-agents loom-backend loom-frontend loom-db loom-cognito shared-foundation; do
-    aws cloudformation wait stack-delete-complete --stack-name "$s" 2>/dev/null || true
+    aws cloudformation wait stack-delete-complete --stack-name "$SN_PREFIX-$s" 2>/dev/null || true
   done
   if [ "$MADE_VPC" = "1" ]; then
     echo "  (throwaway VPC $LOOM_VPC_ID + NAT left for manual cleanup — NAT/EIP/subnets)"
@@ -121,7 +125,7 @@ npm run synth  >/tmp/live-e2e-synth.log  2>&1 || { echo "SYNTH FAILED"; tail -20
 
 echo "=== assert all 7 stacks CREATE/UPDATE_COMPLETE ==="
 for stack in shared-foundation loom-cognito loom-db loom-frontend loom-backend loom-agents downstream-stub; do
-  st=$(aws cloudformation describe-stacks --stack-name "$stack" --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo MISSING)
+  st=$(aws cloudformation describe-stacks --stack-name "$SN_PREFIX-$stack" --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo MISSING)
   case "$st" in CREATE_COMPLETE|UPDATE_COMPLETE) echo "    ok $stack ($st)";;
     *) echo "FAIL: $stack = $st"; exit 1;; esac
 done
@@ -129,14 +133,14 @@ done
 echo "=== assert tier-distinguishing resources (live) ==="
 count_type() { aws cloudformation describe-stack-resources --stack-name "$1" --query "length(StackResources[?ResourceType=='$2'])" --output text 2>/dev/null || echo 0; }
 assert_present() { [ "$(count_type "$1" "$2")" -ge "${3:-1}" ] || { echo "FAIL: $1 has fewer than ${3:-1} $2"; exit 1; }; echo "    ok $4"; }
-assert_present loom-db AWS::RDS::DBProxy 1 "RDS Proxy"
-assert_present shared-foundation AWS::EC2::VPCEndpointService 1 "PrivateLink VPC endpoint service"
-assert_present shared-foundation AWS::CertificateManager::Certificate 1 "ACM certificate"
-assert_present shared-foundation AWS::Route53::RecordSet 1 "Route53 alias record"
-assert_present loom-backend AWS::ApplicationAutoScaling::ScalableTarget 1 "backend autoscaling"
-assert_present loom-agents AWS::BedrockAgentCore::Runtime 1 "assistant agent runtime (code-config; harness is opt-in, loomster#128)"
+assert_present "$(sn loom-db)" AWS::RDS::DBProxy 1 "RDS Proxy"
+assert_present "$(sn shared-foundation)" AWS::EC2::VPCEndpointService 1 "PrivateLink VPC endpoint service"
+assert_present "$(sn shared-foundation)" AWS::CertificateManager::Certificate 1 "ACM certificate"
+assert_present "$(sn shared-foundation)" AWS::Route53::RecordSet 1 "Route53 alias record"
+assert_present "$(sn loom-backend)" AWS::ApplicationAutoScaling::ScalableTarget 1 "backend autoscaling"
+assert_present "$(sn loom-agents)" AWS::BedrockAgentCore::Runtime 1 "assistant agent runtime (code-config; harness is opt-in, loomster#128)"
 if [ "$TIER" = "production-ha" ]; then
-  assert_present loom-db AWS::SecretsManager::RotationSchedule 1 "credential rotation schedule"
+  assert_present "$(sn loom-db)" AWS::SecretsManager::RotationSchedule 1 "credential rotation schedule"
 fi
 
 echo "=== assert the app is served on https://$LOOM_DOMAIN_NAME ==="

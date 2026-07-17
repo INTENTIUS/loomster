@@ -105,7 +105,8 @@ fi
 
 # ── 3. Assert the light tier actually deployed (real CFN stacks in Floci) ─────
 echo "=== Verifying deployed stacks ==="
-for stack in shared-foundation loom-cognito loom-db downstream-stub; do
+SN="${LOOM_PROJECT:-loom}-${LOOM_ENV:-dev}-${LOOM_INSTANCE:-a}"
+for stack in "$SN-shared-foundation" "$SN-loom-cognito" "$SN-loom-db" "$SN-downstream-stub"; do
   status=$(aws --endpoint-url "$ENDPOINT" cloudformation describe-stacks --stack-name "$stack" --query 'Stacks[0].StackStatus' --output text 2>&1) || {
     echo "FAIL: stack \"$stack\" was not deployed: $status"
     exit 1
