@@ -15,7 +15,7 @@ import { sn } from "../lib/stack-name";
  * ingress source (chant#898 — opt in via `LOOM_DB_SOURCE_SG=true`, see
  * `../loom-db/params.ts`'s `pEcsSecurityGroupId` Parameter and
  * `../loom-db/db.ts`). Named outputs (`../loom-db/outputs.ts`) are what #889
- * (the backend ECS service) attaches to via `stackOutput(sn("loom-db"), ...)`.
+ * (the backend ECS service) attaches to via `stackOutput("loom-db", ...)`.
  */
 export const loomDb: Component = {
   name: "loom-db",
@@ -28,9 +28,9 @@ export const loomDb: Component = {
         stack: sn("loom-db"),
         template: "dist/loom-db.template.json",
         inputs: {
-          pVpcId: stackOutput(sn("shared-foundation"), "oVpcId"),
-          pPrivateSubnetIds: stackOutput(sn("shared-foundation"), "oPrivateSubnetIds"),
-          pEcsSecurityGroupId: stackOutput(sn("shared-foundation"), "oEcsSecurityGroupId"),
+          pVpcId: stackOutput("shared-foundation", "oVpcId"),
+          pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
+          pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
         },
       },
     ]),

@@ -12,7 +12,7 @@ import { sn } from "../lib/stack-name";
  * `chant build src/shared-foundation --lexicon aws` synthesizes from
  * `../composites/shared-foundation.ts`. Named outputs
  * (`src/shared-foundation/outputs.ts`) are what #887 (RDS)/#888 (Cognito)/
- * #889 (ECS services) attach to via `stackOutput(sn("shared-foundation"), ...)`.
+ * #889 (ECS services) attach to via `stackOutput("shared-foundation", ...)`.
  */
 export const sharedFoundation: Component = {
   name: "shared-foundation",
