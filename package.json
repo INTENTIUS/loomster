@@ -40,13 +40,13 @@
     "synth:local": "chant build src/local --lexicon docker -o dist/local/docker-compose.yml"
   },
   "dependencies": {
-    "@intentius/chant": "^0.18.25",
-    "@intentius/chant-lexicon-aws": "^0.18.25",
-    "@intentius/chant-lexicon-docker": "^0.18.25",
-    "@intentius/chant-lexicon-forgejo": "^0.18.25",
-    "@intentius/chant-lexicon-github": "^0.18.25",
-    "@intentius/chant-lexicon-gitlab": "^0.18.25",
-    "@intentius/chant-lexicon-temporal": "^0.18.25"
+    "@intentius/chant": "^0.18.26",
+    "@intentius/chant-lexicon-aws": "^0.18.26",
+    "@intentius/chant-lexicon-docker": "^0.18.26",
+    "@intentius/chant-lexicon-forgejo": "^0.18.26",
+    "@intentius/chant-lexicon-github": "^0.18.26",
+    "@intentius/chant-lexicon-gitlab": "^0.18.26",
+    "@intentius/chant-lexicon-temporal": "^0.18.26"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
