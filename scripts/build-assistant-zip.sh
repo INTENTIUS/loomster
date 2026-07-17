@@ -42,7 +42,10 @@ python3 -m pip install --quiet --disable-pip-version-check --break-system-packag
 
 ( cd "$BUILD/package" && zip -qr ../agent.zip . -x '*.pyc' '*__pycache__*' )
 
-BUCKET=$(aws cloudformation describe-stacks --stack-name shared-foundation \
+# Stack names are namespaced by project+env+instance (loomster#140), so resolve the
+# artifact bucket from THIS deployment's shared-foundation, not a plain "shared-foundation".
+SF_STACK="${LOOM_PROJECT:-loom}-${LOOM_ENV:-dev}-${LOOM_INSTANCE:-a}-shared-foundation"
+BUCKET=$(aws cloudformation describe-stacks --stack-name "$SF_STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='oArtifactBucket'].OutputValue | [0]" --output text)
 [ -n "$BUCKET" ] && [ "$BUCKET" != "None" ] || { echo "build-assistant-zip: no shared-foundation artifact bucket output (deploy shared-foundation first)" >&2; exit 1; }
 
