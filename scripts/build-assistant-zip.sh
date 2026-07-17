@@ -21,12 +21,24 @@ rm -rf "$BUILD"
 mkdir -p "$BUILD/package"
 cp -r "$SRC/src" "$BUILD/package/"
 
-# Install deps into the package dir. AgentCore's managed runtime is PYTHON_3_13;
-# pure-Python deps package cleanly here. (A production build targeting native
-# wheels would add --platform manylinux2014_x86_64 --only-binary=:all:.)
-python3 -m venv "$BUILD/.venv"
-"$BUILD/.venv/bin/pip" install --quiet --upgrade pip
-"$BUILD/.venv/bin/pip" install --quiet -r "$SRC/requirements.txt" -t "$BUILD/package"
+# AgentCore's managed runtime is Linux + PYTHON_3_13 on the deployment's CPU arch
+# (Graviton/ARM64 by default). Native deps must be Linux wheels for that arch, not
+# the build host's — installing on macOS gives macOS binaries the runtime rejects
+# ("artifact contains binary files incompatible with Linux ARM64", loomster#128).
+# Pull platform-specific wheels for the target directly (no venv — the host's
+# interpreter never runs this code).
+case "${LOOM_CPU_ARCHITECTURE:-ARM64}" in
+  ARM64)  PLAT=manylinux2014_aarch64 ;;
+  X86_64) PLAT=manylinux2014_x86_64 ;;
+  *)      PLAT=manylinux2014_aarch64 ;;
+esac
+# Install straight into the target dir (never touches the host interpreter, so no
+# venv and no pip upgrade — the latter trips PEP 668 on an externally-managed
+# Python like Homebrew's). --break-system-packages keeps a system-managed pip from
+# refusing the target install too.
+python3 -m pip install --quiet --disable-pip-version-check --break-system-packages \
+  --platform "$PLAT" --python-version 3.13 --implementation cp --only-binary=:all: \
+  --target "$BUILD/package" -r "$SRC/requirements.txt"
 
 ( cd "$BUILD/package" && zip -qr ../agent.zip . -x '*.pyc' '*__pycache__*' )
 
