@@ -55,8 +55,8 @@ pieces. The result is a browsable, authenticated Loom with no AWS account. See
 | Tier | Floci | Real AWS |
 |---|---|---|
 | `light` | Full stack, 7/7 stacks `CREATE_COMPLETE`, including the code-config agents wave against the AgentCore-enabled image | Deployed end to end — the real ALB served the Loom SPA, backed by real RDS and Cognito, backend passed the ECS health-gate. The agents wave has not been applied to a live account. |
-| `production` | Full stack against a BYO VPC — RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend autoscaling, and the assistant code-config Runtime. **Live on real AWS: 6/7 stacks + web tier validated (health-gates on HTTPS, app served); the agents wave is being closed out (loomster#128)** | Light applied; production web tier applied |
-| `production-ha` | Full stack, 7/7 `CREATE_COMPLETE` — as production, plus Multi-AZ RDS, secret rotation, and a 2-task backend floor | Not applied |
+| `production` | Full stack against a BYO VPC — RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend autoscaling, and the assistant code-config Runtime | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, all tier resources present, app served over HTTPS on a custom domain, and the Strands assistant runtime `READY` on Bedrock AgentCore.** Per-screen checks behind Cognito need a user token (no users seeded) |
+| `production-ha` | Full stack, 7/7 `CREATE_COMPLETE` — as production, plus Multi-AZ RDS, secret rotation, and a 2-task backend floor | Distinguishing resources Floci-validated; full live apply still pending |
 
 Both production tiers deploy end to end on Floci against a bring-your-own VPC
 (the tier guard requires `LOOM_VPC_ID` + subnets and a `LOOM_DOMAIN_NAME`; a
