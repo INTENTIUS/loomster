@@ -111,7 +111,21 @@ Teardown snags on the prod tiers, in order:
   and delete the stack once more.
 - **shared-foundation blockers.** Its delete fails while the ECR repos hold images or
   the artifact bucket holds objects — empty the bucket (all versions) and
-  force-delete the repos (`aws ecr delete-repository --force`) first.
+  force-delete the repos (`aws ecr delete-repository --force`) first. The artifact
+  bucket also has `DeletionPolicy: Retain`, so CFN `DELETE_SKIPPED`s it — delete it by
+  hand.
+- **AgentCore ENIs hold the ECS security group.** The agents run in `VPC` network
+  mode on `shared-foundation`'s ECS security group, and Bedrock AgentCore attaches two
+  managed (`agentic_ai` / `ela-attach`) ENIs to it. When the agents stack is deleted —
+  **on a clean delete, not only a rollback** — those ENIs linger, so `foundationEcsSg`
+  (and thus `shared-foundation`) fails to delete with "has a dependent object." You
+  can't detach or delete an `ela-attach` ENI ("You are not allowed to manage
+  'ela-attach' attachments") — only AWS releases them, on its own schedule (tens of
+  minutes, sometimes longer). Poll `aws ec2 describe-network-interfaces
+  --filters Name=group-id,Values=<ecs-sg>` and re-run the `shared-foundation` delete
+  once it returns none. This is the slowest part of a prod teardown; nothing billable
+  remains while you wait (the ALB/ECS/RDS are already gone — only the SG, its ENIs, and
+  the empty VPC linger, all free).
 
 ## Cost
 
