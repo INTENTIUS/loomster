@@ -77,7 +77,7 @@ Six stacks, deployed in dependency order (`chant graph --components`):
 | `loom-db` | `shared-foundation` | RDS Postgres, Secrets Manager; production adds RDS Proxy + rotation |
 | `loom-frontend` | `shared-foundation` | The frontend ECS Fargate service |
 | `loom-backend` | `shared-foundation`, `loom-db`, `loom-cognito` | The backend ECS Fargate service |
-| `loom-agents` | `shared-foundation`, `loom-cognito`, `loom-backend` | The Bedrock AgentCore agents — one Strands agent (every tier) + a no-code harness agent (production-ha) |
+| `loom-agents` | `shared-foundation`, `loom-cognito`, `loom-backend` | The Bedrock AgentCore agents — the Strands assistant (code-config Runtime, every tier). No-code harnesses are created on demand via Loom's app; a BYO container agent can be pre-provisioned with `LOOM_HARNESS_AGENT_IMAGE_URI` |
 
 `loom-backend` / `loom-frontend` each run **build, publish, apply, verify**:
 `docker-build`, then `publish-image` promoted by digest, then `cfn-deploy`, then
