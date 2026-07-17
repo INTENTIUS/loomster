@@ -1,4 +1,5 @@
 import { phase, type Component } from "@intentius/chant/components";
+import { sn } from "../lib/stack-name";
 
 /**
  * The `loom-cognito` identity stack (chant#888) — Cognito UserPool, hosted-UI
@@ -12,7 +13,7 @@ import { phase, type Component } from "@intentius/chant/components";
  * so unlike `loom-db` this has nothing to thread in from `shared-foundation`
  * and can deploy independently. Named outputs (`../loom-cognito/outputs.ts`)
  * are what #889 (the frontend/backend services) attach to via
- * `stackOutput("loom-cognito", ...)`.
+ * `stackOutput(sn("loom-cognito"), ...)`.
  */
 export const loomCognito: Component = {
   name: "loom-cognito",
@@ -20,7 +21,7 @@ export const loomCognito: Component = {
   dependsOn: [],
   deploy: [
     phase("Apply", [
-      { kind: "cfn-deploy", stack: "loom-cognito", template: "dist/loom-cognito.template.json" },
+      { kind: "cfn-deploy", stack: sn("loom-cognito"), template: "dist/loom-cognito.template.json" },
     ]),
   ],
 };

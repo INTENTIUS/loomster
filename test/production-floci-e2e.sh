@@ -32,6 +32,7 @@ FLOCI_IMAGE="ghcr.io/lex00/floci:agentcore"
 FLOCI_NAME="floci-prod-e2e"
 export AWS_ENDPOINT_URL="http://localhost:4566" AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_REGION="$REGION"
 export LOOM_TIER="$TIER" LOOM_ENV=floci LOOM_INSTANCE=a AWS_ACCOUNT_ID=000000000000
+SN_PREFIX="${LOOM_PROJECT:-loom}-floci-a"; sn() { echo "${SN_PREFIX}-$1"; }  # namespaced stack names (loomster#140)
 export LOOM_DB_PASSWORD="floci-e2e-pw-1234" LOOM_CPU_ARCHITECTURE=ARM64
 export LOOM_ASSISTANT_CODE_PREFIX="strands_agent/agent.zip"
 # Harness agent is opt-in (loomster#128) — left UNSET so the agents wave deploys the
@@ -68,7 +69,7 @@ npm run synth >/tmp/prod-e2e-synth.log 2>&1 || { echo "SYNTH FAILED"; tail -20 /
 
 echo "=== [4/5] assert all 7 stacks CREATE_COMPLETE ==="
 for stack in shared-foundation loom-cognito loom-db loom-frontend loom-backend loom-agents downstream-stub; do
-  st=$(aws cloudformation describe-stacks --stack-name "$stack" --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo MISSING)
+  st=$(aws cloudformation describe-stacks --stack-name "$SN_PREFIX-$stack" --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo MISSING)
   [ "$st" = "CREATE_COMPLETE" ] || { echo "FAIL: $stack = $st"; tail -25 /tmp/prod-e2e-deploy.log; exit 1; }
   echo "    ok $stack"
 done
@@ -78,18 +79,18 @@ count_type() { aws cloudformation describe-stack-resources --stack-name "$1" --q
 assert_present() { [ "$(count_type "$1" "$2")" -ge "${3:-1}" ] || { echo "FAIL: $1 has fewer than ${3:-1} $2"; exit 1; }; echo "    ok $4"; }
 tmpl_field() { aws cloudformation get-template --stack-name "$1" --query TemplateBody --output json 2>/dev/null | python3 -c "import json,sys;t=json.load(sys.stdin);t=json.loads(t) if isinstance(t,str) else t;print(next((r['Properties'].get('$3') for r in t['Resources'].values() if r['Type']=='$2'),None))"; }
 
-assert_present loom-db AWS::RDS::DBProxy 1 "RDS Proxy"
-assert_present shared-foundation AWS::EC2::VPCEndpointService 1 "PrivateLink VPC endpoint service"
-assert_present shared-foundation AWS::CertificateManager::Certificate 1 "ACM certificate"
-assert_present shared-foundation AWS::Route53::HostedZone 1 "Route53 hosted zone"
-assert_present loom-backend AWS::ApplicationAutoScaling::ScalableTarget 1 "backend autoscaling"
-assert_present loom-agents AWS::BedrockAgentCore::Runtime 1 "assistant agent runtime (code-config; harness is opt-in, loomster#128)"
+assert_present "$(sn loom-db)" AWS::RDS::DBProxy 1 "RDS Proxy"
+assert_present "$(sn shared-foundation)" AWS::EC2::VPCEndpointService 1 "PrivateLink VPC endpoint service"
+assert_present "$(sn shared-foundation)" AWS::CertificateManager::Certificate 1 "ACM certificate"
+assert_present "$(sn shared-foundation)" AWS::Route53::HostedZone 1 "Route53 hosted zone"
+assert_present "$(sn loom-backend)" AWS::ApplicationAutoScaling::ScalableTarget 1 "backend autoscaling"
+assert_present "$(sn loom-agents)" AWS::BedrockAgentCore::Runtime 1 "assistant agent runtime (code-config; harness is opt-in, loomster#128)"
 
 if [ "$TIER" = "production-ha" ]; then
-  assert_present loom-db AWS::SecretsManager::RotationSchedule 1 "credential rotation schedule"
-  maz=$(tmpl_field loom-db AWS::RDS::DBInstance MultiAZ)
+  assert_present "$(sn loom-db)" AWS::SecretsManager::RotationSchedule 1 "credential rotation schedule"
+  maz=$(tmpl_field "$(sn loom-db)" AWS::RDS::DBInstance MultiAZ)
   [ "$maz" = "True" ] || { echo "FAIL: production-ha template MultiAZ != True (got $maz)"; exit 1; }; echo "    ok Multi-AZ RDS (template)"
-  floor=$(tmpl_field loom-backend AWS::ApplicationAutoScaling::ScalableTarget MinCapacity)
+  floor=$(tmpl_field "$(sn loom-backend)" AWS::ApplicationAutoScaling::ScalableTarget MinCapacity)
   [ "$floor" = "2" ] || { echo "FAIL: production-ha ScalableTarget MinCapacity != 2 (got $floor)"; exit 1; }; echo "    ok 2-task backend floor"
 fi
 

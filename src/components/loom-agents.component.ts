@@ -1,4 +1,5 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
+import { sn } from "../lib/stack-name";
 
 /**
  * The `loom-agents` stack (chant#893) — the base path from #882: apply the
@@ -65,15 +66,15 @@ export const loomAgents: Component = {
     phase("Apply", [
       {
         kind: "cfn-deploy",
-        stack: "loom-agents",
+        stack: sn("loom-agents"),
         template: "dist/loom-agents.template.json",
         inputs: {
-          pArtifactBucket: stackOutput("shared-foundation", "oArtifactBucket"),
-          pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
-          pPrivateSubnetIds: stackOutput("shared-foundation", "oPrivateSubnetIds"),
-          pDomainName: stackOutput("shared-foundation", "oDomainName"),
-          pCognitoTokenUrl: stackOutput("loom-cognito", "oCognitoTokenUrl"),
-          pCognitoDiscoveryUrl: stackOutput("loom-cognito", "oCognitoDiscoveryUrl"),
+          pArtifactBucket: stackOutput(sn("shared-foundation"), "oArtifactBucket"),
+          pEcsSecurityGroupId: stackOutput(sn("shared-foundation"), "oEcsSecurityGroupId"),
+          pPrivateSubnetIds: stackOutput(sn("shared-foundation"), "oPrivateSubnetIds"),
+          pDomainName: stackOutput(sn("shared-foundation"), "oDomainName"),
+          pCognitoTokenUrl: stackOutput(sn("loom-cognito"), "oCognitoTokenUrl"),
+          pCognitoDiscoveryUrl: stackOutput(sn("loom-cognito"), "oCognitoDiscoveryUrl"),
           // Only meaningful when a caller supplies their own harness container
           // image (LOOM_HARNESS_AGENT_IMAGE_URI); unset → the composite emits no
           // harness Runtime (loomster#128), and this param stays its "" default.
@@ -82,7 +83,7 @@ export const loomAgents: Component = {
       },
     ]),
     phase("Verify", [
-      { kind: "wait-for-stack", stack: "loom-agents" },
+      { kind: "wait-for-stack", stack: sn("loom-agents") },
     ]),
   ],
 };

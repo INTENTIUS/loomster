@@ -1,4 +1,5 @@
 import { phase, type Component } from "@intentius/chant/components";
+import { sn } from "../lib/stack-name";
 
 /**
  * The shared infrastructure every Loom service/agent attaches to: the ALB +
@@ -11,7 +12,7 @@ import { phase, type Component } from "@intentius/chant/components";
  * `chant build src/shared-foundation --lexicon aws` synthesizes from
  * `../composites/shared-foundation.ts`. Named outputs
  * (`src/shared-foundation/outputs.ts`) are what #887 (RDS)/#888 (Cognito)/
- * #889 (ECS services) attach to via `stackOutput("shared-foundation", ...)`.
+ * #889 (ECS services) attach to via `stackOutput(sn("shared-foundation"), ...)`.
  */
 export const sharedFoundation: Component = {
   name: "shared-foundation",
@@ -19,7 +20,7 @@ export const sharedFoundation: Component = {
   dependsOn: [],
   deploy: [
     phase("Apply", [
-      { kind: "cfn-deploy", stack: "shared-foundation", template: "dist/shared-foundation.template.json" },
+      { kind: "cfn-deploy", stack: sn("shared-foundation"), template: "dist/shared-foundation.template.json" },
     ]),
   ],
 };

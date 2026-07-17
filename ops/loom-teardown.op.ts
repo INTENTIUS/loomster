@@ -27,6 +27,11 @@ import { TEARDOWN_ORDER, deleteStackScript } from "./lib/teardown-plan";
 
 const naming = namingParamsFromEnv();
 
+// CFN stack names are namespaced by project+env+instance (loomster#140), so this
+// tears down exactly THIS deployment's stacks, never another instance's.
+const stackName = (component: string): string => `${naming.project}-${naming.env}-${naming.instance}-${component}`;
+const stacks = TEARDOWN_ORDER.map(stackName);
+
 export default Op({
   name: "loom-teardown",
   overview: `Decommission the Loom deployment (env=${naming.env}, instance=${naming.instance}): gated, owned-only, marker-scoped stack deletes, no foreign deletes`,
@@ -36,12 +41,12 @@ export default Op({
     phase("Approve", [
       gate("approve-loom-teardown", {
         timeout: "72h",
-        description: `Approve deleting all ${TEARDOWN_ORDER.length} Loom stacks for env=${naming.env}/instance=${naming.instance}: ${TEARDOWN_ORDER.join(", ")}`,
+        description: `Approve deleting all ${stacks.length} Loom stacks for env=${naming.env}/instance=${naming.instance}: ${stacks.join(", ")}`,
       }),
     ]),
     phase(
       "Teardown",
-      TEARDOWN_ORDER.map((stackName) => shell(deleteStackScript(stackName), { profile: "longInfra" })),
+      stacks.map((s) => shell(deleteStackScript(s), { profile: "longInfra" })),
     ),
   ],
 });
