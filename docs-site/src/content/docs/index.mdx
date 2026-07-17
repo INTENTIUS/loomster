@@ -38,12 +38,13 @@ from a chant-generated compose, browsable at `localhost:8080`. The web app runs
 for real. Only agents need real AWS. See
 [Run Loom on your laptop](/loomster/guides/local/).
 
-**Where it runs today:** the full stack runs on Floci, and the **light tier is
-deployed end to end to a real AWS account**. Loom is served on a real ALB, backed
-by real RDS and Cognito. `production` / `production-ha` synthesize and pass the
-fidelity audit against Loom's `v1.6.0` templates, but haven't been applied to a
-live account yet. The [Overview](/loomster/getting-started/overview/) has the full
-picture.
+**Where it runs today:** the full stack runs on Floci, the **light tier is deployed
+end to end to a real AWS account**, and **`production` is validated end to end on a
+real account — 7/7 stacks `CREATE_COMPLETE`**, including the agents wave (the Strands
+assistant's code-config Runtime reaches `READY` on Bedrock AgentCore, app served over
+HTTPS). `production-ha` passes the fidelity audit with its distinguishing resources
+Floci-validated; a full live apply is the remaining step. The
+[Overview](/loomster/getting-started/overview/) has the full picture.
 
 ## Same discipline, one layer down
 

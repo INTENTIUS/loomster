@@ -36,8 +36,12 @@ stdio) for inspecting and building the graph. From the checkout, ask your agent 
   a local emulator, browsable at `localhost:8080`, no AWS account.
 - The **light tier is deployed end to end to a real AWS account**. Loom served on
   a real ALB, backed by real RDS and Cognito.
-- `production` / `production-ha` synthesize and pass the fidelity audit against
-  Loom's `v1.6.0` templates, but haven't been applied to a live account yet.
+- **`production` is validated end to end on a real AWS account — 7/7 stacks
+  `CREATE_COMPLETE`**: RDS Proxy, PrivateLink, ACM on a custom domain, autoscaling,
+  and the agents wave (the Strands assistant's code-config Runtime reaches `READY`
+  on Bedrock AgentCore, app served over HTTPS).
+- `production-ha` passes the fidelity audit and its distinguishing resources are
+  Floci-validated; a full live apply is the remaining step.
 
 ## Run it locally
 

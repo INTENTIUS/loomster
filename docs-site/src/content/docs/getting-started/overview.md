@@ -44,9 +44,16 @@ not to touch.
   local emulator, at `localhost:8080` — no AWS account.
 - The **light tier is deployed end to end to a real AWS account**: a real ALB,
   backed by real RDS and Cognito.
-- `production` / `production-ha` synthesize and pass the fidelity audit against
-  Loom's `v1.6.0` templates, and deploy end to end on Floci, but haven't been applied
-  to a live account yet.
+- **`production` is validated end to end on a real AWS account — 7/7 stacks
+  `CREATE_COMPLETE`**, including RDS Proxy, PrivateLink, an ACM cert on a custom
+  domain, backend autoscaling, and the agents wave: the Strands assistant's
+  code-config Runtime reaches `READY` on Bedrock AgentCore, and the app is served
+  over HTTPS. Screen-level checks behind Cognito still need a user token (loomster
+  seeds no users), so validation covers the stacks, the tier resources, the served
+  app, and the agent runtime.
+- `production-ha` synthesizes and passes the fidelity audit, and its distinguishing
+  resources (Multi-AZ RDS, credential rotation, 2-task floor) are Floci-validated; a
+  full live apply is the remaining step.
 
 The [Screens reference](/loomster/reference/screens/) maps the running app back to
 the deployment decisions behind it — what each screen shows, what's seeded, and what
