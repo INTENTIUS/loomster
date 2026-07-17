@@ -18,7 +18,11 @@ account ids, or sizes in any composite.
 - **`env`** is `dev` / `staging` / `prod`, etc.
 - **`instance`** is the tenant/boundary segment. Mandatory. This is what lets N
   Loom instances coexist in one AWS account or spread across many without
-  collision (the multi-boundary topology).
+  collision (the multi-boundary topology). The **CFN stack names** are namespaced by
+  the same `{project}-{env}-{instance}` prefix — a component `loom-db` deploys to a
+  stack `loom-prod-a-loom-db` — so two deployments never collide on stack names
+  either, only on the `instance` boundary. Two tiers were run side by side in one
+  account this way (`production` as instance `a`, `production-ha` as instance `b`).
 - **`component`** is the composite's own name, e.g. `loom-db`, `shared-foundation`.
 - **`resource`** is the specific resource within the component, e.g. `instance`,
   `uploads`, `domain`.

@@ -64,6 +64,8 @@ See the [local guide](/loomster/guides/local/#agents-deploy-locally-invoke-is-a-
 
 Floci proves synthesis, deployability, and that the web-tier workload runs. It is
 **not** a substitute for a real-AWS run, and it doesn't validate anything in the
-sections above. The light tier has been deployed to a real account end to end.
-`production` / `production-ha` have not yet. See the
+sections above. All three tiers have been deployed to a real account end to end —
+`production` and `production-ha` both reach 7/7 stacks `CREATE_COMPLETE` with the
+assistant runtime `READY` on Bedrock AgentCore. What Floci still can't stand in for
+is real agent *execution* (invoke), which needs AgentCore on a live account. See the
 [Tutorial](/loomster/getting-started/tutorial/#3-go-to-production).
