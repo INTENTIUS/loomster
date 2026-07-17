@@ -401,44 +401,33 @@ pricing data. This is plumbing. Without Infracost installed and authenticated,
 every component prints a skip notice and the script exits `0`, never failing the
 build.
 
-## Positioning
+## What loomster adds over the SAM baseline
 
-Loom's own deploy today is a manual, multi-step SAM process behind a
-`DEPLOYMENT.md`. You clone three repos and run `sam build` / `sam deploy` per
-stack, in order, by hand. That's the baseline this replaces. Some of the
-difference is a real improvement. Some of what sounds like a win is
-CloudFormation-vs-Terraform, or no difference at all.
+Loom's upstream deploy is a manual, multi-step SAM process: clone three repos and
+run `sam build` / `sam deploy` per stack, in order, by hand. loomster replaces that
+with a typed, single-orchestrator build. The features it adds:
 
-**Real wins**
+- **Author-time type-checking and lint of cross-resource references** — a wrong
+  stack-output name or an unresolved `Ref` fails the build before synthesis, not as
+  a `ROLLBACK_COMPLETE` on a live stack.
+- **Cross-stack wiring without hand-written glue** — `loom-backend` resolves nine
+  inputs across three upstream stacks via `stackOutput(...)`, with no parameter
+  files and no copy-paste between applies.
+- **One dependency-ordered orchestrator** — `chant graph --components` prints the
+  exact order `chant run` and the generated pipeline both follow.
+- **Build-once, promote-by-digest** — images build once and are referenced by digest
+  through every later stage.
+- **Tiering as configuration** — one composite per component, parameterized by tier,
+  not three forked copies.
+- **Generated CI** for GitHub, GitLab, and Forgejo, from the same graph the CLI reads.
+- **A local emulator** — Floci runs the whole stack with no account and no cost, and
+  the CloudFormation is identical between Floci and real AWS.
 
-- **Author-time type-check and lint of cross-resource references.** A wrong stack
-  output name or an unresolved `Ref` is a build failure before anything
-  synthesizes, not a `ROLLBACK_COMPLETE` found against a live stack.
-- **Cross-stack wiring without hand-written glue.** `loom-backend` alone resolves
-  nine inputs across three upstream stacks via `stackOutput(...)`, with no
-  parameter file and no copy-paste between applies.
-- **One dependency-ordered orchestrator**, not a `DEPLOYMENT.md` a human executes
-  by hand. `chant graph --components` prints the exact order `chant run` and the
-  generated pipeline both run.
-- **Build-once, promote-by-digest.** The images build once and are referenced by
-  digest through every later stage, never a build-per-environment that drifts
-  from what was tested.
-- **Tiering as config, not three forked copies.** One composite each,
-  parameterized by tier.
-- **Generated CI** from the same graph the CLI reads, not a second source of
-  truth to keep in sync.
-- **A local emulator for the light tier.** Floci gives a no-account, no-cost path
-  to run the whole thing before touching an account, and the CloudFormation
-  doesn't change between Floci and real AWS. Only the endpoint does.
-
-**Parity, not wins**
-
-- **"No state file."** CloudFormation manages state as a service, true of vanilla
-  SAM too. A real advantage over a Terraform-style state file, but not something
-  chant adds on top of SAM.
-- **Walk-away.** chant emits standard CloudFormation and stops. SAM does the same.
-  The difference being argued for is the authoring and orchestration path that
-  produces the template, not the output format.
+Two things are sometimes counted as advantages but are properties of CloudFormation,
+not additions loomster makes: there is no separate state file (CloudFormation manages
+state as a service, as vanilla SAM does), and the output is standard CloudFormation
+you apply and walk away from (SAM emits CloudFormation too). What differs is the
+authoring and orchestration path that produces the template, not the output format.
 
 ## Known gaps
 
