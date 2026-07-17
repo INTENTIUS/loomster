@@ -94,6 +94,21 @@ artifact bucket and ECR repos are retained — empty and delete them by hand. Th
 hosted zone costs about $0.50/month; keep it for the next run or delete it once you
 remove the provider-side delegation.
 
+Three teardown snags on the prod tiers, in order:
+
+- **RDS deletion protection.** Production enables it (a correct default), so
+  `loom-db` delete fails with "Cannot delete protected DB Instance." Disable it first:
+  `aws rds modify-db-instance --db-instance-identifier <id> --no-deletion-protection --apply-immediately`.
+- **Subnet-group / instance race.** `dbRdsSubnetGroup` can fail to delete while the
+  instance is still draining ("still using it"). Wait for the instance to be gone,
+  then re-run the stack delete.
+- **Orphaned subnet group.** If the group outlives the instance and the stack retry
+  still fails, delete it directly (`aws rds delete-db-subnet-group --db-subnet-group-name <name>`)
+  and delete the stack once more.
+- **shared-foundation blockers.** Its delete fails while the ECR repos hold images or
+  the artifact bucket holds objects — empty the bucket (all versions) and
+  force-delete the repos (`aws ecr delete-repository --force`) first.
+
 ## Cost
 
 Real resources accrue for the run's duration. `production-ha` is materially more than
