@@ -217,10 +217,21 @@ describe("LoomAgents — production tier", () => {
 });
 
 describe("LoomAgents — production-ha tier", () => {
-  test("same full agent set as production (chant#890 — tier alone selects the set)", () => {
+  test("assistant only by default — the harness is opt-in via harnessImageUri (loomster#128)", () => {
     const instance = LoomAgents(baseProps({
       naming: prodHaNaming,
       privateSubnetIds: ["subnet-priv1", "subnet-priv2"],
+    }));
+    // No harnessImageUri supplied → no harness Runtime (Loom's no-code harness is
+    // created on demand via the app's create_harness API, not pre-provisioned).
+    expect(Object.keys(instance.members)).toEqual(ASSISTANT_ONLY_MEMBERS);
+  });
+
+  test("supplying a harness image provisions the full agent set on the full tier", () => {
+    const instance = LoomAgents(baseProps({
+      naming: prodHaNaming,
+      privateSubnetIds: ["subnet-priv1", "subnet-priv2"],
+      harnessImageUri: "111111111111.dkr.ecr.us-east-1.amazonaws.com/loom-harness-agent@sha256:def",
     }));
     expect(Object.keys(instance.members)).toEqual([...ASSISTANT_ONLY_MEMBERS, ...HARNESS_AGENT_MEMBERS]);
   });

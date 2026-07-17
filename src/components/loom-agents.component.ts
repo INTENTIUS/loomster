@@ -41,11 +41,27 @@ import { phase, stackOutput, type Component } from "@intentius/chant/components"
  * verb to close (out of #20's scope). `harnessImageUri`'s "stock/managed
  * image" is unaffected either way — it was never Loom source to vendor.
  */
+// A caller's own harness container image, threaded to the CFN parameter. Unset
+// (the default) means the composite emits no harness Runtime (loomster#128).
+const harnessAgentImageUri = process.env.LOOM_HARNESS_AGENT_IMAGE_URI ?? "";
+
 export const loomAgents: Component = {
   name: "loom-agents",
   archetype: "infra",
   dependsOn: ["shared-foundation", "loom-cognito", "loom-backend"],
   deploy: [
+    // Build + upload the Strands assistant zip to the artifact bucket first, so
+    // the code-config Runtime's `code.s3` target exists before the stack applies
+    // (loomster#128). shared-foundation is already up (dependsOn), so its bucket
+    // exists. The `shell` escape hatch is the honest fit until an
+    // `agent-artifact-build` verb exists.
+    phase("Build", [
+      {
+        kind: "shell",
+        cmd: "bash scripts/build-assistant-zip.sh",
+        reason: "build + upload the Strands assistant zip to the artifact bucket for the code-config Runtime (loomster#128); no dedicated agent-artifact-build verb yet",
+      },
+    ]),
     phase("Apply", [
       {
         kind: "cfn-deploy",
@@ -58,6 +74,10 @@ export const loomAgents: Component = {
           pDomainName: stackOutput("shared-foundation", "oDomainName"),
           pCognitoTokenUrl: stackOutput("loom-cognito", "oCognitoTokenUrl"),
           pCognitoDiscoveryUrl: stackOutput("loom-cognito", "oCognitoDiscoveryUrl"),
+          // Only meaningful when a caller supplies their own harness container
+          // image (LOOM_HARNESS_AGENT_IMAGE_URI); unset → the composite emits no
+          // harness Runtime (loomster#128), and this param stays its "" default.
+          pHarnessAgentImageUri: harnessAgentImageUri,
         },
       },
     ]),

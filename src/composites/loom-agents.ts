@@ -433,12 +433,21 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
   };
   const assistant = AgentCoreAgent(assistantProps);
 
-  // ── No-code: the AgentCore-managed harness agent (production/production-ha only) ──
+  // ── No-code: the AgentCore-managed harness agent (opt-in) ──
+  // Loom's real no-code harness is a *managed agent loop* created on demand
+  // through the app's own `create_harness` API (AWS::BedrockAgentCore::Harness,
+  // no container image) — it is not pre-provisioned infrastructure. Modeling it
+  // here as an AgentCore *Runtime* with a `containerUri` was wrong on two counts
+  // (wrong resource, and there is no stock harness image to point at), and a
+  // real AgentCore deploy rejects an empty `ContainerUri` (loomster#128). So the
+  // harness Runtime is provisioned ONLY when a caller explicitly supplies a real
+  // `harnessImageUri` (their own container agent). Unset — the default — no
+  // harness is emitted, and users create no-code harnesses through the Loom UI.
   const harnessOverrides = defaults?.harnessAgent ?? {};
-  const harnessAgent = fullTier
+  const harnessAgent = fullTier && props.harnessImageUri
     ? AgentCoreAgent({
         name: naming.name("harness-agent"),
-        containerUri: props.harnessImageUri ?? "",
+        containerUri: props.harnessImageUri,
         networkMode,
         vpcSubnetIds,
         vpcSecurityGroupIds,
@@ -468,7 +477,9 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
   const assistantCodeInterpreterRole = codeInterpreter
     ? buildCodeInterpreterRole(naming, "assistant", codeInterpreterTags)
     : undefined;
-  const harnessAgentCodeInterpreterRole = codeInterpreter && fullTier
+  // Only when the harness agent itself is provisioned (loomster#128) — no orphan
+  // code-interpreter role for an agent that no longer exists.
+  const harnessAgentCodeInterpreterRole = codeInterpreter && harnessAgent
     ? buildCodeInterpreterRole(naming, "harness-agent", codeInterpreterTags)
     : undefined;
 

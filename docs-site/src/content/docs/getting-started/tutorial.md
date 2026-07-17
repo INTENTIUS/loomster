@@ -66,7 +66,7 @@ Deploy order (waves apply top-to-bottom; a wave's components are parallel-safe):
 | `loom-db` | RDS Postgres and its secret; production adds RDS Proxy and rotation |
 | `loom-frontend` | The frontend ECS Fargate service |
 | `loom-backend` | The backend ECS Fargate service |
-| `loom-agents` | The Bedrock AgentCore agents — one Strands agent on every tier, a second harness agent on production-ha |
+| `loom-agents` | The Bedrock AgentCore agents — the Strands assistant (code-config Runtime) on every tier. No-code harnesses are created on demand via Loom's app; a BYO container agent is opt-in via `LOOM_HARNESS_AGENT_IMAGE_URI` |
 
 `downstream-stub` in the graph is not part of Loom. It's a verification stack
 that consumes `shared-foundation`'s outputs, proving they resolve for a real
@@ -218,8 +218,8 @@ three survive and want the same manual cleanup.
 `production` and `production-ha` are the same source with a different tier. What
 the output gains: HTTPS with an ACM certificate and a Route53 alias, PrivateLink
 (an NLB plus a VPC endpoint service), the RDS Proxy and a credential-rotation
-schedule, and, on `production-ha`, Multi-AZ RDS and a second, no-code agent
-alongside the low-code one.
+schedule, and, on `production-ha`, Multi-AZ RDS. The Strands assistant deploys on
+every tier; no-code harness agents are created on demand through Loom's app.
 
 The trade for that is real inputs. Unlike light, production **does not provision
 a network**. PrivateLink needs private subnets a from-scratch VPC never has, so
