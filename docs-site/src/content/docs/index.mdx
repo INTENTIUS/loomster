@@ -42,8 +42,9 @@ for real. Only agents need real AWS. See
 end to end to a real AWS account**, and **`production` is validated end to end on a
 real account — 7/7 stacks `CREATE_COMPLETE`**, including the agents wave (the Strands
 assistant's code-config Runtime reaches `READY` on Bedrock AgentCore, app served over
-HTTPS). `production-ha` passes the fidelity audit with its distinguishing resources
-Floci-validated; a full live apply is the remaining step. The
+HTTPS). **`production-ha` is validated end to end on a real account too — 7/7 stacks**, adding
+Multi-AZ RDS + a live credential rotation, and it ran as a second instance alongside
+`production` (multi-deployment). The
 [Overview](/loomster/getting-started/overview/) has the full picture.
 
 ## Same discipline, one layer down

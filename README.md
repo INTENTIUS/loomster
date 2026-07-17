@@ -40,8 +40,9 @@ stdio) for inspecting and building the graph. From the checkout, ask your agent 
   `CREATE_COMPLETE`**: RDS Proxy, PrivateLink, ACM on a custom domain, autoscaling,
   and the agents wave (the Strands assistant's code-config Runtime reaches `READY`
   on Bedrock AgentCore, app served over HTTPS).
-- `production-ha` passes the fidelity audit and its distinguishing resources are
-  Floci-validated; a full live apply is the remaining step.
+- **`production-ha` is validated end to end on a real account too — 7/7 stacks**, adding
+  Multi-AZ RDS + a live credential rotation, and it ran as a second instance alongside
+  `production` (multi-deployment).
 
 ## Run it locally
 
