@@ -12,7 +12,11 @@ import { agents } from "./agents";
 
 export const oAssistantRuntimeArn = output(agents.assistantRuntime.AgentRuntimeArn, "oAssistantRuntimeArn");
 export const oAssistantRuntimeVersion = output(agents.assistantRuntime.AgentRuntimeVersion, "oAssistantRuntimeVersion");
-export const oAssistantEndpointArn = output(agents.assistantEndpoint.AgentRuntimeEndpointArn, "oAssistantEndpointArn");
+// Present only if the endpoint was opted in (chant#978) — by default it's created
+// out-of-band once the Runtime is READY, so there's no CFN endpoint to reference.
+export const oAssistantEndpointArn = agents.assistantEndpoint
+  ? output(agents.assistantEndpoint.AgentRuntimeEndpointArn, "oAssistantEndpointArn")
+  : undefined;
 export const oAssistantMemoryArn = output(agents.assistantMemory.MemoryArn, "oAssistantMemoryArn");
 export const oAssistantWorkloadIdentityArn = output(agents.assistantWorkloadIdentity.WorkloadIdentityArn, "oAssistantWorkloadIdentityArn");
 export const oAssistantGatewayUrl = output(agents.assistantGateway.GatewayUrl, "oAssistantGatewayUrl");

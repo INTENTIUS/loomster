@@ -155,7 +155,8 @@ export type LoomAgentsResult = {
   assistantRole: AgentCoreAgentResult["role"];
   assistantGatewayRole: AgentCoreAgentResult["gatewayRole"];
   assistantRuntime: AgentCoreAgentResult["runtime"];
-  assistantEndpoint: AgentCoreAgentResult["endpoint"];
+  /** RuntimeEndpoint — present only when opted in (chant#978): the endpoint races the Runtime's version-READY when applied in the same template, so it is created out-of-band post-READY. */
+  assistantEndpoint?: AgentCoreAgentResult["endpoint"];
   assistantMemory: AgentCoreAgentResult["memory"];
   assistantWorkloadIdentity: AgentCoreAgentResult["workloadIdentity"];
   assistantGateway: AgentCoreAgentResult["gateway"];
@@ -487,7 +488,7 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
     assistantRole: assistant.role,
     assistantGatewayRole: assistant.gatewayRole,
     assistantRuntime: assistant.runtime,
-    assistantEndpoint: assistant.endpoint,
+    ...(assistant.endpoint ? { assistantEndpoint: assistant.endpoint } : {}),
     assistantMemory: assistant.memory,
     assistantWorkloadIdentity: assistant.workloadIdentity,
     assistantGateway: assistant.gateway,
@@ -499,7 +500,8 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
           harnessAgentRole: harnessAgent.role,
           harnessAgentGatewayRole: harnessAgent.gatewayRole,
           harnessAgentRuntime: harnessAgent.runtime,
-          harnessAgentEndpoint: harnessAgent.endpoint,
+          // Endpoint is opt-in (chant#978) — omitted unless present.
+          ...(harnessAgent.endpoint ? { harnessAgentEndpoint: harnessAgent.endpoint } : {}),
           harnessAgentMemory: harnessAgent.memory,
           harnessAgentWorkloadIdentity: harnessAgent.workloadIdentity,
           harnessAgentGateway: harnessAgent.gateway,

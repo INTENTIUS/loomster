@@ -28,14 +28,16 @@ function baseProps(overrides: Partial<LoomAgentsProps> = {}): LoomAgentsProps {
   };
 }
 
+// No *Endpoint members: the RuntimeEndpoint is opt-in (chant#978) — it races the
+// Runtime's version-READY when applied inline, so it's created out-of-band post-READY.
 const ASSISTANT_ONLY_MEMBERS = [
-  "assistantRole", "assistantGatewayRole", "assistantRuntime", "assistantEndpoint",
+  "assistantRole", "assistantGatewayRole", "assistantRuntime",
   "assistantMemory", "assistantWorkloadIdentity", "assistantGateway", "assistantGatewayTarget",
   "assistantCodeInterpreterRole",
 ];
 
 const HARNESS_AGENT_MEMBERS = [
-  "harnessAgentRole", "harnessAgentGatewayRole", "harnessAgentRuntime", "harnessAgentEndpoint",
+  "harnessAgentRole", "harnessAgentGatewayRole", "harnessAgentRuntime",
   "harnessAgentMemory", "harnessAgentWorkloadIdentity", "harnessAgentGateway", "harnessAgentGatewayTarget",
   "harnessAgentCodeInterpreterRole",
 ];
@@ -267,7 +269,8 @@ describe("LoomAgents — serializes to valid CloudFormation", () => {
       expect(resource.Type.startsWith("AWS::")).toBe(true);
     }
     expect(template.Resources.loomAgentsAssistantRuntime.Type).toBe("AWS::BedrockAgentCore::Runtime");
-    expect(template.Resources.loomAgentsAssistantEndpoint.Type).toBe("AWS::BedrockAgentCore::RuntimeEndpoint");
+    // No RuntimeEndpoint — opt-in (chant#978), created out-of-band post-READY.
+    expect(Object.keys(template.Resources)).not.toContain("loomAgentsAssistantEndpoint");
     expect(template.Resources.loomAgentsAssistantMemory.Type).toBe("AWS::BedrockAgentCore::Memory");
     expect(template.Resources.loomAgentsAssistantGateway.Type).toBe("AWS::BedrockAgentCore::Gateway");
     expect(template.Resources.loomAgentsAssistantWorkloadIdentity.Type).toBe("AWS::BedrockAgentCore::WorkloadIdentity");
@@ -288,12 +291,15 @@ describe("LoomAgents — serializes to valid CloudFormation", () => {
     const template = JSON.parse(output);
     expect(template.Resources.loomAgentsHarnessAgentRuntime.Type).toBe("AWS::BedrockAgentCore::Runtime");
     expect(template.Resources.loomAgentsAssistantRuntime.Type).toBe("AWS::BedrockAgentCore::Runtime");
-    // Endpoint's AgentRuntimeId references its own agent's Runtime, not the other agent's.
-    expect(template.Resources.loomAgentsAssistantEndpoint.Properties.AgentRuntimeId).toEqual({
-      "Fn::GetAtt": ["loomAgentsAssistantRuntime", "AgentRuntimeId"],
+    // No RuntimeEndpoints (opt-in, chant#978). Each agent's GatewayTarget routes back
+    // to its OWN Runtime, not the other agent's — the cross-ref that matters now.
+    expect(Object.keys(template.Resources)).not.toContain("loomAgentsAssistantEndpoint");
+    expect(Object.keys(template.Resources)).not.toContain("loomAgentsHarnessAgentEndpoint");
+    expect(template.Resources.loomAgentsAssistantGatewayTarget.Properties.TargetConfiguration.Http.AgentcoreRuntime.Arn).toEqual({
+      "Fn::GetAtt": ["loomAgentsAssistantRuntime", "AgentRuntimeArn"],
     });
-    expect(template.Resources.loomAgentsHarnessAgentEndpoint.Properties.AgentRuntimeId).toEqual({
-      "Fn::GetAtt": ["loomAgentsHarnessAgentRuntime", "AgentRuntimeId"],
+    expect(template.Resources.loomAgentsHarnessAgentGatewayTarget.Properties.TargetConfiguration.Http.AgentcoreRuntime.Arn).toEqual({
+      "Fn::GetAtt": ["loomAgentsHarnessAgentRuntime", "AgentRuntimeArn"],
     });
   });
 });
