@@ -431,10 +431,11 @@ authoring and orchestration path that produces the template, not the output form
 
 ## Known gaps
 
-- `production` is validated end to end on a live account (7/7 stacks
-  `CREATE_COMPLETE`, agents wave included). `production-ha` has been synthesized and
-  fidelity-audited and its distinguishing resources are Floci-validated, but a full
-  live apply is still pending. The light tier is also applied live.
+- Both `production` and `production-ha` are validated end to end on a live account
+  (7/7 stacks `CREATE_COMPLETE`, agents wave included; production-ha adds Multi-AZ RDS
+  and a live credential rotation). They can run side by side in one account —
+  production-ha was deployed as a second instance while production's resources were
+  still up. The light tier is also applied live.
 - Screen-level validation behind real Cognito needs a user token; loomster seeds no
   users, so the live checks cover stacks, tier resources, the served app, and the
   agent runtime — not per-screen content.

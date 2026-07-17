@@ -51,9 +51,10 @@ not to touch.
   over HTTPS. Screen-level checks behind Cognito still need a user token (loomster
   seeds no users), so validation covers the stacks, the tier resources, the served
   app, and the agent runtime.
-- `production-ha` synthesizes and passes the fidelity audit, and its distinguishing
-  resources (Multi-AZ RDS, credential rotation, 2-task floor) are Floci-validated; a
-  full live apply is the remaining step.
+- **`production-ha` is validated end to end on a real account too — 7/7 stacks
+  `CREATE_COMPLETE`**, adding Multi-AZ RDS and a live `HostedRotationLambda` credential
+  rotation. It also proved multi-deployment: it ran as a second instance alongside
+  `production` in the same account.
 
 The [Screens reference](/loomster/reference/screens/) maps the running app back to
 the deployment decisions behind it — what each screen shows, what's seeded, and what
