@@ -34,7 +34,8 @@ export AWS_ENDPOINT_URL="http://localhost:4566" AWS_ACCESS_KEY_ID=test AWS_SECRE
 export LOOM_TIER="$TIER" LOOM_ENV=floci LOOM_INSTANCE=a AWS_ACCOUNT_ID=000000000000
 export LOOM_DB_PASSWORD="floci-e2e-pw-1234" LOOM_CPU_ARCHITECTURE=ARM64
 export LOOM_ASSISTANT_CODE_PREFIX="strands_agent/agent.zip"
-export LOOM_HARNESS_AGENT_IMAGE_URI="public.ecr.aws/loom/harness:latest"
+# Harness agent is opt-in (loomster#128) — left UNSET so the agents wave deploys the
+# assistant alone. The Floci run asserts the assistant runtime only (see below).
 export LOOM_DOMAIN_NAME="loom.floci.test"
 
 aws() { command aws --endpoint-url "$AWS_ENDPOINT_URL" --region "$REGION" "$@"; }
@@ -82,7 +83,7 @@ assert_present shared-foundation AWS::EC2::VPCEndpointService 1 "PrivateLink VPC
 assert_present shared-foundation AWS::CertificateManager::Certificate 1 "ACM certificate"
 assert_present shared-foundation AWS::Route53::HostedZone 1 "Route53 hosted zone"
 assert_present loom-backend AWS::ApplicationAutoScaling::ScalableTarget 1 "backend autoscaling"
-assert_present loom-agents AWS::BedrockAgentCore::Runtime 2 "both agent runtimes (assistant + harness)"
+assert_present loom-agents AWS::BedrockAgentCore::Runtime 1 "assistant agent runtime (code-config; harness is opt-in, loomster#128)"
 
 if [ "$TIER" = "production-ha" ]; then
   assert_present loom-db AWS::SecretsManager::RotationSchedule 1 "credential rotation schedule"

@@ -43,7 +43,10 @@ export LOOM_TIER="$TIER"
 export LOOM_ENV="${LOOM_ENV:-prod}" LOOM_INSTANCE="${LOOM_INSTANCE:-a}"
 export LOOM_CPU_ARCHITECTURE="${LOOM_CPU_ARCHITECTURE:-ARM64}"
 export LOOM_ASSISTANT_CODE_PREFIX="${LOOM_ASSISTANT_CODE_PREFIX:-strands_agent/agent.zip}"
-export LOOM_HARNESS_AGENT_IMAGE_URI="${LOOM_HARNESS_AGENT_IMAGE_URI:-public.ecr.aws/loom/harness:latest}"
+# Harness agent is opt-in (loomster#128): only a real, existing container image
+# should be set here. Left UNSET by default so the agents wave deploys the assistant
+# alone — no-code harnesses are created on demand through Loom's app, not here.
+# (Set LOOM_HARNESS_AGENT_IMAGE_URI to a real image to exercise a BYO container agent.)
 
 : "${LOOM_HOSTED_ZONE_ID:?set LOOM_HOSTED_ZONE_ID to a delegated Route53 zone}"
 : "${LOOM_DOMAIN_NAME:?set LOOM_DOMAIN_NAME (e.g. loom.intentius.io)}"
@@ -131,7 +134,7 @@ assert_present shared-foundation AWS::EC2::VPCEndpointService 1 "PrivateLink VPC
 assert_present shared-foundation AWS::CertificateManager::Certificate 1 "ACM certificate"
 assert_present shared-foundation AWS::Route53::RecordSet 1 "Route53 alias record"
 assert_present loom-backend AWS::ApplicationAutoScaling::ScalableTarget 1 "backend autoscaling"
-assert_present loom-agents AWS::BedrockAgentCore::Runtime 2 "both agent runtimes"
+assert_present loom-agents AWS::BedrockAgentCore::Runtime 1 "assistant agent runtime (code-config; harness is opt-in, loomster#128)"
 if [ "$TIER" = "production-ha" ]; then
   assert_present loom-db AWS::SecretsManager::RotationSchedule 1 "credential rotation schedule"
 fi
