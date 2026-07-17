@@ -5,7 +5,7 @@ description: The two load-bearing reference-existing seams — bring your own VP
 
 Most platform teams don't let an application stack provision its own VPC or IAM
 roles — a platform/security team owns those centrally. So for both, `reference-existing`
-is the first-class path, not a fallback. See the [seam matrix](/loomster/adoption/#the-seam-matrix)
+is the first-class path, not a fallback. See the [seam matrix](/loomster/adoption/overview/#the-seam-matrix)
 for the exact option/default/replacement of each.
 
 ## Network
