@@ -10,14 +10,14 @@ import { sn } from "../lib/stack-name";
  * SSM parameter (`../downstream-stub/stub.ts`).
  */
 const fromSharedFoundation = {
-  ecsClusterArn: stackOutput(sn("shared-foundation"), "oEcsClusterArn"),
-  httpsListenerArn: stackOutput(sn("shared-foundation"), "oHttpsListenerArn"),
-  frontendTargetGroupArn: stackOutput(sn("shared-foundation"), "oFrontendTargetGroupArn"),
-  backendTargetGroupArn: stackOutput(sn("shared-foundation"), "oBackendTargetGroupArn"),
-  frontendRepositoryUri: stackOutput(sn("shared-foundation"), "oFrontendRepositoryUri"),
-  backendRepositoryUri: stackOutput(sn("shared-foundation"), "oBackendRepositoryUri"),
-  albSecurityGroupId: stackOutput(sn("shared-foundation"), "oAlbSecurityGroupId"),
-  ecsSecurityGroupId: stackOutput(sn("shared-foundation"), "oEcsSecurityGroupId"),
+  ecsClusterArn: stackOutput("shared-foundation", "oEcsClusterArn"),
+  httpsListenerArn: stackOutput("shared-foundation", "oHttpsListenerArn"),
+  frontendTargetGroupArn: stackOutput("shared-foundation", "oFrontendTargetGroupArn"),
+  backendTargetGroupArn: stackOutput("shared-foundation", "oBackendTargetGroupArn"),
+  frontendRepositoryUri: stackOutput("shared-foundation", "oFrontendRepositoryUri"),
+  backendRepositoryUri: stackOutput("shared-foundation", "oBackendRepositoryUri"),
+  albSecurityGroupId: stackOutput("shared-foundation", "oAlbSecurityGroupId"),
+  ecsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
 };
 
 export const downstreamStub: Component = {

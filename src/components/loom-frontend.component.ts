@@ -48,7 +48,7 @@ import { namingParams } from "../loom-frontend/params";
 
 const naming = loomNaming(namingParams, "loom-frontend");
 const serviceName = naming.name("frontend-svc");
-const clusterArn = stackOutput(sn("shared-foundation"), "oEcsClusterArn");
+const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // Verify runs the runtime health checks: the service reaches steady state
 // (`wait-steady-state`, chant#937), then an HTTP health check through the
 // shared ALB against `/` (nginx serves the SPA at root; `health-gate` composes
@@ -68,7 +68,7 @@ const onRealAws = !process.env.AWS_ENDPOINT_URL;
 // `host` honors a full URL scheme and prepends http:// only to a bare host.
 const fullTier = namingParams.tier !== "light";
 const domain = process.env.LOOM_DOMAIN_NAME;
-const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput(sn("shared-foundation"), "oAlbDnsName");
+const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput("shared-foundation", "oAlbDnsName");
 const verifyPhases = onRealAws
   ? [
       phase("Verify", [
@@ -97,7 +97,7 @@ export const loomFrontend: Component = {
       { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
     ]),
     phase("Publish", [
-      { kind: "publish-image", from: "archive", to: stackOutput(sn("shared-foundation"), "oFrontendRepositoryUri") },
+      { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oFrontendRepositoryUri") },
     ]),
     phase("Apply", [
       {
@@ -106,9 +106,9 @@ export const loomFrontend: Component = {
         template: "dist/loom-frontend.template.json",
         inputs: {
           pEcsClusterArn: clusterArn,
-          pEcsSecurityGroupId: stackOutput(sn("shared-foundation"), "oEcsSecurityGroupId"),
-          pTargetGroupArn: stackOutput(sn("shared-foundation"), "oFrontendTargetGroupArn"),
-          pPublicSubnetIds: stackOutput(sn("shared-foundation"), "oPublicSubnetIds"),
+          pEcsSecurityGroupId: stackOutput("shared-foundation", "oEcsSecurityGroupId"),
+          pTargetGroupArn: stackOutput("shared-foundation", "oFrontendTargetGroupArn"),
+          pPublicSubnetIds: stackOutput("shared-foundation", "oPublicSubnetIds"),
           pImageUri: "@Publish.uri",
         },
       },

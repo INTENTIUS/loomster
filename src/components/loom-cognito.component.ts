@@ -13,7 +13,7 @@ import { sn } from "../lib/stack-name";
  * so unlike `loom-db` this has nothing to thread in from `shared-foundation`
  * and can deploy independently. Named outputs (`../loom-cognito/outputs.ts`)
  * are what #889 (the frontend/backend services) attach to via
- * `stackOutput(sn("loom-cognito"), ...)`.
+ * `stackOutput("loom-cognito", ...)`.
  */
 export const loomCognito: Component = {
   name: "loom-cognito",
