@@ -25,6 +25,7 @@ export default defineConfig({
 						{ label: 'Network & IAM', slug: 'adoption/network-and-iam' },
 						{ label: 'DNS & certificates', slug: 'adoption/dns' },
 						{ label: 'Identity & topology', slug: 'adoption/identity' },
+						{ label: 'Multiple deployments', slug: 'adoption/multiple-deployments' },
 					],
 				},
 				{
