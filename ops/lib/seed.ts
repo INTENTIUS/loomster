@@ -54,6 +54,13 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     // LOOM_SEED_GROUP (default "loomster").
     `GROUP="\${LOOM_SEED_GROUP:-loomster}"`,
     `echo "loom-seed: profile=$PROFILE base=$BASE group=$GROUP"`,
+    // Real-Cognito deployments enforce auth on every endpoint; a local-up app runs
+    // Loom's dev-auth bypass and needs none. When LOOM_API_TOKEN is set (e.g. the
+    // throwaway admin the live-e2e harness mints, loomster#147), pass it as a bearer
+    // via a curl -K config file — kept out of argv/`ps`, quoting-safe, and simply
+    // absent (empty file) on local-up. Every curl below reads it (`-K "$AUTHCFG"`).
+    `AUTHCFG="$(mktemp)"; trap 'rm -f "$AUTHCFG"' EXIT`,
+    `if [ -n "\${LOOM_API_TOKEN:-}" ]; then printf 'header = "Authorization: Bearer %s"\\n' "$LOOM_API_TOKEN" > "$AUTHCFG"; echo "loom-seed: authenticating with LOOM_API_TOKEN"; fi`,
     `if [ "$PROFILE" = "none" ]; then echo "loom-seed: profile=none, nothing to seed"; exit 0; fi`,
     // Account id: prefer the env, fall back to STS (Floci returns the zero account).
     `ACCOUNT="\${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo 000000000000)}"`,
@@ -193,5 +200,8 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `  echo "loom-seed: invocations already recorded, skipping demo invocations"`,
     `fi`,
     `echo "loom-seed: demo seed complete"`,
-  ].join("\n");
+  ]
+    .join("\n")
+    // Every request authenticates when a token is present (see AUTHCFG above).
+    .replace(/curl -fsS/g, `curl -fsS -K "$AUTHCFG"`);
 }

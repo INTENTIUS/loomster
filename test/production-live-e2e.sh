@@ -164,9 +164,20 @@ if [ -z "${LOOM_API_TOKEN:-}" ] && [ "${LOOM_E2E_MINT_USER:-1}" = "1" ]; then
   fi
 fi
 if [ -n "${LOOM_API_TOKEN:-}" ]; then
-  LOOM_API_BASE_URL="https://$LOOM_DOMAIN_NAME" npx tsx scripts/validate/run.ts || { echo "FAIL: screen validation"; [ "$MINTED_USER" = "1" ] && bash scripts/validate/get-user-token.sh --delete; exit 1; }
+  # Seed the production floor (agent role + Cognito authorizer) THROUGH the token, so
+  # screen validation asserts real seeded content behind real auth — not just that
+  # endpoints render. loomster seeds no users/roles into Loom's app DB; loom-seed
+  # drives Loom's own import/create endpoints, now authenticated (loomster#147).
+  SEED_PROFILE="${LOOM_SEED_PROFILE:-foundation}"
+  echo "    seeding the $SEED_PROFILE floor via the token ..."
+  LOOM_API_BASE_URL="https://$LOOM_DOMAIN_NAME" LOOM_SEED_PROFILE="$SEED_PROFILE" AWS_ACCOUNT_ID="$ACCT" \
+    ./node_modules/.bin/chant run loom-seed --env "$LOOM_ENV" 2>&1 | tee /tmp/live-e2e-seed.log \
+    || { echo "FAIL: loom-seed"; [ "$MINTED_USER" = "1" ] && bash scripts/validate/get-user-token.sh --delete; exit 1; }
+  echo "    validating every screen behind real Cognito ($SEED_PROFILE profile) ..."
+  LOOM_API_BASE_URL="https://$LOOM_DOMAIN_NAME" LOOM_SEED_PROFILE="$SEED_PROFILE" npx tsx scripts/validate/run.ts \
+    || { echo "FAIL: screen validation"; [ "$MINTED_USER" = "1" ] && bash scripts/validate/get-user-token.sh --delete; exit 1; }
   [ "$MINTED_USER" = "1" ] && bash scripts/validate/get-user-token.sh --delete
-  echo "PASS: $TIER validated live on $ACCT/$REGION (7/7 stacks + tier resources + app served + authed screens)"
+  echo "PASS: $TIER validated live on $ACCT/$REGION (7/7 stacks + tier resources + app served + $SEED_PROFILE floor seeded + authed screens)"
 else
   echo "    SKIPPED: real Cognito enforces auth; set LOOM_API_TOKEN or LOOM_E2E_MINT_USER=1 to validate screens."
   echo "PASS: $TIER deployed + served live on $ACCT/$REGION (7/7 stacks + tier resources + app served). Screen validation pending a token."

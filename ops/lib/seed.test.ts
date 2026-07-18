@@ -19,6 +19,17 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain('if [ "$PROFILE" = "none" ]; then echo "loom-seed: profile=none, nothing to seed"; exit 0; fi');
   });
 
+  test("authenticates every request with LOOM_API_TOKEN when set (real Cognito), no header otherwise", () => {
+    const script = seedDefaultsScript(refs);
+    // The bearer is loaded into a curl -K config file only when the token is present.
+    expect(script).toContain('AUTHCFG="$(mktemp)"');
+    expect(script).toContain('if [ -n "${LOOM_API_TOKEN:-}" ]; then');
+    expect(script).toContain('Authorization: Bearer %s');
+    // Every request reads that config, so nothing hits a live endpoint unauthenticated.
+    expect(script).not.toMatch(/curl -fsS(?! -K "\$AUTHCFG")/);
+    expect(script).toContain('curl -fsS -K "$AUTHCFG"');
+  });
+
   test("foundation: imports the agent execution role by ARN, idempotently", () => {
     const script = seedDefaultsScript(refs);
     expect(script).toContain(`ROLE_ARN="arn:aws:iam::\${ACCOUNT}:role/${refs.agentRoleName}"`);
