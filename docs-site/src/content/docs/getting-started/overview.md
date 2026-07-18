@@ -48,10 +48,10 @@ not to touch.
   `CREATE_COMPLETE`**, including RDS Proxy, PrivateLink, an ACM cert on a custom
   domain, backend autoscaling, and the agents wave: the Strands assistant's
   code-config Runtime reaches `READY` on Bedrock AgentCore, and the app is served
-  over HTTPS. Screen-level checks behind Cognito authenticate with a throwaway admin
-  the harness mints against the deployed pool (loomster seeds no users); live proof
-  so far covers the stacks, the tier resources, the served app, and the agent runtime,
-  with the minted-token screen pass running inline on the next apply.
+  over HTTPS. All 15 screens are validated behind real (MFA-enforced) Cognito: the
+  harness mints a throwaway admin against the deployed pool, seeds the foundation floor
+  through that token, and reads every screen — so the live proof covers the stacks, the
+  tier resources, the served app, the agent runtime, and the authenticated UI.
 - **`production-ha` is validated end to end on a real account too — 7/7 stacks
   `CREATE_COMPLETE`**, adding Multi-AZ RDS and a live `HostedRotationLambda` credential
   rotation. It also proved multi-deployment: it ran as a second instance alongside
