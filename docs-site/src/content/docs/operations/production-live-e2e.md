@@ -83,7 +83,8 @@ The script vendors Loom, synthesizes, deploys all seven stacks, then asserts:
   service, ACM certificate, Route53 alias record, backend autoscaling, both agent
   runtimes (`production-ha` also asserts the credential-rotation schedule),
 - the app is served at `https://<domain>`,
-- every screen validates behind real Cognito auth.
+- the foundation floor is seeded through the minted admin token, then all 15 screens
+  validate behind real Cognito auth (last live run: 15/15).
 
 ### Authenticated screen validation
 
@@ -92,8 +93,14 @@ screens need a real token. Loom derives a user's scopes from their `cognito:grou
 claim, and an admin needs the `t-admin` type group plus one `g-admins-*` group.
 `scripts/validate/get-user-token.sh` does this end to end against the deployed pool:
 it creates those two groups (idempotent), a throwaway user, adds it to both, then
-uses `ADMIN_USER_PASSWORD_AUTH` (the user client enables it) to return an access
-token. The harness mints and deletes this user automatically — set
+authenticates via `ADMIN_USER_PASSWORD_AUTH`. The full tier enforces MFA on the pool
+(hardening rule WAW052, `MfaConfiguration: ON`), so that first call returns an
+`MFA_SETUP` challenge — the script associates a software token, computes its TOTP
+(RFC 6238, no external tool), verifies it, and answers the challenge to obtain the
+access token. That token carries `cognito:groups`, so Loom grants the full scope set
+and every screen authorizes. The harness then seeds the foundation floor *through the
+same token* (`loom-seed` authenticates with `LOOM_API_TOKEN`) and validates the 15
+screens against it. It mints and deletes the throwaway user automatically — set
 `LOOM_E2E_MINT_USER=0` to skip, or export your own `LOOM_API_TOKEN` to override. To
 drive it by hand against a live deployment:
 

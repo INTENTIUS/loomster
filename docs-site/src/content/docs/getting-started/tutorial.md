@@ -436,10 +436,10 @@ authoring and orchestration path that produces the template, not the output form
   and a live credential rotation). They can run side by side in one account —
   production-ha was deployed as a second instance while production's resources were
   still up. The light tier is also applied live.
-- Screen-level validation behind real Cognito authenticates with a throwaway admin the
-  harness mints against the deployed pool (loomster seeds no users). Live checks so far
-  cover stacks, tier resources, the served app, and the agent runtime; the minted-token
-  per-screen pass runs inline on the next live apply.
+- Screen-level validation behind real Cognito is proven live: the harness mints a
+  throwaway admin against the deployed pool (completing the software-token MFA the
+  production pool enforces), seeds the foundation floor through that token, and reads
+  all 15 screens. loomster seeds no users of its own.
 - Agents deploy locally against the AgentCore-enabled Floci image, but real agent
   execution needs Bedrock AgentCore on a live account (not enabled everywhere).
   See steps 1 and 2.
