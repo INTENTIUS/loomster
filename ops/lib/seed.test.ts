@@ -4,6 +4,7 @@ import { seedDefaultsScript } from "./seed";
 const refs = {
   agentRoleName: "loom-prod-a-shared-foundation-agent-role",
   cognitoUserPoolName: "loom-prod-a-loom-cognito-pool",
+  cognitoStackName: "loom-prod-a-loom-cognito",
   defaultProfile: "foundation" as const,
 };
 
@@ -19,6 +20,17 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain('if [ "$PROFILE" = "none" ]; then echo "loom-seed: profile=none, nothing to seed"; exit 0; fi');
   });
 
+  test("authenticates every request with LOOM_API_TOKEN when set (real Cognito), no header otherwise", () => {
+    const script = seedDefaultsScript(refs);
+    // The bearer is loaded into a curl -K config file only when the token is present.
+    expect(script).toContain('AUTHCFG="$(mktemp)"');
+    expect(script).toContain('if [ -n "${LOOM_API_TOKEN:-}" ]; then');
+    expect(script).toContain('Authorization: Bearer %s');
+    // Every request reads that config, so nothing hits a live endpoint unauthenticated.
+    expect(script).not.toMatch(/curl -fsS(?! -K "\$AUTHCFG")/);
+    expect(script).toContain('curl -fsS -K "$AUTHCFG"');
+  });
+
   test("foundation: imports the agent execution role by ARN, idempotently", () => {
     const script = seedDefaultsScript(refs);
     expect(script).toContain(`ROLE_ARN="arn:aws:iam::\${ACCOUNT}:role/${refs.agentRoleName}"`);
@@ -28,8 +40,12 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain("POST \"$BASE/api/security/roles\"");
   });
 
-  test("foundation: resolves the Cognito pool id by name and creates an authorizer, idempotently", () => {
+  test("foundation: resolves the Cognito pool id from the stack output (name scan as fallback) and creates an authorizer, idempotently", () => {
     const script = seedDefaultsScript(refs);
+    // Exact + pagination-proof: the stack output is tried first.
+    expect(script).toContain(`--stack-name "${refs.cognitoStackName}"`);
+    expect(script).toContain("OutputKey=='oCognitoUserPoolId'");
+    // The by-name scan remains as a fallback for a locally-provisioned pool.
     expect(script).toContain(`UserPools[?Name=='${refs.cognitoUserPoolName}'].Id`);
     expect(script).toContain("jq -e --arg n \"$AUTH_NAME\" 'any(.[]; .name == $n)'");
     expect(script).toContain("POST \"$BASE/api/security/authorizers\"");
