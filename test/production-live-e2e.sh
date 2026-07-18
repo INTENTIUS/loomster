@@ -160,6 +160,7 @@ if [ -z "${LOOM_API_TOKEN:-}" ] && [ "${LOOM_E2E_MINT_USER:-1}" = "1" ]; then
   if LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh); then
     export LOOM_API_TOKEN; MINTED_USER=1
   else
+    unset LOOM_API_TOKEN   # a failed mint must not leave a partial value that seeds/validates as garbage
     echo "    WARN: token mint failed; screens will be skipped."
   fi
 fi

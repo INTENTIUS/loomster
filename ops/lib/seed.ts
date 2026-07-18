@@ -34,14 +34,16 @@ export type SeedProfile = "demo" | "foundation" | "none";
 export interface SeedRefs {
   /** Deterministic shared-foundation agent execution role name (`naming.name("agent-role")`). */
   agentRoleName: string;
-  /** Deterministic Cognito user-pool name (`./stack-refs.ts`'s `cognitoUserPoolName`); the pool id is resolved from it at run time. */
+  /** Deterministic Cognito user-pool name (`./stack-refs.ts`'s `cognitoUserPoolName`); used as the fallback pool lookup. */
   cognitoUserPoolName: string;
+  /** Namespaced loom-cognito stack name (`{project}-{env}-{instance}-loom-cognito`); the pool id is read from its `oCognitoUserPoolId` output, which is exact and pagination-proof. */
+  cognitoStackName: string;
   /** Profile to use when `LOOM_SEED_PROFILE` is unset — the tier default (`demo` on light, `foundation` otherwise). */
   defaultProfile: SeedProfile;
 }
 
 export function seedDefaultsScript(refs: SeedRefs): string {
-  const { agentRoleName, cognitoUserPoolName, defaultProfile } = refs;
+  const { agentRoleName, cognitoUserPoolName, cognitoStackName, defaultProfile } = refs;
   return [
     "set -euo pipefail",
     `BASE="\${LOOM_API_BASE_URL:-http://localhost:8080}"`,
@@ -83,11 +85,14 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `    -d "{\\"mode\\":\\"import\\",\\"role_arn\\":\\"$ROLE_ARN\\",\\"role_type\\":\\"agent\\",\\"description\\":\\"Loomster: agent execution role (seeded by loom-seed)\\",\\"tags\\":$BRAND_TAGS}" >/dev/null`,
     `  echo "loom-seed: imported agent role $ROLE_ARN"`,
     `fi`,
-    // ── foundation: Cognito authorizer (idempotent), pool id resolved by name ──
-    `POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='${cognitoUserPoolName}'].Id | [0]" --output text 2>/dev/null || echo None)`,
+    // ── foundation: Cognito authorizer (idempotent) ──
+    // Resolve the pool id from the loom-cognito stack output (exact, pagination-proof);
+    // fall back to a name scan for a locally-provisioned pool with no stack output.
+    `POOL_ID=$(aws cloudformation describe-stacks --stack-name "${cognitoStackName}" --query "Stacks[0].Outputs[?OutputKey=='oCognitoUserPoolId'].OutputValue | [0]" --output text 2>/dev/null || echo None)`,
+    `if [ -z "$POOL_ID" ] || [ "$POOL_ID" = "None" ]; then POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='${cognitoUserPoolName}'].Id | [0]" --output text 2>/dev/null || echo None); fi`,
     `AUTH_NAME="Loomster Cognito Pool"`,
     `if [ -z "$POOL_ID" ] || [ "$POOL_ID" = "None" ]; then`,
-    `  echo "loom-seed: no cognito pool named ${cognitoUserPoolName}, skipping authorizer" >&2`,
+    `  echo "loom-seed: no cognito pool (stack ${cognitoStackName} / name ${cognitoUserPoolName}), skipping authorizer" >&2`,
     `elif curl -fsS "$BASE/api/security/authorizers" | jq -e --arg n "$AUTH_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
     `  echo "loom-seed: authorizer already present ($AUTH_NAME)"`,
     `else`,

@@ -28,6 +28,9 @@ const refs = stackRefs(naming);
 /** The shared-foundation agent execution role name (`../src/composites/shared-foundation.ts`'s `naming.name("agent-role")`). */
 const agentRoleName = loomNaming(naming, "shared-foundation").name("agent-role");
 
+/** Namespaced loom-cognito stack name — the pool id is read from its `oCognitoUserPoolId` output. */
+const cognitoStackName = `${naming.project}-${naming.env}-${naming.instance}-loom-cognito`;
+
 /** Tier default: light gets demo content; production tiers get config only (no cost-incurring demo resources). */
 const defaultProfile: SeedProfile = naming.tier === "light" ? "demo" : "foundation";
 
@@ -38,7 +41,7 @@ export default Op({
   searchAttributes: { Env: naming.env },
   phases: [
     phase("Seed", [
-      shell(seedDefaultsScript({ agentRoleName, cognitoUserPoolName: refs.cognitoUserPoolName, defaultProfile }), { profile: "fastIdempotent" }),
+      shell(seedDefaultsScript({ agentRoleName, cognitoUserPoolName: refs.cognitoUserPoolName, cognitoStackName, defaultProfile }), { profile: "fastIdempotent" }),
     ]),
   ],
 });

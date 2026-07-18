@@ -4,6 +4,7 @@ import { seedDefaultsScript } from "./seed";
 const refs = {
   agentRoleName: "loom-prod-a-shared-foundation-agent-role",
   cognitoUserPoolName: "loom-prod-a-loom-cognito-pool",
+  cognitoStackName: "loom-prod-a-loom-cognito",
   defaultProfile: "foundation" as const,
 };
 
@@ -39,8 +40,12 @@ describe("seedDefaultsScript", () => {
     expect(script).toContain("POST \"$BASE/api/security/roles\"");
   });
 
-  test("foundation: resolves the Cognito pool id by name and creates an authorizer, idempotently", () => {
+  test("foundation: resolves the Cognito pool id from the stack output (name scan as fallback) and creates an authorizer, idempotently", () => {
     const script = seedDefaultsScript(refs);
+    // Exact + pagination-proof: the stack output is tried first.
+    expect(script).toContain(`--stack-name "${refs.cognitoStackName}"`);
+    expect(script).toContain("OutputKey=='oCognitoUserPoolId'");
+    // The by-name scan remains as a fallback for a locally-provisioned pool.
     expect(script).toContain(`UserPools[?Name=='${refs.cognitoUserPoolName}'].Id`);
     expect(script).toContain("jq -e --arg n \"$AUTH_NAME\" 'any(.[]; .name == $n)'");
     expect(script).toContain("POST \"$BASE/api/security/authorizers\"");
