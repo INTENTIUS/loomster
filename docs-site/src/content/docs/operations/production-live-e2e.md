@@ -85,6 +85,27 @@ The script vendors Loom, synthesizes, deploys all seven stacks, then asserts:
 - the app is served at `https://<domain>`,
 - every screen validates behind real Cognito auth.
 
+### Authenticated screen validation
+
+Real Cognito rejects unauthenticated requests, and loomster seeds no users, so the
+screens need a real token. Loom derives a user's scopes from their `cognito:groups`
+claim, and an admin needs the `t-admin` type group plus one `g-admins-*` group.
+`scripts/validate/get-user-token.sh` does this end to end against the deployed pool:
+it creates those two groups (idempotent), a throwaway user, adds it to both, then
+uses `ADMIN_USER_PASSWORD_AUTH` (the user client enables it) to return an access
+token. The harness mints and deletes this user automatically — set
+`LOOM_E2E_MINT_USER=0` to skip, or export your own `LOOM_API_TOKEN` to override. To
+drive it by hand against a live deployment:
+
+```
+export LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh)
+LOOM_API_BASE_URL=https://loom.example.com npm run validate
+bash scripts/validate/get-user-token.sh --delete   # remove the throwaway user
+```
+
+The user is E2E-only. A real deployment brings its own users — never leave this one
+on a real tenant.
+
 ## 4. Teardown
 
 Set `LOOM_E2E_TEARDOWN=1` to delete the stacks at the end. The throwaway VPC, its NAT

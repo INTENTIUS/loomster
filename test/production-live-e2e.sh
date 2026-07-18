@@ -152,10 +152,22 @@ done
 [ "$code" = "200" ] || { echo "FAIL: app not served (last $code)"; exit 1; }
 
 echo "=== authenticated screen validation ==="
+# Real Cognito enforces auth, and loomster seeds no users, so mint a throwaway admin
+# token against the deployed pool (#147) unless one was supplied or minting is opted out.
+MINTED_USER=0
+if [ -z "${LOOM_API_TOKEN:-}" ] && [ "${LOOM_E2E_MINT_USER:-1}" = "1" ]; then
+  echo "    minting throwaway admin token via scripts/validate/get-user-token.sh ..."
+  if LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh); then
+    export LOOM_API_TOKEN; MINTED_USER=1
+  else
+    echo "    WARN: token mint failed; screens will be skipped."
+  fi
+fi
 if [ -n "${LOOM_API_TOKEN:-}" ]; then
-  LOOM_API_BASE_URL="https://$LOOM_DOMAIN_NAME" npx tsx scripts/validate/run.ts || { echo "FAIL: screen validation"; exit 1; }
+  LOOM_API_BASE_URL="https://$LOOM_DOMAIN_NAME" npx tsx scripts/validate/run.ts || { echo "FAIL: screen validation"; [ "$MINTED_USER" = "1" ] && bash scripts/validate/get-user-token.sh --delete; exit 1; }
+  [ "$MINTED_USER" = "1" ] && bash scripts/validate/get-user-token.sh --delete
   echo "PASS: $TIER validated live on $ACCT/$REGION (7/7 stacks + tier resources + app served + authed screens)"
 else
-  echo "    SKIPPED: real Cognito enforces auth; set LOOM_API_TOKEN (M2M bearer) to validate screens."
+  echo "    SKIPPED: real Cognito enforces auth; set LOOM_API_TOKEN or LOOM_E2E_MINT_USER=1 to validate screens."
   echo "PASS: $TIER deployed + served live on $ACCT/$REGION (7/7 stacks + tier resources + app served). Screen validation pending a token."
 fi
