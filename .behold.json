@@ -1,0 +1,6 @@
+{
+  "tiers": {
+    "envVar": "LOOM_TIER",
+    "values": ["light", "production", "production-ha"]
+  }
+}
