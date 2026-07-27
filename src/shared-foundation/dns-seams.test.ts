@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveRoute53, resolveAcm } from "./params";
+import { resolveRoute53, resolveAcm } from "./seams";
 
 // DNS seam resolution for the deployable (#117). The composite already supports
 // route53/acm reference-existing + omit; these cover the params-layer decision

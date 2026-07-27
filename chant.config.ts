@@ -25,6 +25,112 @@ export default {
   // its cloud→code PRs to chant-owned resources and never touch a foreign
   // one (chant#897).
   ownership: { stack: "loom", env: loomEnv },
+  // Build-time parameters (chant#1064 migration) — every src/*/params.ts file
+  // used to read process.env directly, which chant's fold engine correctly
+  // can never reduce to a value (an ambient read depends on whatever process
+  // happens to be running the build, not on the source). Declared here once;
+  // referenced from source as `params.<name>` (`@intentius/chant/params`),
+  // supplied via `chant build --param name=value`/`--params-file`, or (only
+  // where explicitly mapped below) a same-named env var — see each
+  // `src/*/params.ts` for which stack reads which parameter. Names shared
+  // across stacks (project/env/instance/tier/region/accountId/owner,
+  // dbUsername/dbPassword/dbName, cpuArchitecture) are declared once and read
+  // by every stack that needs the identical value; stack-specific names are
+  // prefixed (frontendCpu vs backendCpu) to avoid colliding in this one flat
+  // namespace.
+  buildParams: {
+    // ── Shared naming/tagging params (every stack's namingParams) ──────────
+    project: { type: "string", default: "loom" },
+    env: { type: "string", default: "dev", env: "LOOM_ENV" },
+    instance: { type: "string", default: "a" },
+    tier: { type: "string", enum: ["light", "production", "production-ha"], default: "light", env: "LOOM_TIER" },
+    region: { type: "string", default: "us-east-1", env: "AWS_REGION" },
+    accountId: { type: "string", required: false, env: "AWS_ACCOUNT_ID" },
+    owner: { type: "string", default: "platform" },
+
+    // ── loom-db ─────────────────────────────────────────────────────────
+    dbMode: { type: "string", enum: ["provision", "reference-existing", "omit"], default: "provision" },
+    dbAllowedCidr: { type: "string", required: false },
+    dbSourceSg: { type: "boolean", default: false },
+    // dbName/dbUsername/dbPassword are shared with loom-backend (../loom-backend/params.ts) — same value, same meaning.
+    dbName: { type: "string", required: false },
+    dbUsername: { type: "string", required: false },
+    dbPassword: { type: "string", required: false },
+    dbInstanceClass: { type: "string", required: false },
+    dbAllocatedStorage: { type: "number", required: false },
+    dbReferenceEndpoint: { type: "string", required: false },
+    dbReferencePort: { type: "number", required: false },
+    dbReferenceCredentialsSecretArn: { type: "string", required: false },
+    dbReferenceConnectionSecretArn: { type: "string", required: false },
+
+    // ── shared-foundation ───────────────────────────────────────────────
+    domainName: { type: "string", required: false },
+    hostedZoneId: { type: "string", required: false },
+    route53Mode: { type: "string", required: false, enum: ["omit", "provision"] },
+    certificateArn: { type: "string", required: false },
+    acmMode: { type: "string", required: false, enum: ["omit", "provision"] },
+    kmsKeyArn: { type: "string", required: false },
+    kmsMode: { type: "string", required: false, enum: ["omit", "provision"] },
+    frontendRepositoryUri: { type: "string", required: false },
+    frontendRepositoryArn: { type: "string", required: false },
+    backendRepositoryUri: { type: "string", required: false },
+    backendRepositoryArn: { type: "string", required: false },
+    ecrMode: { type: "string", required: false, enum: ["omit", "provision"] },
+    agentRoleArn: { type: "string", required: false },
+    agentRoleMode: { type: "string", required: false, enum: ["omit", "provision"] },
+    albIngressCidr: { type: "string", required: false },
+    loggingBucketName: { type: "string", required: false },
+    privateLinkMode: { type: "string", required: false, enum: ["provision", "omit"] },
+
+    // ── loom-cognito ────────────────────────────────────────────────────
+    cognitoMode: { type: "string", enum: ["provision", "reference-existing", "omit"], default: "provision" },
+    cognitoCallbackUrls: { type: "string", required: false },
+    cognitoResourceServerId: { type: "string", required: false },
+    cognitoScopesJson: { type: "string", required: false },
+    cognitoUiTierGroupsJson: { type: "string", required: false },
+    cognitoResourceGroupsJson: { type: "string", required: false },
+    cognitoDemoSeedUsersJson: { type: "string", required: false },
+    cognitoAbacApplication: { type: "string", required: false },
+    cognitoAbacGroup: { type: "string", required: false },
+    cognitoAbacOwner: { type: "string", required: false },
+    cognitoManagedLoginBranding: { type: "boolean", required: false },
+    cognitoUserPoolId: { type: "string", required: false },
+    cognitoUserPoolArn: { type: "string", required: false },
+    cognitoDomain: { type: "string", required: false },
+    cognitoM2mClientId: { type: "string", required: false },
+    cognitoUserClientId: { type: "string", required: false },
+    cognitoIssuer: { type: "string", required: false },
+    cognitoDiscoveryUrl: { type: "string", required: false },
+    cognitoTokenUrl: { type: "string", required: false },
+
+    // ── loom-backend / loom-frontend ────────────────────────────────────
+    // Shared between both stacks — must match how the image was built.
+    cpuArchitecture: { type: "string", required: false, enum: ["X86_64", "ARM64"] },
+    backendCpu: { type: "string", required: false },
+    backendMemory: { type: "string", required: false },
+    backendDesiredCount: { type: "number", required: false },
+    backendMaxCount: { type: "number", required: false },
+    backendLogRetentionDays: { type: "number", required: false },
+    backendExecutionRoleArn: { type: "string", required: false },
+    backendTaskRoleArn: { type: "string", required: false },
+    frontendCpu: { type: "string", required: false },
+    frontendMemory: { type: "string", required: false },
+    frontendDesiredCount: { type: "number", required: false },
+    frontendLogRetentionDays: { type: "number", required: false },
+    frontendExecutionRoleArn: { type: "string", required: false },
+    cognitoRegion: { type: "string", required: false },
+    allowedOrigins: { type: "string", required: false },
+    registryId: { type: "string", required: false },
+    litellmProxyBaseUrl: { type: "string", required: false },
+    litellmDiscoveryBaseUrl: { type: "string", required: false },
+    litellmProxyApiKeySecretArn: { type: "string", required: false },
+    litellmProxyApiKeySecretKmsKeyArn: { type: "string", required: false },
+
+    // ── loom-agents ─────────────────────────────────────────────────────
+    assistantCodePrefix: { type: "string", default: "strands_agent/agent.zip" },
+    agentsBedrockModelArns: { type: "string", required: false },
+    agentsMemoryEventExpiryDays: { type: "number", required: false },
+  },
   lint: {
     overrides: [
       {
