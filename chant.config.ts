@@ -39,10 +39,16 @@ export default {
   // prefixed (frontendCpu vs backendCpu) to avoid colliding in this one flat
   // namespace.
   buildParams: {
-    // ── Shared naming/tagging params (every stack's namingParams) ──────────
-    project: { type: "string", default: "loom" },
+    // ── Shared naming/tagging params (every stack's namingParams, plus
+    // src/lib/stack-name.ts's `sn()` — chant#157) ───────────────────────────
+    // `project`/`instance` gained their `env:` mappings in the #157 migration
+    // (they were declared without one in #156, since nothing read
+    // LOOM_PROJECT/LOOM_INSTANCE through `buildParams` yet) — `sn()` needs
+    // both to resolve the same way `chant build --param`/a bare `LOOM_PROJECT`/
+    // `LOOM_INSTANCE` env var already did before it moved off `process.env`.
+    project: { type: "string", default: "loom", env: "LOOM_PROJECT" },
     env: { type: "string", default: "dev", env: "LOOM_ENV" },
-    instance: { type: "string", default: "a" },
+    instance: { type: "string", default: "a", env: "LOOM_INSTANCE" },
     tier: { type: "string", enum: ["light", "production", "production-ha"], default: "light", env: "LOOM_TIER" },
     region: { type: "string", default: "us-east-1", env: "AWS_REGION" },
     accountId: { type: "string", required: false, env: "AWS_ACCOUNT_ID" },
