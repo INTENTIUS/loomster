@@ -1,5 +1,5 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
-import { sn } from "../lib/stack-name";
+import { loomAgentsStackName } from "../lib/component-stack-names";
 
 /**
  * The `loom-agents` stack (chant#893) — the base path from #882: apply the
@@ -66,7 +66,7 @@ export const loomAgents: Component = {
     phase("Apply", [
       {
         kind: "cfn-deploy",
-        stack: sn("loom-agents"),
+        stack: loomAgentsStackName,
         template: "dist/loom-agents.template.json",
         inputs: {
           pArtifactBucket: stackOutput("shared-foundation", "oArtifactBucket"),
@@ -83,7 +83,7 @@ export const loomAgents: Component = {
       },
     ]),
     phase("Verify", [
-      { kind: "wait-for-stack", stack: sn("loom-agents") },
+      { kind: "wait-for-stack", stack: loomAgentsStackName },
     ]),
   ],
 };

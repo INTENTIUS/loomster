@@ -1,5 +1,5 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
-import { sn } from "../lib/stack-name";
+import { loomFrontendStackName } from "../lib/component-stack-names";
 import { loomNaming } from "../lib/naming";
 import { namingParams } from "../loom-frontend/params";
 
@@ -102,7 +102,7 @@ export const loomFrontend: Component = {
     phase("Apply", [
       {
         kind: "cfn-deploy",
-        stack: sn("loom-frontend"),
+        stack: loomFrontendStackName,
         template: "dist/loom-frontend.template.json",
         inputs: {
           pEcsClusterArn: clusterArn,

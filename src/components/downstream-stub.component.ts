@@ -1,5 +1,5 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
-import { sn } from "../lib/stack-name";
+import { downstreamStubStackName } from "../lib/component-stack-names";
 
 /**
  * Throwaway downstream component (chant#886 acceptance: "a downstream stub
@@ -28,7 +28,7 @@ export const downstreamStub: Component = {
     phase("Apply", [
       {
         kind: "cfn-deploy",
-        stack: sn("downstream-stub"),
+        stack: downstreamStubStackName,
         template: "dist/downstream-stub.template.json",
         inputs: fromSharedFoundation,
       },

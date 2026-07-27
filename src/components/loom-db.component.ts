@@ -1,5 +1,5 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
-import { sn } from "../lib/stack-name";
+import { loomDbStackName } from "../lib/component-stack-names";
 
 /**
  * The `loom-db` data tier (chant#887) — RDS Postgres, subnet group, KMS, the
@@ -25,7 +25,7 @@ export const loomDb: Component = {
     phase("Apply", [
       {
         kind: "cfn-deploy",
-        stack: sn("loom-db"),
+        stack: loomDbStackName,
         template: "dist/loom-db.template.json",
         inputs: {
           pVpcId: stackOutput("shared-foundation", "oVpcId"),

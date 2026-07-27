@@ -1,5 +1,5 @@
 import { phase, type Component } from "@intentius/chant/components";
-import { sn } from "../lib/stack-name";
+import { loomCognitoStackName } from "../lib/component-stack-names";
 
 /**
  * The `loom-cognito` identity stack (chant#888) — Cognito UserPool, hosted-UI
@@ -21,7 +21,7 @@ export const loomCognito: Component = {
   dependsOn: [],
   deploy: [
     phase("Apply", [
-      { kind: "cfn-deploy", stack: sn("loom-cognito"), template: "dist/loom-cognito.template.json" },
+      { kind: "cfn-deploy", stack: loomCognitoStackName, template: "dist/loom-cognito.template.json" },
     ]),
   ],
 };
