@@ -12,17 +12,20 @@
  * Every value below used to be an ambient `process.env` read in the component
  * file itself, which is the one thing chant's fold path refuses on purpose: an
  * environment read is a value it could only get by executing the file. Each is
- * now a declared build-time parameter (`../../chant.config.ts`) read through
- * `paramOrEnv` — declared value first, the original env var second, so nothing
- * that sets `LOOM_HARNESS_AGENT_IMAGE_URI`, `LOOM_DOMAIN_NAME` or
- * `AWS_ENDPOINT_URL` today behaves differently. See `paramOrEnv`'s docstring
- * for why the env fallback is not optional: `chant run --components`, the
- * command every one of these values is actually read under, never resolves
- * build-time parameters at all (intentius/chant#1108).
+ * now a declared build-time parameter (`../../chant.config.ts`), read as
+ * `params.<name>` directly — nothing that sets `LOOM_HARNESS_AGENT_IMAGE_URI`,
+ * `LOOM_DOMAIN_NAME` or `AWS_ENDPOINT_URL` today behaves differently, since
+ * each still has its own declared `env:` mapping there.
+ *
+ * These used to be read through a hand-rolled `paramOrEnv`/`paramOrEnvOr`
+ * (declared value first, the raw env var second) because `chant run
+ * --components` — the command every one of these values is actually read
+ * under — never resolved build-time parameters at all
+ * (intentius/chant#1108). Fixed as of `@intentius/chant@0.23.0`, so
+ * `params.*` alone is enough now (loomster#162).
  */
 
 import { params } from "@intentius/chant/params";
-import { paramOrEnv, paramOrEnvOr } from "./params-helpers";
 import { loomName } from "./naming";
 import { namingParams as backendNamingParams } from "../loom-backend/params";
 import { namingParams as frontendNamingParams } from "../loom-frontend/params";
@@ -32,7 +35,7 @@ import { namingParams as frontendNamingParams } from "../loom-frontend/params";
  * parameter. Unset (the default) means the composite emits no harness Runtime
  * (loomster#128).
  */
-export const harnessAgentImageUri = paramOrEnvOr(params.harnessAgentImageUri, "LOOM_HARNESS_AGENT_IMAGE_URI", "");
+export const harnessAgentImageUri = (params.harnessAgentImageUri as string | undefined) ?? "";
 
 /**
  * The AWS endpoint override a local emulator sets (Floci sets
@@ -41,14 +44,14 @@ export const harnessAgentImageUri = paramOrEnvOr(params.harnessAgentImageUri, "L
  * there, since an emulator deploys the control plane but does not serve the
  * ALB->ECS HTTP data path (verified live, loomster#37).
  */
-export const awsEndpointUrl = paramOrEnv(params.awsEndpointUrl, "AWS_ENDPOINT_URL");
+export const awsEndpointUrl = params.awsEndpointUrl as string | undefined;
 
 /**
  * The custom domain the full tiers serve HTTPS-only on (the prod ALB has no
  * HTTP listener), so a health-gate must probe `https://<domain>` rather than
  * the ALB's own DNS name (loomster#125).
  */
-export const domainName = paramOrEnv(params.domainName, "LOOM_DOMAIN_NAME");
+export const domainName = params.domainName as string | undefined;
 
 /**
  * ECS service names, the one place a component needs a physical resource name.
