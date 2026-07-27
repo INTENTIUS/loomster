@@ -144,6 +144,11 @@ export default {
 
     // ── loom-agents ─────────────────────────────────────────────────────
     assistantCodePrefix: { type: "string", default: "strands_agent/agent.zip" },
+    // Gates whether the composite emits a harness Runtime at all
+    // (loomster#128) — declared here, and still readable from
+    // LOOM_HARNESS_AGENT_IMAGE_URI, so `src/loom-agents/agents.ts` no longer
+    // needs an ambient `process.env` read to decide (loomster#160).
+    harnessAgentImageUri: { type: "string", required: false, env: "LOOM_HARNESS_AGENT_IMAGE_URI" },
     agentsBedrockModelArns: { type: "string", required: false },
     agentsMemoryEventExpiryDays: { type: "number", required: false },
   },

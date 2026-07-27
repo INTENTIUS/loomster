@@ -25,11 +25,12 @@ export const agents = LoomAgents({
   cognitoDiscoveryUrl: Ref(params.pCognitoDiscoveryUrl) as unknown as string,
 
   assistantCodePrefix: Ref(params.pAssistantCodePrefix) as unknown as string,
-  // Pass the harness image Ref ONLY when a real image was supplied at build time
-  // (LOOM_HARNESS_AGENT_IMAGE_URI). The prop is always a CFN `Ref`, so the
-  // composite can't tell "supplied" from "empty" — this env gate is what makes
-  // the composite emit no harness Runtime by default (loomster#128).
-  harnessImageUri: process.env.LOOM_HARNESS_AGENT_IMAGE_URI
+  // Pass the harness image Ref ONLY when a real image was supplied at build
+  // time. The prop is always a CFN `Ref`, so the composite can't tell
+  // "supplied" from "empty" — `params.harnessAgentImageUri` is what makes the
+  // composite emit no harness Runtime by default (loomster#128); it reads the
+  // declared build-time parameter, falling back to LOOM_HARNESS_AGENT_IMAGE_URI.
+  harnessImageUri: params.harnessAgentImageUri
     ? (Ref(params.pHarnessAgentImageUri) as unknown as string)
     : undefined,
 
