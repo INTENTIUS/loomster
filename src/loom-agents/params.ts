@@ -1,7 +1,7 @@
 /**
  * Concrete parameter source for the deployable `loom-agents` stack
- * (chant#893). Everything author-time-known comes from the environment
- * (LOOM001 — nothing hardcoded in this file or the composite), same
+ * (chant#893). Everything here is a declared build-time parameter
+ * (chant#1064) — see `../../chant.config.ts`'s `buildParams`, same
  * convention `../loom-backend/params.ts`/`../loom-db/params.ts` use.
  *
  * The seven cross-stack values (artifact bucket + ECS security group +
@@ -10,9 +10,7 @@
  * Ref()-able declarables, resolved at deploy time by
  * `../components/loom-agents.component.ts`'s `cfn-deploy` step, keyed by
  * export name so their logical id in the synthesized template exactly
- * matches the key that wiring uses. `pPrivateSubnetIds` replaces the old
- * `LOOM_PRIVATE_SUBNET_IDS` env var (chant#928/loomster#35) — comma-joined
- * (CloudFormation Outputs can't be lists), split back apart in `./agents.ts`.
+ * matches the key that wiring uses.
  *
  * The assistant's code prefix (`pAssistantCodePrefix`) and the harness image
  * (`pHarnessAgentImageUri`) are also `Parameter`s, but unlike `pImageUri` in
@@ -26,34 +24,22 @@
  */
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
+import { params } from "@intentius/chant/params";
 import type { LoomNamingParams, Tier } from "../lib/naming";
+import { splitCsv } from "../lib/params-helpers";
 
-const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
-
-function tierFromEnv(): Tier {
-  const raw = process.env.LOOM_TIER ?? "light";
-  const invalidTierError = new Error(`loom-agents: LOOM_TIER must be one of ${VALID_TIERS.join(", ")}, got "${raw}"`);
-  if (!(VALID_TIERS as readonly string[]).includes(raw)) {
-    throw invalidTierError;
-  }
-  return raw as Tier;
-}
-
+// `?? <default>` mirrors chant.config.ts's own declared `default` — a real
+// safety net for anything that imports this module outside chant's build
+// pipeline (a unit test), where `setBuildParams(...)` never ran.
 export const namingParams: LoomNamingParams = {
-  project: process.env.LOOM_PROJECT ?? "loom",
-  env: process.env.LOOM_ENV ?? "dev",
-  instance: process.env.LOOM_INSTANCE ?? "a",
-  tier: tierFromEnv(),
-  region: process.env.AWS_REGION ?? "us-east-1",
-  accountId: process.env.AWS_ACCOUNT_ID,
-  owner: process.env.LOOM_OWNER ?? "platform",
+  project: (params.project as string | undefined) ?? "loom",
+  env: (params.env as string | undefined) ?? "dev",
+  instance: (params.instance as string | undefined) ?? "a",
+  tier: (params.tier as Tier | undefined) ?? "light",
+  region: (params.region as string | undefined) ?? "us-east-1",
+  accountId: params.accountId as string | undefined,
+  owner: (params.owner as string | undefined) ?? "platform",
 };
-
-function splitCsv(value: string | undefined): string[] | undefined {
-  if (!value) return undefined;
-  const parts = value.split(",").map((s) => s.trim()).filter(Boolean);
-  return parts.length > 0 ? parts : undefined;
-}
 
 // ── Cross-stack Parameters (chant#893) — real CFN Parameter declarables,
 // resolved at deploy time via ../components/loom-agents.component.ts's
@@ -79,12 +65,10 @@ export const pCognitoDiscoveryUrl = new Parameter("String", { description: "Cogn
 // upload — this is its `code.s3.prefix` within shared-foundation's artifact bucket.
 export const pAssistantCodePrefix = new Parameter("String", {
   description: "S3 key of the low-code Strands agent zip within the artifact bucket (AgentCore codeConfiguration prefix; built/uploaded out-of-band — see README)",
-  defaultValue: process.env.LOOM_ASSISTANT_CODE_PREFIX ?? "strands_agent/agent.zip",
+  defaultValue: (params.assistantCodePrefix as string | undefined) ?? "strands_agent/agent.zip",
 });
 export const pHarnessAgentImageUri = new Parameter("String", { description: "No-code AgentCore-harness agent image — config-only, stock/managed image (production/production-ha only)", defaultValue: "" });
 
 // ── Sizing / policy knobs (chant#890 tier defaults live in the composite; overrides here) ──
-export const bedrockModelArns = splitCsv(process.env.LOOM_AGENTS_BEDROCK_MODEL_ARNS);
-export const memoryEventExpiryDays = process.env.LOOM_AGENTS_MEMORY_EVENT_EXPIRY_DAYS
-  ? Number(process.env.LOOM_AGENTS_MEMORY_EVENT_EXPIRY_DAYS)
-  : undefined;
+export const bedrockModelArns = splitCsv(params.agentsBedrockModelArns as string | undefined);
+export const memoryEventExpiryDays = params.agentsMemoryEventExpiryDays as number | undefined;

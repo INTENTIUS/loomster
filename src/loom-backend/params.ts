@@ -1,50 +1,33 @@
 /**
  * Concrete parameter source for the deployable `loom-backend` stack
- * (chant#889). Everything author-time-known comes from the environment
- * (LOOM001 — nothing hardcoded in this file or the composite), same
- * convention `shared-foundation`/`loom-db`/`loom-cognito`'s `params.ts` use.
- *
- * The ten cross-stack values (cluster/SG/target-group/ECR-KMS/private-
- * subnets from shared-foundation, the connection-secret ARN + its KMS key
- * from loom-db, the user pool id from loom-cognito) plus the published image
- * are genuine CloudFormation `Parameter`s — real Ref()-able declarables
- * collected independently of the `LoomBackend` composite (same convention
- * `loom-db/params.ts`'s `ecsSecurityGroupId` established), keyed by export
- * name so their logical id in the synthesized template exactly matches the
- * key `../components/loom-backend.component.ts`'s `cfn-deploy` step's
- * `inputs` map uses to resolve them via `stackOutput(...)` at deploy time.
- * `pPrivateSubnetIds` replaces the old `LOOM_PRIVATE_SUBNET_IDS` env var
- * (chant#928/loomster#35) — comma-joined (CloudFormation Outputs can't be
- * lists), split back apart in `./backend.ts`. Everything else (sizing,
- * app-level knobs) is a plain env-driven composite prop — author-time-known,
- * baked directly into the template at `chant build` time, not deferred to a
- * deploy-time parameter override (same convention `loom-db/params.ts` uses
- * for `dbPassword`/`dbInstanceClass`).
+ * (chant#889). Everything here is a declared build-time parameter
+ * (chant#1064) — see `../../chant.config.ts`'s `buildParams`. The ten
+ * cross-stack values (cluster/SG/target-group/ECR-KMS/private-subnets from
+ * shared-foundation, the connection-secret ARN + its KMS key from loom-db,
+ * the user pool id from loom-cognito) plus the published image are genuine
+ * CloudFormation `Parameter`s — real Ref()-able declarables, resolved at
+ * deploy time via `../components/loom-backend.component.ts`'s `cfn-deploy`
+ * step's `stackOutput(...)` wiring. Everything else (sizing, app-level
+ * knobs) is a plain build-time parameter, baked directly into the template
+ * at `chant build` time.
  */
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
+import { params } from "@intentius/chant/params";
 import type { LoomNamingParams, Tier } from "../lib/naming";
 import type { LogRetentionDays, LoomBackendIamRolesSeam } from "../composites/loom-backend";
 
-const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
-
-function tierFromEnv(): Tier {
-  const raw = process.env.LOOM_TIER ?? "light";
-  const invalidTierError = new Error(`loom-backend: LOOM_TIER must be one of ${VALID_TIERS.join(", ")}, got "${raw}"`);
-  if (!(VALID_TIERS as readonly string[]).includes(raw)) {
-    throw invalidTierError;
-  }
-  return raw as Tier;
-}
-
+// `?? <default>` mirrors chant.config.ts's own declared `default` — a real
+// safety net for anything that imports this module outside chant's build
+// pipeline (a unit test), where `setBuildParams(...)` never ran.
 export const namingParams: LoomNamingParams = {
-  project: process.env.LOOM_PROJECT ?? "loom",
-  env: process.env.LOOM_ENV ?? "dev",
-  instance: process.env.LOOM_INSTANCE ?? "a",
-  tier: tierFromEnv(),
-  region: process.env.AWS_REGION ?? "us-east-1",
-  accountId: process.env.AWS_ACCOUNT_ID,
-  owner: process.env.LOOM_OWNER ?? "platform",
+  project: (params.project as string | undefined) ?? "loom",
+  env: (params.env as string | undefined) ?? "dev",
+  instance: (params.instance as string | undefined) ?? "a",
+  tier: (params.tier as Tier | undefined) ?? "light",
+  region: (params.region as string | undefined) ?? "us-east-1",
+  accountId: params.accountId as string | undefined,
+  owner: (params.owner as string | undefined) ?? "platform",
 };
 
 // ── Cross-stack Parameters (chant#889) — real CFN Parameter declarables,
@@ -70,54 +53,52 @@ export const pImageUri = new Parameter("String", { description: "Published backe
 // resolve `Fn::Sub ${LogicalId.Attribute}` GetAtt inside a `SecretString`.
 // So light tier builds `LOOM_DATABASE_URL` as a plain `Environment` var (see
 // ./backend.ts) from loom-db's *already-resolved* endpoint/port outputs —
-// which chant's cfn-deploy resolves to real literals (proven on Floci:
-// oRdsEndpoint=172.17.0.2, oRdsPort=7001) and an `Fn::Sub` over these
-// *parameters* resolves fine, unlike a GetAtt. Production/production-ha keep
-// the Secrets-Manager secret unchanged. The endpoint + port are deploy-time
-// (cross-stack); the username/password/dbName are author-time-known and baked.
+// which chant's cfn-deploy resolves to real literals and an `Fn::Sub` over
+// these *parameters* resolves fine, unlike a GetAtt. Production/production-ha
+// keep the Secrets-Manager secret unchanged. The endpoint + port are
+// deploy-time (cross-stack); the username/password/dbName are build-time and
+// baked.
 export const pRdsEndpoint = new Parameter("String", { description: "RDS endpoint address (loom-db oRdsEndpoint) — light-tier plain DB URL", defaultValue: "" });
 export const pRdsPort = new Parameter("String", { description: "RDS endpoint port (loom-db oRdsPort) — light-tier plain DB URL", defaultValue: "5432" });
 export const isLightTier = namingParams.tier === "light";
-export const dbUsername = process.env.LOOM_DB_USERNAME ?? "loom";
-export const dbPassword = process.env.LOOM_DB_PASSWORD ?? "";
-export const dbName = process.env.LOOM_DB_NAME ?? "loom";
+export const dbUsername = (params.dbUsername as string | undefined) ?? "loom";
+export const dbPassword = (params.dbPassword as string | undefined) ?? "";
+export const dbName = (params.dbName as string | undefined) ?? "loom";
 
 // ── Sizing (chant#890 tier defaults live in the composite; overrides here) ──
-// Fargate CPU architecture (LOOM_CPU_ARCHITECTURE), shared with loom-frontend.
-// Default (unset) → the composite's X86_64, matching CI-built images. Set ARM64
-// for Apple-Silicon-built images or Graviton — must match how the image is built.
+// Fargate CPU architecture, shared with loom-frontend. Default (unset) → the
+// composite's X86_64, matching CI-built images. Set ARM64 for Apple-Silicon-
+// built images or Graviton — must match how the image is built.
 export const cpuArchitecture: "X86_64" | "ARM64" | undefined =
-  process.env.LOOM_CPU_ARCHITECTURE === "ARM64" ? "ARM64"
-    : process.env.LOOM_CPU_ARCHITECTURE === "X86_64" ? "X86_64"
+  params.cpuArchitecture === "ARM64" ? "ARM64"
+    : params.cpuArchitecture === "X86_64" ? "X86_64"
       : undefined;
-export const cpu = process.env.LOOM_BACKEND_CPU;
-export const memory = process.env.LOOM_BACKEND_MEMORY;
-export const desiredCount = process.env.LOOM_BACKEND_DESIRED_COUNT ? Number(process.env.LOOM_BACKEND_DESIRED_COUNT) : undefined;
-export const maxCount = process.env.LOOM_BACKEND_MAX_COUNT ? Number(process.env.LOOM_BACKEND_MAX_COUNT) : undefined;
-export const logRetentionDays = process.env.LOOM_BACKEND_LOG_RETENTION_DAYS
-  ? (Number(process.env.LOOM_BACKEND_LOG_RETENTION_DAYS) as LogRetentionDays)
-  : undefined;
+export const cpu = params.backendCpu as string | undefined;
+export const memory = params.backendMemory as string | undefined;
+export const desiredCount = params.backendDesiredCount as number | undefined;
+export const maxCount = params.backendMaxCount as number | undefined;
+export const logRetentionDays = params.backendLogRetentionDays as LogRetentionDays | undefined;
 
-// ── Other Loom app-level knobs — author-time, env-driven; Loom's own
-// template defaults all of these to "" (disabled/unset). ──────────────────
-export const cognitoRegion = process.env.LOOM_COGNITO_REGION;
-export const allowedOrigins = process.env.LOOM_ALLOWED_ORIGINS;
-export const registryId = process.env.LOOM_REGISTRY_ID;
-export const litellmProxyBaseUrl = process.env.LOOM_LITELLM_PROXY_BASE_URL;
-export const litellmDiscoveryBaseUrl = process.env.LOOM_LITELLM_DISCOVERY_BASE_URL;
-export const litellmProxyApiKeySecretArn = process.env.LOOM_LITELLM_PROXY_API_KEY_SECRET_ARN;
-export const litellmProxyApiKeySecretKmsKeyArn = process.env.LOOM_LITELLM_PROXY_API_KEY_SECRET_KMS_KEY_ARN;
+// ── Other Loom app-level knobs — build-time; Loom's own template defaults
+// all of these to "" (disabled/unset). ────────────────────────────────────
+export const cognitoRegion = params.cognitoRegion as string | undefined;
+export const allowedOrigins = params.allowedOrigins as string | undefined;
+export const registryId = params.registryId as string | undefined;
+export const litellmProxyBaseUrl = params.litellmProxyBaseUrl as string | undefined;
+export const litellmDiscoveryBaseUrl = params.litellmDiscoveryBaseUrl as string | undefined;
+export const litellmProxyApiKeySecretArn = params.litellmProxyApiKeySecretArn as string | undefined;
+export const litellmProxyApiKeySecretKmsKeyArn = params.litellmProxyApiKeySecretKmsKeyArn as string | undefined;
 
 /**
  * Bring-your-own execution + task IAM roles (loomster#66). Set both
- * LOOM_BACKEND_EXECUTION_ROLE_ARN and LOOM_BACKEND_TASK_ROLE_ARN to reference
- * roles a platform/security team owns; otherwise the composite provisions them.
+ * `backendExecutionRoleArn` and `backendTaskRoleArn` to reference roles a
+ * platform/security team owns; otherwise the composite provisions them.
  */
 export const iamRoles: LoomBackendIamRolesSeam | undefined =
-  process.env.LOOM_BACKEND_EXECUTION_ROLE_ARN && process.env.LOOM_BACKEND_TASK_ROLE_ARN
+  params.backendExecutionRoleArn && params.backendTaskRoleArn
     ? {
         mode: "reference-existing",
-        executionRoleArn: process.env.LOOM_BACKEND_EXECUTION_ROLE_ARN,
-        taskRoleArn: process.env.LOOM_BACKEND_TASK_ROLE_ARN,
+        executionRoleArn: params.backendExecutionRoleArn as string,
+        taskRoleArn: params.backendTaskRoleArn as string,
       }
     : undefined;

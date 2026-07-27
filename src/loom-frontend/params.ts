@@ -1,9 +1,7 @@
 /**
  * Concrete parameter source for the deployable `loom-frontend` stack
- * (chant#889). Everything author-time-known comes from the environment
- * (LOOM001 — nothing hardcoded in this file or the composite), same
- * convention `shared-foundation`/`loom-db`/`loom-cognito`/`loom-backend`'s
- * `params.ts` use.
+ * (chant#889). Everything here is a declared build-time parameter
+ * (chant#1064) — see `../../chant.config.ts`'s `buildParams`.
  *
  * The frontend depends on shared-foundation only (#886) — four cross-stack
  * values (cluster/SG/target-group/public-subnets) plus the published image,
@@ -11,37 +9,26 @@
  * logical id in the synthesized template matches the key
  * `../components/loom-frontend.component.ts`'s `cfn-deploy` step uses to
  * resolve it via `stackOutput(...)` at deploy time (same convention
- * `loom-backend/params.ts` established). `pPublicSubnetIds` replaces the old
- * `LOOM_PUBLIC_SUBNET_IDS` env var (chant#928/loomster#35) — the ECS
- * service's subnets now come from shared-foundation's `oPublicSubnetIds`,
- * comma-joined (CloudFormation Outputs can't be lists) and split back apart
- * in `./frontend.ts`.
+ * `loom-backend/params.ts` established).
  */
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
+import { params } from "@intentius/chant/params";
 import type { LoomNamingParams, Tier } from "../lib/naming";
 import type { LogRetentionDays } from "../composites/loom-backend";
 import type { LoomFrontendIamRoleSeam } from "../composites/loom-frontend";
 
-const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
-
-function tierFromEnv(): Tier {
-  const raw = process.env.LOOM_TIER ?? "light";
-  const invalidTierError = new Error(`loom-frontend: LOOM_TIER must be one of ${VALID_TIERS.join(", ")}, got "${raw}"`);
-  if (!(VALID_TIERS as readonly string[]).includes(raw)) {
-    throw invalidTierError;
-  }
-  return raw as Tier;
-}
-
+// `?? <default>` mirrors chant.config.ts's own declared `default` — a real
+// safety net for anything that imports this module outside chant's build
+// pipeline (a unit test), where `setBuildParams(...)` never ran.
 export const namingParams: LoomNamingParams = {
-  project: process.env.LOOM_PROJECT ?? "loom",
-  env: process.env.LOOM_ENV ?? "dev",
-  instance: process.env.LOOM_INSTANCE ?? "a",
-  tier: tierFromEnv(),
-  region: process.env.AWS_REGION ?? "us-east-1",
-  accountId: process.env.AWS_ACCOUNT_ID,
-  owner: process.env.LOOM_OWNER ?? "platform",
+  project: (params.project as string | undefined) ?? "loom",
+  env: (params.env as string | undefined) ?? "dev",
+  instance: (params.instance as string | undefined) ?? "a",
+  tier: (params.tier as Tier | undefined) ?? "light",
+  region: (params.region as string | undefined) ?? "us-east-1",
+  accountId: params.accountId as string | undefined,
+  owner: (params.owner as string | undefined) ?? "platform",
 };
 
 // ── Cross-stack Parameters (chant#889) — real CFN Parameter declarables,
@@ -54,26 +41,24 @@ export const pPublicSubnetIds = new Parameter("String", { description: "Comma-se
 export const pImageUri = new Parameter("String", { description: "Published frontend image (build-once, promote-by-digest — @Publish.uri)" });
 
 // ── Sizing (chant#890 tier defaults live in the composite; overrides here) ──
-// Fargate CPU architecture (LOOM_CPU_ARCHITECTURE), shared with loom-backend.
-// Default (unset) → the composite's X86_64. Set ARM64 for Apple-Silicon-built
-// images or Graviton — must match how the image is built.
+// Fargate CPU architecture, shared with loom-backend. Default (unset) → the
+// composite's X86_64. Set ARM64 for Apple-Silicon-built images or Graviton —
+// must match how the image is built.
 export const cpuArchitecture: "X86_64" | "ARM64" | undefined =
-  process.env.LOOM_CPU_ARCHITECTURE === "ARM64" ? "ARM64"
-    : process.env.LOOM_CPU_ARCHITECTURE === "X86_64" ? "X86_64"
+  params.cpuArchitecture === "ARM64" ? "ARM64"
+    : params.cpuArchitecture === "X86_64" ? "X86_64"
       : undefined;
 /**
  * Bring-your-own execution IAM role (loomster#66). Set
- * LOOM_FRONTEND_EXECUTION_ROLE_ARN to reference a role a platform/security team
+ * `frontendExecutionRoleArn` to reference a role a platform/security team
  * owns; otherwise the composite provisions it.
  */
 export const iamRole: LoomFrontendIamRoleSeam | undefined =
-  process.env.LOOM_FRONTEND_EXECUTION_ROLE_ARN
-    ? { mode: "reference-existing", executionRoleArn: process.env.LOOM_FRONTEND_EXECUTION_ROLE_ARN }
+  params.frontendExecutionRoleArn
+    ? { mode: "reference-existing", executionRoleArn: params.frontendExecutionRoleArn as string }
     : undefined;
 
-export const cpu = process.env.LOOM_FRONTEND_CPU;
-export const memory = process.env.LOOM_FRONTEND_MEMORY;
-export const desiredCount = process.env.LOOM_FRONTEND_DESIRED_COUNT ? Number(process.env.LOOM_FRONTEND_DESIRED_COUNT) : undefined;
-export const logRetentionDays = process.env.LOOM_FRONTEND_LOG_RETENTION_DAYS
-  ? (Number(process.env.LOOM_FRONTEND_LOG_RETENTION_DAYS) as LogRetentionDays)
-  : undefined;
+export const cpu = params.frontendCpu as string | undefined;
+export const memory = params.frontendMemory as string | undefined;
+export const desiredCount = params.frontendDesiredCount as number | undefined;
+export const logRetentionDays = params.frontendLogRetentionDays as LogRetentionDays | undefined;

@@ -1,57 +1,38 @@
 /**
  * Concrete parameter source for the deployable `loom-db` stack (chant#887).
- * Everything here comes from the environment (LOOM001 — nothing hardcoded in
- * this file or the composite), same convention `shared-foundation/params.ts`
- * uses — except `pVpcId`/`pPrivateSubnetIds`/`pEcsSecurityGroupId`, which are
- * genuine CloudFormation `Parameter`s because they cross stacks:
- * `../components/loom-db.component.ts` wires them from shared-foundation's
- * `oVpcId`/`oPrivateSubnetIds`/`oEcsSecurityGroupId` outputs at deploy time
- * (chant#928/loomster#35 — the RDS instance's own network comes from
- * shared-foundation, not a `LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS` env var).
- * Every other input (project/env/instance/tier, DB password, ...) is already
- * known outside any stack's outputs, so it's read straight from the
- * environment.
+ * Everything here is a declared build-time parameter (chant#1064) — nothing
+ * hardcoded in this file or the composite — except `pVpcId`/
+ * `pPrivateSubnetIds`/`pEcsSecurityGroupId`, which are genuine CloudFormation
+ * `Parameter`s because they cross stacks: `../components/loom-db.component.ts`
+ * wires them from shared-foundation's `oVpcId`/`oPrivateSubnetIds`/
+ * `oEcsSecurityGroupId` outputs at deploy time (chant#928/loomster#35 — the
+ * RDS instance's own network comes from shared-foundation, not a build-time
+ * parameter). Every other input (project/env/instance/tier, DB password, ...)
+ * is a declared build-time parameter — see `../../chant.config.ts`'s
+ * `buildParams`.
  */
 
 import { Parameter } from "@intentius/chant-lexicon-aws";
+import { params } from "@intentius/chant/params";
 import type { LoomNamingParams, Tier } from "../lib/naming";
 
-const VALID_TIERS: readonly Tier[] = ["light", "production", "production-ha"];
-
-function tierFromEnv(): Tier {
-  const raw = process.env.LOOM_TIER ?? "light";
-  const invalidTierError = new Error(`loom-db: LOOM_TIER must be one of ${VALID_TIERS.join(", ")}, got "${raw}"`);
-  if (!(VALID_TIERS as readonly string[]).includes(raw)) {
-    throw invalidTierError;
-  }
-  return raw as Tier;
-}
-
+// `?? <default>` mirrors chant.config.ts's own declared `default` — a real
+// safety net for anything that imports this module outside chant's build
+// pipeline (a unit test), where `setBuildParams(...)` never ran.
 export const namingParams: LoomNamingParams = {
-  project: process.env.LOOM_PROJECT ?? "loom",
-  env: process.env.LOOM_ENV ?? "dev",
-  instance: process.env.LOOM_INSTANCE ?? "a",
-  tier: tierFromEnv(),
-  region: process.env.AWS_REGION ?? "us-east-1",
-  accountId: process.env.AWS_ACCOUNT_ID,
-  owner: process.env.LOOM_OWNER ?? "platform",
+  project: (params.project as string | undefined) ?? "loom",
+  env: (params.env as string | undefined) ?? "dev",
+  instance: (params.instance as string | undefined) ?? "a",
+  tier: (params.tier as Tier | undefined) ?? "light",
+  region: (params.region as string | undefined) ?? "us-east-1",
+  accountId: params.accountId as string | undefined,
+  owner: (params.owner as string | undefined) ?? "platform",
 };
 
 /** BYO-DB (chant#898): `"provision"` (default) | `"reference-existing"` | `"omit"`. */
 export type DataMode = "provision" | "reference-existing" | "omit";
 
-const VALID_DATA_MODES: readonly DataMode[] = ["provision", "reference-existing", "omit"];
-
-function dataModeFromEnv(): DataMode {
-  const raw = process.env.LOOM_DB_MODE ?? "provision";
-  const invalidModeError = new Error(`loom-db: LOOM_DB_MODE must be one of ${VALID_DATA_MODES.join(", ")}, got "${raw}"`);
-  if (!(VALID_DATA_MODES as readonly string[]).includes(raw)) {
-    throw invalidModeError;
-  }
-  return raw as DataMode;
-}
-
-export const dataMode = dataModeFromEnv();
+export const dataMode: DataMode = (params.dbMode as DataMode | undefined) ?? "provision";
 
 /**
  * BYO network (chant#886/#887 scope: "network/KMS provisioning owned by
@@ -67,23 +48,23 @@ export const dataMode = dataModeFromEnv();
 export const pVpcId = new Parameter("AWS::EC2::VPC::Id", { description: "shared-foundation VPC id (shared-foundation oVpcId)" });
 export const pPrivateSubnetIds = new Parameter("String", { description: "Comma-separated private subnet ids for the RDS subnet group (shared-foundation oPrivateSubnetIds)" });
 
-/** CIDR allowed to reach RDS directly — Loom's own `pAllowedCidr` posture. Ignored once `LOOM_DB_SOURCE_SG_ID` is set (chant#898: reference shared-foundation's ECS security group instead of a CIDR block). */
-export const allowedCidr = process.env.LOOM_DB_ALLOWED_CIDR;
+/** CIDR allowed to reach RDS directly — Loom's own `pAllowedCidr` posture. Ignored once `useSourceSecurityGroup` is set (chant#898: reference shared-foundation's ECS security group instead of a CIDR block). */
+export const allowedCidr = params.dbAllowedCidr as string | undefined;
 /** When set, takes priority over `allowedCidr` — see `pEcsSecurityGroupId` below. */
-export const useSourceSecurityGroup = process.env.LOOM_DB_SOURCE_SG === "true";
+export const useSourceSecurityGroup: boolean = (params.dbSourceSg as boolean | undefined) ?? false;
 
-export const dbName = process.env.LOOM_DB_NAME;
-export const dbUsername = process.env.LOOM_DB_USERNAME;
+export const dbName = params.dbName as string | undefined;
+export const dbUsername = params.dbUsername as string | undefined;
 /** Master password — required for `data.mode: "provision"`. No default: never hardcode. Marking the CFN parameter NoEcho is chant#894 (RDS hardening) — out of scope here. */
-export const dbPassword = process.env.LOOM_DB_PASSWORD;
-export const dbInstanceClass = process.env.LOOM_DB_INSTANCE_CLASS;
-export const dbAllocatedStorage = process.env.LOOM_DB_ALLOCATED_STORAGE ? Number(process.env.LOOM_DB_ALLOCATED_STORAGE) : undefined;
+export const dbPassword = params.dbPassword as string | undefined;
+export const dbInstanceClass = params.dbInstanceClass as string | undefined;
+export const dbAllocatedStorage = params.dbAllocatedStorage as number | undefined;
 
 /** `data.mode: "reference-existing"` inputs — an external DB this stack does not own. */
-export const referenceEndpoint = process.env.LOOM_DB_ENDPOINT;
-export const referencePort = process.env.LOOM_DB_PORT ? Number(process.env.LOOM_DB_PORT) : undefined;
-export const referenceCredentialsSecretArn = process.env.LOOM_DB_CREDENTIALS_SECRET_ARN;
-export const referenceConnectionSecretArn = process.env.LOOM_DB_CONNECTION_SECRET_ARN;
+export const referenceEndpoint = params.dbReferenceEndpoint as string | undefined;
+export const referencePort = params.dbReferencePort as number | undefined;
+export const referenceCredentialsSecretArn = params.dbReferenceCredentialsSecretArn as string | undefined;
+export const referenceConnectionSecretArn = params.dbReferenceConnectionSecretArn as string | undefined;
 
 /**
  * shared-foundation's ECS task security group id, threaded in at deploy time

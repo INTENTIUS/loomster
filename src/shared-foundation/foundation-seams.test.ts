@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveKms, resolveEcr, resolveAgentRole } from "./params";
+import { resolveKms, resolveEcr, resolveAgentRole } from "./seams";
 
 // KMS / ECR / agent-role seam resolution for the deployable (#120). The
 // composite already supports these three seams (provision | reference-existing |
