@@ -15,7 +15,7 @@
 import { params } from "@intentius/chant/params";
 import type { Route53Seam, AcmSeam, KmsSeam, EcrSeam, AgentRoleSeam, NetworkSeam } from "../composites/shared-foundation";
 import type { Tier } from "../lib/naming";
-import { splitCsv, paramOrEnv } from "../lib/params-helpers";
+import { splitCsv } from "../lib/params-helpers";
 
 /**
  * Network seam (chant#886/#898). Reference-existing is first-class — a
@@ -63,13 +63,25 @@ export function resolveNetwork(
   return { mode: "provision" };
 }
 
-/** `resolveNetwork` applied to this invocation's declared inputs. See `./network.ts`. */
+/**
+ * `resolveNetwork` applied to this invocation's declared inputs. See
+ * `./network.ts`.
+ *
+ * `params.vpcId`/`publicSubnetIds`/`privateSubnetIds` used to be read through
+ * a hand-rolled `paramOrEnv` (declared value first, the original
+ * `LOOM_VPC_ID`/`LOOM_PUBLIC_SUBNET_IDS`/`LOOM_PRIVATE_SUBNET_IDS` env var
+ * second) because `chant build <subdir>` — every `npm run synth:*` script —
+ * never discovered a repo-root `chant.config.ts`, so these params' own
+ * `env:` mappings were silently inert there (intentius/chant#1117). Fixed as
+ * of `@intentius/chant@0.24.0` — `params.*` alone now resolves the same env
+ * vars through the declared mapping (loomster#162).
+ */
 export function networkSeam(tier: Tier): NetworkSeam {
   return resolveNetwork(
     tier,
-    paramOrEnv(params.vpcId, "LOOM_VPC_ID"),
-    splitCsv(paramOrEnv(params.publicSubnetIds, "LOOM_PUBLIC_SUBNET_IDS")),
-    splitCsv(paramOrEnv(params.privateSubnetIds, "LOOM_PRIVATE_SUBNET_IDS")),
+    params.vpcId as string | undefined,
+    splitCsv(params.publicSubnetIds as string | undefined),
+    splitCsv(params.privateSubnetIds as string | undefined),
   );
 }
 

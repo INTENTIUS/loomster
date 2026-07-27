@@ -26,7 +26,7 @@
 import { Parameter } from "@intentius/chant-lexicon-aws";
 import { params } from "@intentius/chant/params";
 import type { LoomNamingParams, Tier } from "../lib/naming";
-import { splitCsv, paramOrEnv } from "../lib/params-helpers";
+import { splitCsv } from "../lib/params-helpers";
 
 // `?? <default>` mirrors chant.config.ts's own declared `default` — a real
 // safety net for anything that imports this module outside chant's build
@@ -75,13 +75,17 @@ export const pHarnessAgentImageUri = new Parameter("String", { description: "No-
  * "empty" — this is the gate that makes it emit no harness Runtime by default
  * (loomster#128).
  *
- * Read through `paramOrEnv` rather than `process.env` directly: an ambient
- * read is a value chant's fold engine can only get by executing the file, so
+ * A declared build-time parameter rather than an ambient `process.env` read:
+ * chant's fold engine can only get an ambient read by executing the file, so
  * `./agents.ts` fell back to run purely because of this one condition
- * (loomster#160). See `paramOrEnv`'s own docstring for why the env var is
- * still consulted and not merely declared as a `buildParams` `env:` mapping.
+ * (loomster#160). Used to be read through a hand-rolled `paramOrEnv` (declared
+ * value first, `LOOM_HARNESS_AGENT_IMAGE_URI` second) because `chant build
+ * <subdir>` — every `npm run synth:*` script — never discovered a repo-root
+ * `chant.config.ts`, leaving this param's own `env:` mapping inert there
+ * (intentius/chant#1117, fixed in `@intentius/chant@0.24.0`) — `params.*`
+ * alone resolves the same env var now (loomster#162).
  */
-export const harnessAgentImageUri = paramOrEnv(params.harnessAgentImageUri, "LOOM_HARNESS_AGENT_IMAGE_URI");
+export const harnessAgentImageUri = params.harnessAgentImageUri as string | undefined;
 
 // ── Sizing / policy knobs (chant#890 tier defaults live in the composite; overrides here) ──
 export const bedrockModelArns = splitCsv(params.agentsBedrockModelArns as string | undefined);

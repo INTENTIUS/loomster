@@ -56,8 +56,9 @@ export default {
     // Set by a local emulator (Floci) to point the AWS SDK at itself. Read by
     // the component files to decide whether a runtime Verify phase can pass at
     // all — declared here so that decision is a build input rather than an
-    // ambient read (loomster#160); still honours the env var it has always
-    // read, see src/lib/params-helpers.ts's `paramOrEnv`.
+    // ambient read (loomster#160); this `env:` mapping is what makes the env
+    // var still resolve now that `src/lib/component-inputs.ts` reads
+    // `params.awsEndpointUrl` directly (loomster#162).
     awsEndpointUrl: { type: "string", required: false, env: "AWS_ENDPOINT_URL" },
 
     // ── loom-db ─────────────────────────────────────────────────────────
@@ -86,7 +87,16 @@ export default {
     vpcId: { type: "string", required: false, env: "LOOM_VPC_ID" },
     publicSubnetIds: { type: "string", required: false, env: "LOOM_PUBLIC_SUBNET_IDS" },
     privateSubnetIds: { type: "string", required: false, env: "LOOM_PRIVATE_SUBNET_IDS" },
-    domainName: { type: "string", required: false },
+    // `env: "LOOM_DOMAIN_NAME"` added for loomster#162 — `.github/workflows/deploy.yml`
+    // (and its forgejo/gitlab equivalents) has always fed `LOOM_DOMAIN_NAME` to
+    // `chant run --components all`, but this param had no declared `env:`
+    // mapping of its own; `src/lib/component-inputs.ts`'s `domainName` masked
+    // the gap with a hand-rolled `paramOrEnv` fallback, needed only because
+    // `chant run --components` didn't resolve build-time parameters at all
+    // (intentius/chant#1108, fixed in `@intentius/chant@0.23.0`). Declaring
+    // the mapping here is what lets that fallback retire without silently
+    // dropping `LOOM_DOMAIN_NAME` from the real deploy workflows.
+    domainName: { type: "string", required: false, env: "LOOM_DOMAIN_NAME" },
     hostedZoneId: { type: "string", required: false },
     route53Mode: { type: "string", required: false, enum: ["omit", "provision"] },
     certificateArn: { type: "string", required: false },
