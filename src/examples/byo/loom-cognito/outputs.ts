@@ -4,10 +4,15 @@
  * as the repo's real `src/loom-cognito/outputs.ts`. `cognito.members` is
  * empty (`identity.mode: "reference-existing"` builds no Cognito
  * declarables), so every key here comes from `./params.ts`.
+ *
+ * `literalOutput(value, name)` rather than `output(literalOutputValue(x), name)`
+ * — two nested calls, half of them behind a ternary — for the reason
+ * loomster#160 covers: a call inside a ternary branch is rejected by the
+ * reducer that folds this file, and one call at the export's own top level is
+ * a shape it resolves.
  */
 
-import { output } from "@intentius/chant-lexicon-aws";
-import { literalOutputValue } from "../../../composites/shared-foundation";
+import { literalOutput } from "../../../composites/shared-foundation";
 import * as params from "./params";
 
 const identity = params.identity;
@@ -28,16 +33,12 @@ const issuerFallback = `https://cognito-idp.${region}.amazonaws.com/${identity.u
 const discoveryUrlFallback = `${issuerFallback}/.well-known/openid-configuration`;
 const tokenUrlFallback = `https://${identity.domain}.auth.${region}.amazoncognito.com/oauth2/token`;
 
-export const oCognitoUserPoolId = output(literalOutputValue(identity.userPoolId), "oCognitoUserPoolId");
-export const oCognitoUserPoolArn = identity.userPoolArn
-  ? output(literalOutputValue(identity.userPoolArn), "oCognitoUserPoolArn")
-  : undefined;
-export const oM2MClientId = output(literalOutputValue(identity.m2mClientId), "oM2MClientId");
-export const oUserClientId = identity.userClientId
-  ? output(literalOutputValue(identity.userClientId), "oUserClientId")
-  : undefined;
-export const oCognitoDomain = output(literalOutputValue(identity.domain), "oCognitoDomain");
-export const oResourceServerIdentifier = output(literalOutputValue(identity.resourceServerIdentifier), "oResourceServerIdentifier");
-export const oCognitoIssuer = output(literalOutputValue(identity.issuer ?? issuerFallback), "oCognitoIssuer");
-export const oCognitoDiscoveryUrl = output(literalOutputValue(identity.discoveryUrl ?? discoveryUrlFallback), "oCognitoDiscoveryUrl");
-export const oCognitoTokenUrl = output(literalOutputValue(identity.tokenUrl ?? tokenUrlFallback), "oCognitoTokenUrl");
+export const oCognitoUserPoolId = literalOutput(identity.userPoolId, "oCognitoUserPoolId");
+export const oCognitoUserPoolArn = literalOutput(identity.userPoolArn, "oCognitoUserPoolArn");
+export const oM2MClientId = literalOutput(identity.m2mClientId, "oM2MClientId");
+export const oUserClientId = literalOutput(identity.userClientId, "oUserClientId");
+export const oCognitoDomain = literalOutput(identity.domain, "oCognitoDomain");
+export const oResourceServerIdentifier = literalOutput(identity.resourceServerIdentifier, "oResourceServerIdentifier");
+export const oCognitoIssuer = literalOutput(identity.issuer ?? issuerFallback, "oCognitoIssuer");
+export const oCognitoDiscoveryUrl = literalOutput(identity.discoveryUrl ?? discoveryUrlFallback, "oCognitoDiscoveryUrl");
+export const oCognitoTokenUrl = literalOutput(identity.tokenUrl ?? tokenUrlFallback, "oCognitoTokenUrl");
