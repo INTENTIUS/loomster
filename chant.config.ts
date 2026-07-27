@@ -53,6 +53,12 @@ export default {
     region: { type: "string", default: "us-east-1", env: "AWS_REGION" },
     accountId: { type: "string", required: false, env: "AWS_ACCOUNT_ID" },
     owner: { type: "string", default: "platform" },
+    // Set by a local emulator (Floci) to point the AWS SDK at itself. Read by
+    // the component files to decide whether a runtime Verify phase can pass at
+    // all — declared here so that decision is a build input rather than an
+    // ambient read (loomster#160); still honours the env var it has always
+    // read, see src/lib/params-helpers.ts's `paramOrEnv`.
+    awsEndpointUrl: { type: "string", required: false, env: "AWS_ENDPOINT_URL" },
 
     // ── loom-db ─────────────────────────────────────────────────────────
     dbMode: { type: "string", enum: ["provision", "reference-existing", "omit"], default: "provision" },
@@ -70,6 +76,16 @@ export default {
     dbReferenceConnectionSecretArn: { type: "string", required: false },
 
     // ── shared-foundation ───────────────────────────────────────────────
+    // The BYO-network trio (`src/shared-foundation/network.ts`). Declared
+    // here for the same reason `sn()`'s three were in #157: an ambient
+    // `process.env` read is a value chant can only get by executing the file,
+    // so `network.ts` could never fold while it read them directly. Each keeps
+    // its `env:` mapping, so `LOOM_VPC_ID`/`LOOM_PUBLIC_SUBNET_IDS`/
+    // `LOOM_PRIVATE_SUBNET_IDS` (what .github/workflows/deploy.yml and every
+    // existing runbook set) resolve exactly as they did before.
+    vpcId: { type: "string", required: false, env: "LOOM_VPC_ID" },
+    publicSubnetIds: { type: "string", required: false, env: "LOOM_PUBLIC_SUBNET_IDS" },
+    privateSubnetIds: { type: "string", required: false, env: "LOOM_PRIVATE_SUBNET_IDS" },
     domainName: { type: "string", required: false },
     hostedZoneId: { type: "string", required: false },
     route53Mode: { type: "string", required: false, enum: ["omit", "provision"] },
@@ -134,6 +150,11 @@ export default {
 
     // ── loom-agents ─────────────────────────────────────────────────────
     assistantCodePrefix: { type: "string", default: "strands_agent/agent.zip" },
+    // Gates whether the composite emits a harness Runtime at all
+    // (loomster#128) — declared here, and still readable from
+    // LOOM_HARNESS_AGENT_IMAGE_URI, so `src/loom-agents/agents.ts` no longer
+    // needs an ambient `process.env` read to decide (loomster#160).
+    harnessAgentImageUri: { type: "string", required: false, env: "LOOM_HARNESS_AGENT_IMAGE_URI" },
     agentsBedrockModelArns: { type: "string", required: false },
     agentsMemoryEventExpiryDays: { type: "number", required: false },
   },

@@ -26,7 +26,7 @@
 import { Parameter } from "@intentius/chant-lexicon-aws";
 import { params } from "@intentius/chant/params";
 import type { LoomNamingParams, Tier } from "../lib/naming";
-import { splitCsv } from "../lib/params-helpers";
+import { splitCsv, paramOrEnv } from "../lib/params-helpers";
 
 // `?? <default>` mirrors chant.config.ts's own declared `default` — a real
 // safety net for anything that imports this module outside chant's build
@@ -68,6 +68,20 @@ export const pAssistantCodePrefix = new Parameter("String", {
   defaultValue: (params.assistantCodePrefix as string | undefined) ?? "strands_agent/agent.zip",
 });
 export const pHarnessAgentImageUri = new Parameter("String", { description: "No-code AgentCore-harness agent image — config-only, stock/managed image (production/production-ha only)", defaultValue: "" });
+
+/**
+ * Whether a real harness image was supplied for this build. `pHarnessAgentImageUri`
+ * above is always a CFN `Ref`, so the composite can't tell "supplied" from
+ * "empty" — this is the gate that makes it emit no harness Runtime by default
+ * (loomster#128).
+ *
+ * Read through `paramOrEnv` rather than `process.env` directly: an ambient
+ * read is a value chant's fold engine can only get by executing the file, so
+ * `./agents.ts` fell back to run purely because of this one condition
+ * (loomster#160). See `paramOrEnv`'s own docstring for why the env var is
+ * still consulted and not merely declared as a `buildParams` `env:` mapping.
+ */
+export const harnessAgentImageUri = paramOrEnv(params.harnessAgentImageUri, "LOOM_HARNESS_AGENT_IMAGE_URI");
 
 // ── Sizing / policy knobs (chant#890 tier defaults live in the composite; overrides here) ──
 export const bedrockModelArns = splitCsv(params.agentsBedrockModelArns as string | undefined);

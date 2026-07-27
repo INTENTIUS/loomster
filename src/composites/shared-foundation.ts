@@ -38,6 +38,8 @@ import type { Declarable } from "@intentius/chant/declarable";
 import { AttrRef } from "@intentius/chant/attrref";
 import { INTRINSIC_MARKER, type Intrinsic } from "@intentius/chant/intrinsic";
 import {
+  output,
+  type LexiconOutput,
   Vpc,
   Subnet,
   InternetGateway,
@@ -234,6 +236,25 @@ function tagList(tags: Record<string, string>): TagList {
  */
 export function literalOutputValue(value: string): SubIntrinsic {
   return new SubIntrinsic(["", ""], [value]);
+}
+
+/**
+ * A named output carrying a plain, already-known-at-author-time string — or no
+ * output at all when there is no value to publish.
+ *
+ * `output(literalOutputValue(x), name)` written inline is two nested calls,
+ * and every real use of it is conditional (a reference-existing seam publishes
+ * a literal where a provisioned one publishes a resource attribute). chant's
+ * reducer, which handles a ternary but has no call case, then rejects the file
+ * — and it does so only for the modes whose branch happens to contain the
+ * call, so the same source folds or doesn't depending on the build's inputs
+ * (loomster#160). Collapsing both calls and the conditional into one call
+ * gives a shape chant resolves through the importing file's own imports and
+ * invokes for real.
+ */
+export function literalOutput(value: string | undefined, name: string): LexiconOutput | undefined {
+  if (value === undefined) return undefined;
+  return output(literalOutputValue(value), name);
 }
 
 /**

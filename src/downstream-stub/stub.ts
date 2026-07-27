@@ -9,8 +9,16 @@ import {
   albSecurityGroupId,
   ecsSecurityGroupId,
 } from "./params";
-import { loomNaming } from "../lib/naming";
-import { namingParams } from "../shared-foundation/params";
+import {
+  ecsClusterArnEchoName,
+  httpsListenerArnEchoName,
+  frontendTargetGroupArnEchoName,
+  backendTargetGroupArnEchoName,
+  frontendRepositoryUriEchoName,
+  backendRepositoryUriEchoName,
+  albSecurityGroupIdEchoName,
+  ecsSecurityGroupIdEchoName,
+} from "./names";
 
 /**
  * Registers each `shared-foundation` output this stub was handed (see
@@ -21,17 +29,11 @@ import { namingParams } from "../shared-foundation/params";
  * `Ref(param)`) — chant's EVL001 requires resource constructor properties to
  * be statically evaluable, and a bare identifier reference already
  * serializes to `{ Ref: <parameter> }`, same as an explicit `Ref(...)` would.
+ *
+ * The physical names come from `./names.ts` rather than a `naming.name(...)`
+ * call here — see that file for why a call in this position can never fold
+ * (loomster#160).
  */
-const naming = loomNaming(namingParams, "downstream-stub");
-
-const ecsClusterArnEchoName = naming.name("ecs-cluster-arn");
-const httpsListenerArnEchoName = naming.name("https-listener-arn");
-const frontendTargetGroupArnEchoName = naming.name("frontend-target-group-arn");
-const backendTargetGroupArnEchoName = naming.name("backend-target-group-arn");
-const frontendRepositoryUriEchoName = naming.name("frontend-repository-uri");
-const backendRepositoryUriEchoName = naming.name("backend-repository-uri");
-const albSecurityGroupIdEchoName = naming.name("alb-security-group-id");
-const ecsSecurityGroupIdEchoName = naming.name("ecs-security-group-id");
 
 // chant-disable-next-line COR004 -- discovered by chant build, not referenced in this file.
 export const ecsClusterArnEcho = new SsmParameter({

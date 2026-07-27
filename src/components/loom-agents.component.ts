@@ -1,5 +1,6 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
 import { loomAgentsStackName } from "../lib/component-stack-names";
+import { harnessAgentImageUri } from "../lib/component-inputs";
 
 /**
  * The `loom-agents` stack (chant#893) — the base path from #882: apply the
@@ -44,7 +45,7 @@ import { loomAgentsStackName } from "../lib/component-stack-names";
  */
 // A caller's own harness container image, threaded to the CFN parameter. Unset
 // (the default) means the composite emits no harness Runtime (loomster#128).
-const harnessAgentImageUri = process.env.LOOM_HARNESS_AGENT_IMAGE_URI ?? "";
+// Imported rather than read here — see ../lib/component-inputs.ts.
 
 export const loomAgents: Component = {
   name: "loom-agents",

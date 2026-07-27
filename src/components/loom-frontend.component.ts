@@ -1,6 +1,6 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
 import { loomFrontendStackName } from "../lib/component-stack-names";
-import { loomNaming } from "../lib/naming";
+import { awsEndpointUrl, domainName, frontendServiceName } from "../lib/component-inputs";
 import { namingParams } from "../loom-frontend/params";
 
 /**
@@ -46,8 +46,13 @@ import { namingParams } from "../loom-frontend/params";
  * every input through the generic `inputs` map instead.
  */
 
-const naming = loomNaming(namingParams, "loom-frontend");
-const serviceName = naming.name("frontend-svc");
+// The service name comes from ../lib/component-inputs.ts — a call is only
+// resolvable as a file's own top-level `export const`, never inside a
+// `Component` object literal (loomster#160).
+// The service name comes from ../lib/component-inputs.ts — a call is only
+// resolvable as a file's own top-level `export const`, never inside a
+// `Component` object literal (loomster#160).
+const serviceName = frontendServiceName;
 const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // Verify runs the runtime health checks: the service reaches steady state
 // (`wait-steady-state`, chant#937), then an HTTP health check through the
@@ -59,7 +64,7 @@ const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // symmetry with `loom-backend`, whose task can't even start on Floci. On real
 // AWS the full Verify runs. (Held in a const so the `deploy` spread references
 // a const, not a ternary — chant's EVL004 lint rule.)
-const onRealAws = !process.env.AWS_ENDPOINT_URL;
+const onRealAws = !awsEndpointUrl;
 // The full tiers (production / production-ha) serve HTTPS-only on the custom
 // domain — the prod ALB has no HTTP listener — so the health-gate must probe
 // `https://<domain>`. Light serves HTTP on the ALB's own DNS name. Found live
@@ -67,7 +72,7 @@ const onRealAws = !process.env.AWS_ENDPOINT_URL;
 // (000) and the gate false-fails even though the app is healthy. The health-gate
 // `host` honors a full URL scheme and prepends http:// only to a bare host.
 const fullTier = namingParams.tier !== "light";
-const domain = process.env.LOOM_DOMAIN_NAME;
+const domain = domainName;
 const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput("shared-foundation", "oAlbDnsName");
 const verifyPhases = onRealAws
   ? [
