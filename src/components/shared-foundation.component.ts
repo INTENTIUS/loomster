@@ -1,5 +1,5 @@
 import { phase, type Component } from "@intentius/chant/components";
-import { sn } from "../lib/stack-name";
+import { sharedFoundationStackName } from "../lib/component-stack-names";
 
 /**
  * The shared infrastructure every Loom service/agent attaches to: the ALB +
@@ -20,7 +20,7 @@ export const sharedFoundation: Component = {
   dependsOn: [],
   deploy: [
     phase("Apply", [
-      { kind: "cfn-deploy", stack: sn("shared-foundation"), template: "dist/shared-foundation.template.json" },
+      { kind: "cfn-deploy", stack: sharedFoundationStackName, template: "dist/shared-foundation.template.json" },
     ]),
   ],
 };
