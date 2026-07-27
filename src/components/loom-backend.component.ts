@@ -1,6 +1,6 @@
 import { phase, stackOutput, type Component } from "@intentius/chant/components";
 import { loomBackendStackName } from "../lib/component-stack-names";
-import { loomNaming } from "../lib/naming";
+import { awsEndpointUrl, domainName, backendServiceName } from "../lib/component-inputs";
 import { namingParams } from "../loom-backend/params";
 
 /**
@@ -68,8 +68,13 @@ import { namingParams } from "../loom-backend/params";
  * fits; only its two fixed-key conveniences don't.
  */
 
-const naming = loomNaming(namingParams, "loom-backend");
-const serviceName = naming.name("backend-svc");
+// The service name comes from ../lib/component-inputs.ts — a call is only
+// resolvable as a file's own top-level `export const`, never inside a
+// `Component` object literal (loomster#160).
+// The service name comes from ../lib/component-inputs.ts — a call is only
+// resolvable as a file's own top-level `export const`, never inside a
+// `Component` object literal (loomster#160).
+const serviceName = backendServiceName;
 const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // Verify runs the runtime health checks: the service reaches steady state
 // (`wait-steady-state`, guarding Floci's missing `deployments` field via
@@ -84,12 +89,12 @@ const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // deployability through Apply, and Verify is skipped. On real AWS the full
 // runtime Verify runs. (Held in a const so the `deploy` spread references a
 // const, not a ternary — chant's EVL004 lint rule.)
-const onRealAws = !process.env.AWS_ENDPOINT_URL;
+const onRealAws = !awsEndpointUrl;
 // Full tiers serve HTTPS-only on the custom domain (no HTTP listener on the prod
 // ALB), so probe `https://<domain>/health`; light uses the ALB's own HTTP DNS
 // name. Found live (loomster#125) — see loom-frontend.component.ts for the detail.
 const fullTier = namingParams.tier !== "light";
-const domain = process.env.LOOM_DOMAIN_NAME;
+const domain = domainName;
 const healthGateHost = fullTier && domain ? `https://${domain}` : stackOutput("shared-foundation", "oAlbDnsName");
 const verifyPhases = onRealAws
   ? [

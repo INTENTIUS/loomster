@@ -45,6 +45,18 @@ export function paramOrEnv(paramValue: unknown, envVar: string): string | undefi
   return process.env[envVar];
 }
 
+/**
+ * `paramOrEnv` with a final fallback, as a single call.
+ *
+ * Spelling it `paramOrEnv(...) ?? ""` at the call site would defeat the point:
+ * a `??` makes the initializer a binary expression rather than a bare call, and
+ * chant's reducer — which handles `??` but has no call case — then rejects the
+ * call inside it. One call, one resolvable shape.
+ */
+export function paramOrEnvOr(paramValue: unknown, envVar: string, fallback: string): string {
+  return paramOrEnv(paramValue, envVar) ?? fallback;
+}
+
 /** Comma-separated string -> trimmed, non-empty string array, or `undefined` for an empty/unset value. */
 export function splitCsv(value: string | undefined): string[] | undefined {
   if (!value) return undefined;

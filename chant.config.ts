@@ -53,6 +53,12 @@ export default {
     region: { type: "string", default: "us-east-1", env: "AWS_REGION" },
     accountId: { type: "string", required: false, env: "AWS_ACCOUNT_ID" },
     owner: { type: "string", default: "platform" },
+    // Set by a local emulator (Floci) to point the AWS SDK at itself. Read by
+    // the component files to decide whether a runtime Verify phase can pass at
+    // all — declared here so that decision is a build input rather than an
+    // ambient read (loomster#160); still honours the env var it has always
+    // read, see src/lib/params-helpers.ts's `paramOrEnv`.
+    awsEndpointUrl: { type: "string", required: false, env: "AWS_ENDPOINT_URL" },
 
     // ── loom-db ─────────────────────────────────────────────────────────
     dbMode: { type: "string", enum: ["provision", "reference-existing", "omit"], default: "provision" },
