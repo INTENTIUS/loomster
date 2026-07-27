@@ -70,6 +70,16 @@ export default {
     dbReferenceConnectionSecretArn: { type: "string", required: false },
 
     // ── shared-foundation ───────────────────────────────────────────────
+    // The BYO-network trio (`src/shared-foundation/network.ts`). Declared
+    // here for the same reason `sn()`'s three were in #157: an ambient
+    // `process.env` read is a value chant can only get by executing the file,
+    // so `network.ts` could never fold while it read them directly. Each keeps
+    // its `env:` mapping, so `LOOM_VPC_ID`/`LOOM_PUBLIC_SUBNET_IDS`/
+    // `LOOM_PRIVATE_SUBNET_IDS` (what .github/workflows/deploy.yml and every
+    // existing runbook set) resolve exactly as they did before.
+    vpcId: { type: "string", required: false, env: "LOOM_VPC_ID" },
+    publicSubnetIds: { type: "string", required: false, env: "LOOM_PUBLIC_SUBNET_IDS" },
+    privateSubnetIds: { type: "string", required: false, env: "LOOM_PRIVATE_SUBNET_IDS" },
     domainName: { type: "string", required: false },
     hostedZoneId: { type: "string", required: false },
     route53Mode: { type: "string", required: false, enum: ["omit", "provision"] },

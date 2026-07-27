@@ -24,10 +24,9 @@ import { output, Ref } from "@intentius/chant-lexicon-aws";
 import { foundation } from "./foundation";
 import { namingParams, domainName, route53, acm, kms, ecr, agentRole } from "./params";
 import { network } from "./network";
-import { loomNaming } from "../lib/naming";
+import { loomName } from "../lib/naming";
 import { literalOutputValue, joinOutputValues } from "../composites/shared-foundation";
 
-const naming = loomNaming(namingParams, "shared-foundation");
 const fullTier = namingParams.tier !== "light";
 
 // ── network (provisioned light-tier VPC, or the given reference-existing one) ──
@@ -119,7 +118,7 @@ export const oHostedZoneId =
 export const oEcsClusterArn = output(foundation.ecsCluster.Arn, "oEcsClusterArn");
 // ClusterName is an input prop, not a resource attribute — derive the exact
 // same literal the composite set it to (see ../composites/shared-foundation.ts).
-export const oEcsClusterName = output(literalOutputValue(naming.name("cluster")), "oEcsClusterName");
+export const oEcsClusterName = output(literalOutputValue(loomName(namingParams, "shared-foundation", "cluster")), "oEcsClusterName");
 
 // ── role.yaml ─────────────────────────────────────────────────────────────
 export const oAgentRoleArn =

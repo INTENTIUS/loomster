@@ -13,6 +13,38 @@
  * mechanism a composite factory call already uses.
  */
 
+/**
+ * `params.<name>` when the chant CLI populated it, the named env var
+ * otherwise, `undefined` when neither is set — the two-source read
+ * `./stack-name.ts`'s `segment()` documents, generalized for the seam inputs
+ * that still need it.
+ *
+ * Two chant paths never populate `params.*`, so a declared `env:` mapping
+ * alone is not enough for either:
+ *
+ * - `chant run --components`, the deploy driver — component discovery never
+ *   resolves build-time parameters (intentius/chant#1108).
+ * - `chant build <subdir>`, which is every `npm run synth:*` script — the CLI
+ *   searches for `chant.config.ts` in the built directory and its immediate
+ *   parent only (`loadChantConfig(infraPath)` then
+ *   `loadChantConfig(dirname(infraPath))`), so building `src/shared-foundation`
+ *   looks in `src/shared-foundation` and `src`, finds nothing, and resolves no
+ *   `buildParams` at all. Verified: `chant build src --param tier=production`
+ *   prints `[param]` provenance, `chant build src/shared-foundation --param
+ *   tier=production` fails with "unknown build parameter".
+ *
+ * Living in `src/lib/**` matters twice over: chant.config.ts exempts this
+ * directory from EVL003 (the computed `process.env[name]` index), and a file
+ * of exported function declarations can never fold anyway — which is the
+ * point. The ambient read is confined here, and the resource-bearing file
+ * that needs the value is left with a single call chant resolves through its
+ * own imports and invokes for real.
+ */
+export function paramOrEnv(paramValue: unknown, envVar: string): string | undefined {
+  if (typeof paramValue === "string") return paramValue;
+  return process.env[envVar];
+}
+
 /** Comma-separated string -> trimmed, non-empty string array, or `undefined` for an empty/unset value. */
 export function splitCsv(value: string | undefined): string[] | undefined {
   if (!value) return undefined;

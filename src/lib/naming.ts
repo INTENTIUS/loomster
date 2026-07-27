@@ -206,6 +206,24 @@ export function loomNaming(params: LoomNamingParams, component: string): LoomNam
 }
 
 /**
+ * Free-function form of `loomNaming(params, component).name(resource, opts)`,
+ * for the one place a physical name is needed outside a composite: an
+ * `outputs.ts` file re-deriving a name the composite set as an input prop
+ * (there is no resource attribute to read it back from).
+ *
+ * A method call is structurally unfoldable — chant only resolves a call whose
+ * callee is a plain identifier bound by the file's own `import`s, and
+ * `naming.name(...)` is a property-access callee, so every file that reached
+ * for it fell back to run (loomster#160). Same function, same result, spelled
+ * as something a `--fold` build can resolve. Composites keep using
+ * `loomNaming(...)` — they run for real either way, and the bound `naming`
+ * object is more convenient when a file derives a dozen names.
+ */
+export function loomName(params: LoomNamingParams, component: string, resource: string, opts?: NameOptions): string {
+  return loomNaming(params, component).name(resource, opts);
+}
+
+/**
  * Stable PascalCase CloudFormation logical id for one resource within a
  * component — deployment-agnostic (no project/env/instance segments; logical
  * ids only need to be unique within a single template). Cross-stack outputs

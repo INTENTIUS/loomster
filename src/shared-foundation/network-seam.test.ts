@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveNetwork } from "./network";
+import { resolveNetwork } from "./seams";
 
 const vpcId = "vpc-0123456789abcdef0";
 const publicSubnetIds = ["subnet-pub1", "subnet-pub2"];
