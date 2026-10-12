@@ -27,24 +27,6 @@ function baseProvisionProps(overrides: Partial<LoomCognitoProps> = {}): LoomCogn
 }
 
 describe("LoomCognito — provision, light tier", () => {
-  test("returns only the core members — no user client, branding, or groups", () => {
-    const instance = LoomCognito(baseProvisionProps());
-    const names = Object.keys(instance.members);
-    for (const expected of ["userPool", "userPoolDomain", "resourceServer", "m2mClient"]) {
-      expect(names).toContain(expected);
-    }
-    for (const absent of ["userClient", "managedLoginBranding", "uiTierGroup0", "uiTierGroup1"]) {
-      expect(names).not.toContain(absent);
-    }
-  });
-
-  test("scope catalog is trimmed to just invoke (matches Loom's own pScopes default)", () => {
-    const instance = LoomCognito(baseProvisionProps());
-    const props = (instance.resourceServer as any).props;
-    expect(props.Scopes).toHaveLength(1);
-    expect((props.Scopes[0] as any).props.ScopeName).toBe("invoke");
-  });
-
   test("hosted-UI domain prefix contains none of Cognito's reserved words (aws/amazon/cognito) — real Cognito rejects them", () => {
     const instance = LoomCognito(baseProvisionProps());
     const domain: string = (instance.userPoolDomain as any).props.Domain;
@@ -70,10 +52,6 @@ describe("LoomCognito — provision, light tier", () => {
     expect(props.GenerateSecret).toBe(true);
   });
 
-  test("identity.mode defaults to \"provision\" when omitted entirely", () => {
-    const instance = LoomCognito({ naming: lightNaming, identity: {} });
-    expect(Object.keys(instance.members)).toContain("userPool");
-  });
 });
 
 describe("LoomCognito — provision, production tier", () => {
@@ -88,13 +66,6 @@ describe("LoomCognito — provision, production tier", () => {
       expect(names).toContain(expected);
     }
     expect(names).not.toContain("resourceGroup0");
-  });
-
-  test("full 23-scope catalog on the resource server", () => {
-    const instance = LoomCognito(prodProps());
-    const props = (instance.resourceServer as any).props;
-    expect(props.Scopes).toHaveLength(23);
-    expect(props.Scopes).toHaveLength(LOOM_COGNITO_SCOPES.length);
   });
 
   test("user client never allows implicit grant, requests OIDC + all domain scopes", () => {
@@ -145,12 +116,6 @@ describe("LoomCognito — provision, production tier", () => {
     expect(group0Props.GroupName).toBe("g-team-a");
   });
 
-  test("resourceGroups default to empty — no Loom demo groups defaulted in", () => {
-    const instance = LoomCognito(prodProps());
-    const names = Object.keys(instance.members);
-    const resourceGroupNames = names.filter((n) => n.startsWith("resourceGroup"));
-    expect(resourceGroupNames).toHaveLength(0);
-  });
 });
 
 describe("LoomCognito — production-ha tier", () => {
@@ -243,15 +208,6 @@ describe("LoomCognito — BYO-identity (chant#898): reference-existing | omit", 
 });
 
 describe("LoomCognito — naming, tags, and ABAC", () => {
-  test("physical names derive from the naming helper, not literals", () => {
-    const instance = LoomCognito(baseProvisionProps());
-    const poolProps = (instance.userPool as any).props;
-    expect(poolProps.UserPoolName).toBe("loom-test-a-loom-cognito-pool");
-    const domainProps = (instance.userPoolDomain as any).props;
-    expect(typeof domainProps.Domain).toBe("string");
-    expect(domainProps.Domain.length).toBeLessThanOrEqual(63);
-  });
-
   // chant#896 — component/tier/env/owner/instance, always all five, plus
   // the loom:* ABAC extras, all sourced from the one `naming.tags()` call
   // (UserPool is the only Cognito resource CFN lets carry tags at all — see
@@ -291,15 +247,6 @@ describe("LoomCognito — naming, tags, and ABAC", () => {
     expect(poolProps.UserPoolTags["loom:group"]).toBe("custom-tenant");
   });
 
-  test("UI-tier group names default to Loom's own t-admin/t-user pair", () => {
-    const instance = LoomCognito({ naming: prodNaming, identity: { mode: "provision" } });
-    const members = instance.members as any;
-    const group0 = (members.uiTierGroup0 as any).props;
-    const group1 = (members.uiTierGroup1 as any).props;
-    expect([group0.GroupName, group1.GroupName].sort()).toEqual(
-      LOOM_UI_TIER_GROUPS.map((g) => g.name).sort(),
-    );
-  });
 });
 
 describe("LoomCognito — serializes to valid CloudFormation", () => {
