@@ -62,6 +62,12 @@ CA_STACK_WAVES="tunnel-host | loom-agents | loom-backend | downstream-stub loom-
 
 ca_log() { echo "[claims-aws] $*" >&2; }
 
+# The claim's own log, kept on fd 9 when this file is sourced: a caller that
+# sends a step's output to a file of its own (2>&1 >seed.log) would otherwise
+# take the heartbeat with it, and the grant's stall watch, which watches the
+# claim logs, would stop a healthy run.
+exec 9>&2
+
 ca() { AWS_PAGER="" aws --region "${AWS_REGION:-us-east-1}" --output json "$@" </dev/null; }
 
 # Wait for a stack delete, logging its status every 30 s. A stack delete can run
@@ -283,7 +289,7 @@ claims_heartbeat() { # label command...
   pid=$!
   while kill -0 "$pid" 2>/dev/null; do
     sleep 5; n=$((n + 5))
-    [ $((n % 60)) -ne 0 ] || ca_log "$label: still running (${n}s)"
+    [ $((n % 60)) -ne 0 ] || ca_log "$label: still running (${n}s)" 2>&9
   done
   wait "$pid"; rc=$?
   return "$rc"
