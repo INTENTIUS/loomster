@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# A person starts this, or grants it to an agent with `just grant e2e/production-floci`
+# (test/human-gate.sh). Agents do not run it otherwise.
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/human-gate.sh"
+human_gate "the production E2E against Floci: a local emulator on :4566 and Docker for minutes" e2e/production-floci
 
 # Production-tier runtime E2E against Floci.
 #

@@ -53,6 +53,11 @@ LOOM_API_BASE_URL=https://loom.example.com npm run seed   # a deployed target
 `http://localhost:8080`). Every write is existence-guarded, so re-running is safe
 — the Op skips anything already present.
 
+Each step prints one line, `loom-seed: step=<name> verdict=ok|present|skipped|failed`.
+Only optional steps skip, and they say why (no Cognito pool for the authorizer, no
+`LOOM_DEMO_A2A_URL` for the A2A agent). Any failed step, including the demo agent
+not reaching `READY`, makes the seed exit non-zero after the rest have run.
+
 ## Validating a deploy
 
 `npm run validate` (or `just validate`) checks a running Loom screen by screen:

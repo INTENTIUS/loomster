@@ -111,3 +111,21 @@ local-down:
 # LOOM_API_BASE_URL (default the local-up proxy) + LOOM_SEED_PROFILE (default demo).
 validate:
     npm run validate
+
+# Claims (test/claims.sh, docs reference/claims): one per documented
+# capability, each run plain and under BREAK=1. Static claims run as they are;
+# floci and aws claims stop at the human gate unless a person types "run" or
+# granted them (`just grant`). Rows land in test/.state/claims.json.
+# `just claims` runs every claim; `just claims params,teardown/covers-components` some.
+claims names="":
+    bash test/claims.sh {{ if names == "" { "" } else { "--only " + names } }} --record test/.state/claims.json
+
+# The claims the change since base can affect (test/claims-affected.sh says why).
+claims-affected base="origin/main":
+    bash test/claims.sh --affected {{base}} --record test/.state/claims.json
+
+# A person grants a coding agent runs of named claims, areas or e2e/<name>
+# (2 runs each, for 4 hours, by default): `just grant backend/deploy-agent --runs 1`.
+# `just grant --show` lists what is left; `just grant --end` ends the grant.
+grant +args:
+    bash test/grant.sh {{args}}

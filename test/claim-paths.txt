@@ -1,0 +1,44 @@
+# Which claims a changed path can affect, for test/claims-affected.sh.
+#
+#   <path prefix>  <claim glob>...
+#
+# The first line whose prefix starts the path wins, so a file comes before its
+# directory. ALL is every claim. A changed claim script (test/claims/<area>/
+# <part>.sh) always picks its own claim and needs no line here. A path no line
+# names affects no claim: give a new source file a line when you add it.
+
+# The runner and what every claim shares.
+test/claims.sh                      ALL
+test/human-gate.sh                  ALL
+test/claims-aws.sh                  backend/*
+chant.config.ts                     ALL
+package.json                        ALL
+package-lock.json                   ALL
+
+# Build params: the params files and the composites they feed.
+src/lib/params-helpers.ts           params/*
+src/loom-db/params.ts               params/* backend/*
+src/loom-backend/params.ts          params/* backend/*
+src/composites/loom-db.ts           params/* backend/*
+src/composites/loom-backend.ts      params/* backend/*
+src/loom-db/                        backend/*
+src/loom-backend/                   backend/*
+src/composites/                     backend/*
+src/shared-foundation/              backend/*
+src/loom-cognito/                   backend/*
+src/loom-frontend/                  backend/*
+src/loom-agents/                    backend/*
+src/lib/naming.ts                   backend/* teardown/*
+src/lib/stack-name.ts               backend/* teardown/*
+
+# The component graph and the teardown that must cover it.
+src/components/                     teardown/* backend/*
+ops/lib/teardown-plan.ts            teardown/*
+ops/loom-teardown.op.ts             teardown/*
+
+# Seeding, and the scripts the backend claims call.
+ops/lib/seed.ts                     seed/*
+ops/loom-seed.op.ts                 seed/*
+scripts/local/                      seed/*
+scripts/validate/get-user-token.sh  backend/*
+scripts/vendor-loom.sh              backend/* seed/*

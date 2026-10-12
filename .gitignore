@@ -22,3 +22,6 @@ test/forgejo-runtime-e2e/ci.yml
 
 # chant update's synced type and schema copies (regenerated, never committed)
 .chant/types/
+
+# claims runner state (the aws claims instance, the spend-guard cache) and logs
+test/.state/

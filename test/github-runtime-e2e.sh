@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# A person starts this, or grants it to an agent with `just grant e2e/github-runtime`
+# (test/human-gate.sh). Agents do not run it otherwise.
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/human-gate.sh"
+human_gate "the GitHub Actions runtime E2E: act in Docker, deploying the light tier's infra to Floci" e2e/github-runtime
 
 # GitHub Actions runtime E2E — the `act` counterpart to
 # `./gitlab-runtime-e2e.sh`. Builds the real, discovered-component GitHub
