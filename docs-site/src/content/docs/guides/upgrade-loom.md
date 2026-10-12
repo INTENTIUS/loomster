@@ -45,29 +45,54 @@ image carries Loom's maintenance scripts.
 Keep `vendor/loom` for the upgrade run, and remove it before `chant lint .`,
 which would otherwise lint it as project code.
 
-### 2. Run the upgrade Op
+### 2. Write the schema migration
 
 Loom has no migration tool: when a backend task starts, it creates new tables
-and adds new columns. So the [Op](/loomster/concepts/glossary/#op)'s Migrate phase is the backend roll itself,
-`chant run --components loom-backend`, and a healthy new task is one that has
-migrated.
+and adds new columns. loomster hands that to SQL Yodeler, so a release's schema
+change is a migration you write and review with the pin change:
+
+```
+just db-schema                 # the new version's schema, from its own init_db
+just db new loom-v1.10.0       # the migration
+just db lint && just db-replay
+```
+
+[Migrate Loom's database](/loomster/guides/migrate-the-database/) covers this,
+the read-only user and the baseline a deployment records once.
+
+### 3. Run the upgrade Op
 
 | [Tier](/loomster/concepts/tiers-and-instances/) | Phases | On failure |
 |---|---|---|
-| `light` | Snapshot, Migrate, Apply | the component's own rollback to the previous task definition |
-| `production`, `production-ha` | Snapshot, Approve, Migrate, Apply, Scripts | Rollback restores the pre-upgrade snapshot to a new instance |
+| `light` | Snapshot, Schema, Backend, Apply | the component's own rollback to the previous task definition |
+| `production`, `production-ha` | Snapshot, Approve, Schema, Backend, Apply, Scripts | Rollback restores the pre-upgrade snapshot to a new instance |
 
-Migrate rolls the backend, Apply the frontend, Scripts runs the one-time
-scripts. The gate sits before Migrate, the point of no return for the schema.
+Schema applies the pending migrations (`just db apply`) behind yodel's own gate,
+which is bound to the plan digest, while the old backend still serves. Backend
+rolls the new backend, `chant run --components loom-backend`, whose startup
+migration then finds nothing to do. Apply rolls the frontend, and Scripts runs
+the one-time scripts. The [Op](/loomster/concepts/glossary/#op)'s gate sits before Schema, the point of no return
+for the schema.
+
+Approve the schema plan at your terminal before the run, from a machine that
+reaches the database (on AWS, through the tunnel host):
 
 ```
-chant run loom-upgrade-light               # light: no gate
+just db plan
+just db approve                            # shows the plan; type the deployment's name
+
+chant run loom-upgrade-light               # light: no Op gate
 
 export LOOM_UPGRADE_SCRIPTS="migrate_oauth2_secrets.py --apply"
 chant run loom-upgrade-production          # stops at Approve, exit 3
 chant approve loom-upgrade-production approve-loom-upgrade-production
 chant run loom-upgrade-production          # snapshots again, then continues
 ```
+
+If you didn't approve the schema plan first, Schema stops at yodel's gate
+(exit 3) with the command to run; approve, then run the Op again. Schema
+also stops (exit 4) on a deployment whose history records no migration yet:
+record the baseline first (`just db baseline`).
 
 Each component synthesizes its own template from your variables, so there is no
 separate synth step. Snapshot names the snapshot `<db-instance>-upgrade-<timestamp>`
@@ -80,7 +105,7 @@ pre-upgrade data back, cut over with `loom-restore`
 [Back up and restore](/loomster/guides/back-up-and-restore/)). The backend's own
 rollback puts the previous task definition back but doesn't undo the schema.
 
-### 3. Run one-time scripts
+### 4. Run one-time scripts
 
 On the production tiers, list them in `LOOM_UPGRADE_SCRIPTS`, comma-separated,
 each a script name (`.py` optional) and its arguments:
@@ -126,7 +151,9 @@ DynamoDB) now record configuration only; add the IAM statement to the agent's
 role ([Create an execution role per agent](/loomster/guides/create-an-execution-role-per-agent/)).
 
 Permission requests are gone. `drop_permission_requests.py --apply` drops the
-unused `permission_requests` table and its history. It's optional.
+unused `permission_requests` table and its history. Run it before recording the
+yodel baseline on a deployment that came from v1.6: v1.9.0's schema has no such
+table, and `just db baseline` refuses a database that holds one.
 
 `fix_sequences.py` isn't needed for an upgrade or for `loom-restore`, whose
 snapshot and point-in-time restores are physical copies. It's in the image for a

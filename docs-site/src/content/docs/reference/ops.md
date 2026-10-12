@@ -15,8 +15,8 @@ is in [Gated Ops](/loomster/concepts/gated-ops/).
 |---|---|---|---|
 | `loom-watch` | Drift detection: `chant lifecycle diff --live` across every stack; schedule every 15 minutes | none | |
 | `loom-reconcile` | On drift, opens a pull request that brings the source in line with the cloud, for chant-owned resources only; never changes the cloud. Hourly schedule on the production [tiers](/loomster/concepts/tiers-and-instances/) | none | `GITHUB_TOKEN` in CI |
-| `loom-upgrade-light` | Snapshot RDS, roll the backend (Loom migrates its schema on startup), roll the frontend | none | |
-| `loom-upgrade-production` | As above, plus an approval gate before the backend roll, one-time Loom scripts, and an RDS restore on failure | `approve-loom-upgrade-production` | `LOOM_UPGRADE_SCRIPTS` |
+| `loom-upgrade-light` | Snapshot RDS, apply the pending schema migrations (SQL Yodeler, behind its own plan-bound gate), roll the backend, roll the frontend | yodel's `approve-migrate-<deployment>` when a migration is pending | |
+| `loom-upgrade-production` | As above, plus an approval gate before the schema migration, one-time Loom scripts, and an RDS restore on failure | `approve-loom-upgrade-production`, and yodel's | `LOOM_UPGRADE_SCRIPTS` |
 | `loom-upgrade-production-ha` | The same for production-ha | `approve-loom-upgrade-production-ha` | `LOOM_UPGRADE_SCRIPTS` |
 | `loom-rotate-production` | Rotate the Cognito M2M client, the RDS credential (a manual swap) and, with a custom domain, the ALB's ACM certificate | `approve-loom-rotate-production` | `LOOM_DOMAIN_NAME`, `LOOM_DB_USERNAME`, `LOOM_DB_NAME` |
 | `loom-rotate-production-ha` | The same, rotating the RDS credential through its Secrets Manager rotation | `approve-loom-rotate-production-ha` | `LOOM_DOMAIN_NAME` |
@@ -39,6 +39,20 @@ is in [Gated Ops](/loomster/concepts/gated-ops/).
 | `loom-dns-setup` | Create the Route53 zone for a custom domain, print its NS records, and poll public DNS until the delegation resolves | none | `LOOM_DOMAIN_NAME` |
 | `loom-audit` | Check every pinned `uses:` reference in `.github/workflows/` against upstream; report only | none | `GITHUB_TOKEN` for the API rate limit |
 
+## The schema Ops
+
+`db/` is SQL Yodeler's project for Loom's Postgres schema, with its own two
+Ops, named for the deployment (`{project}-{env}-{instance}`). `just db` runs
+them; they aren't in `ops/` or `chant run list`.
+
+| Op | What it does | Gate |
+|---|---|---|
+| `migrate-<deployment>` | Plan the pending migrations, then apply them as the master user. `just db apply`, and the upgrade Ops' Schema phase | `approve-migrate-<deployment>`, bound to the plan digest; approve with `just db approve` |
+| `watch-<deployment>` | Report declared tables and columns changed out of band or gone, as the read-only user. `just db watch` | none |
+
+[Migrate Loom's database](/loomster/guides/migrate-the-database/) has the whole
+workflow.
+
 ## Running them
 
 ```
@@ -54,7 +68,8 @@ Several have `npm run` aliases: `watch`, `reconcile`, `audit`, `backup`,
 has `watch`, `reconcile`, `audit`, `agent-role <agent> <group>`, `bootstrap`,
 `tunnel-host`, `tunnel [port]`, `import-sqlite <file>`, `fix-sequences`,
 `reset-db`, `credentials`, `credentials-delete`, `memory [query] [id] [who]`,
-`set-passwords [users]`, `cognito-client-id` and `cognito-token`.
+`set-passwords [users]`, `cognito-client-id`, `cognito-token`, `db <command>`,
+`db-schema` and `db-replay`.
 [Loom make targets](/loomster/reference/make-targets/) maps each to the `make`
 target it replaces.
 
@@ -65,6 +80,7 @@ agent connected to it can't run them or approve their gates.
 ## Guides per Op
 
 - Upgrade: [Upgrade Loom](/loomster/guides/upgrade-loom/)
+- Schema migrations and drift: [Migrate Loom's database](/loomster/guides/migrate-the-database/)
 - Rotation: [Rotate credentials](/loomster/guides/rotate-credentials/)
 - Backup, restore, the drill and the Cognito export: [Back up and restore](/loomster/guides/back-up-and-restore/)
 - Watch and reconcile: [Watch and reconcile drift](/loomster/guides/watch-and-reconcile-drift/)

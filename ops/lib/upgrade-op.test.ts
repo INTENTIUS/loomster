@@ -36,19 +36,29 @@ describe("buildLoomUpgradeOp — the dial (chant#905: prod/prod-ha gate+rollback
     expect(config.onFailure?.map((p) => p.name)).toEqual(["Rollback"]);
   });
 
-  test("phase order: Loom migrates when the backend rolls, so the gate sits before Migrate and one-time scripts run last (gated only)", () => {
+  test("phase order: the schema migrates (SQL Yodeler) before the backend rolls, the gate sits before both, one-time scripts run last (gated only)", () => {
     expect(configOf(buildLoomUpgradeOp({ naming: { ...naming, tier: "light" }, gated: false })).phases.map((p) => p.name)).toEqual([
       "Snapshot",
-      "Migrate",
+      "Schema",
+      "Backend",
       "Apply",
     ]);
     expect(configOf(buildLoomUpgradeOp({ naming, gated: true })).phases.map((p) => p.name)).toEqual([
       "Snapshot",
       "Approve",
-      "Migrate",
+      "Schema",
+      "Backend",
       "Apply",
       "Scripts",
     ]);
+  });
+
+  test("Schema applies the pending migrations through scripts/db/yodel.sh, on every tier (#78)", () => {
+    for (const gated of [false, true]) {
+      const schema = configOf(buildLoomUpgradeOp({ naming, gated })).phases.find((p) => p.name === "Schema")!;
+      expect(schema.steps).toHaveLength(1);
+      expect(JSON.stringify(schema.steps[0])).toContain("bash scripts/db/yodel.sh apply");
+    }
   });
 
   test("Op name and labels are tier/env-scoped", () => {

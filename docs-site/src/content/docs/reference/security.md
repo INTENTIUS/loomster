@@ -62,6 +62,17 @@ this role ([Validation](/loomster/reference/validation/)). To check a role you
 bring, run `aws iam simulate-principal-policy --policy-source-arn <role arn>`
 with the actions and resources in `test/claims/backend/task-role.sh`.
 
+## Database users
+
+Loom and the schema migrations connect as the RDS master user, whose
+credentials are in loom-db's credentials secret. SQL Yodeler's plans, status
+and drift reports connect as `loom_reader`, a separate user whose password
+CloudFormation generates into loom-db's reader secret (`oRdsReaderSecretArn`).
+It can read Loom's tables and yodel's history and nothing else: it owns no
+object, every session it opens is read-only, and yodel refuses a deployment
+whose reader and writer are the same user. `just db reader` creates it
+([Migrate Loom's database](/loomster/guides/migrate-the-database/)).
+
 ## Network paths
 
 | From | To | Allowed by | Default |
@@ -69,6 +80,7 @@ with the actions and resources in `test/claims/backend/task-role.sh`.
 | Clients | ALB, port 80 (light) or 443 (production [tiers](/loomster/concepts/tiers-and-instances/)) | ALB security group | `0.0.0.0/0`; narrow it with `LOOM_ALB_INGRESS_CIDR` |
 | ALB | Frontend and backend tasks | ECS task security group | ALB security group only |
 | Backend tasks | Postgres, port 5432 | Database security group | `10.0.0.0/8` as in Loom's template; `LOOM_DB_SOURCE_SG=true` limits it to the ECS task security group |
+| Schema migrations (`just db`) | Postgres on the RDS instance, port 5432 | The tunnel host's ingress rule on the database security group | Only while the optional tunnel host is deployed; the session goes through Systems Manager, never a public endpoint |
 | Private networks | Loom, through PrivateLink | NLB and VPC endpoint service | Production tiers. Connections are accepted without a manual step; add principals to the endpoint service's permissions to let other accounts connect |
 | Backend tasks | AWS APIs and Bedrock (`bedrock-runtime`, `bedrock-mantle.<region>.api.aws`) | Egress | Public subnets on light; your NAT or endpoints on the production tiers |
 | Agents | Models and tools | AgentCore network mode | `PUBLIC` on light, `VPC` in your private subnets on the production tiers |

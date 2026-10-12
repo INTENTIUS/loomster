@@ -40,8 +40,11 @@ itself is in [Upgrade Loom](/loomster/guides/upgrade-loom/).
   ignored ([Build parameters](/loomster/reference/parameters/)).
 - Teardown covers every component in the graph, deletes the credential
   providers its Loom recorded, and deletes the tunnel host first.
-- The upgrade [Op](/loomster/concepts/glossary/#op) uses Loom's real migration path (the backend roll) and runs
-  one-time scripts.
+- Loom's schema belongs to SQL Yodeler (`db/`): the v1.9.0 baseline, one
+  reviewed migration per Loom version, a read-only database user, drift
+  reports, and an upgrade [Op](/loomster/concepts/glossary/#op) that applies the pending migrations behind a
+  plan-bound approval before it rolls the backend, then runs one-time scripts
+  ([Migrate Loom's database](/loomster/guides/migrate-the-database/)).
 - New: `loom-bootstrap`, `loom-tunnel-host`, and Ops for Loom's operator make
   targets ([Loom make targets](/loomster/reference/make-targets/)).
 

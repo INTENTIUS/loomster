@@ -1,0 +1,3725 @@
+{
+  "format": 1,
+  "id": "20261012T2116-baseline",
+  "parent": null,
+  "checksum": "sha256:0c0e568f74f35c5498a60a4de5fa0e0cadec8020226d443c57f6577ba791c920",
+  "createdAt": "2026-10-12T21:16:04Z",
+  "dialect": "postgres",
+  "defaultSchema": "public",
+  "major": 18,
+  "refused": false,
+  "hints": [],
+  "steps": [
+    {
+      "kind": "statement",
+      "object": "a2aAgents",
+      "type": "Postgres::Table",
+      "name": "public.a2a_agents",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.a2a_agents (\n      id serial,\n      base_url character varying NOT NULL,\n      name character varying NOT NULL,\n      description text NOT NULL,\n      agent_version character varying NOT NULL,\n      documentation_url character varying,\n      provider_organization character varying,\n      provider_url character varying,\n      capabilities text NOT NULL,\n      authentication_schemes text NOT NULL,\n      default_input_modes text NOT NULL,\n      default_output_modes text NOT NULL,\n      agent_card_raw text NOT NULL,\n      status character varying NOT NULL,\n      auth_type character varying NOT NULL,\n      oauth2_well_known_url character varying,\n      oauth2_client_id character varying,\n      oauth2_client_secret character varying,\n      has_oauth2_secret character varying,\n      oauth2_scopes character varying,\n      delegation_mode character varying NOT NULL,\n      obo_grant_type character varying,\n      agentcore_session_id character varying,\n      registry_record_id character varying,\n      registry_status character varying,\n      resource_tags text,\n      last_fetched_at timestamp without time zone,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT a2a_agents_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "a2aAgents",
+      "type": "Postgres::Table",
+      "name": "public.a2a_agents",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.a2a_agents IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "a2aAgentAccess",
+      "type": "Postgres::Table",
+      "name": "public.a2a_agent_access",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.a2a_agent_access (\n      id serial,\n      agent_id integer NOT NULL,\n      persona_id integer NOT NULL,\n      access_level character varying NOT NULL,\n      allowed_skill_ids text,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT a2a_agent_access_pkey PRIMARY KEY (id),\n      CONSTRAINT a2a_agent_access_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.a2a_agents(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "a2aAgentAccess",
+      "type": "Postgres::Table",
+      "name": "public.a2a_agent_access",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.a2a_agent_access IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "a2aAgentSkills",
+      "type": "Postgres::Table",
+      "name": "public.a2a_agent_skills",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.a2a_agent_skills (\n      id serial,\n      agent_id integer NOT NULL,\n      skill_id character varying NOT NULL,\n      name character varying NOT NULL,\n      description text NOT NULL,\n      tags text NOT NULL,\n      examples text,\n      input_modes text,\n      output_modes text,\n      last_refreshed_at timestamp without time zone NOT NULL,\n      CONSTRAINT a2a_agent_skills_pkey PRIMARY KEY (id),\n      CONSTRAINT a2a_agent_skills_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.a2a_agents(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "a2aAgentSkills",
+      "type": "Postgres::Table",
+      "name": "public.a2a_agent_skills",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.a2a_agent_skills IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "vpcConfigs",
+      "type": "Postgres::Table",
+      "name": "public.vpc_configs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.vpc_configs (\n      id serial,\n      name character varying NOT NULL,\n      description text,\n      vpc_id character varying NOT NULL,\n      subnet_ids text NOT NULL,\n      sg_ids text NOT NULL,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT vpc_configs_pkey PRIMARY KEY (id),\n      CONSTRAINT vpc_configs_name_key UNIQUE (name)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "vpcConfigs",
+      "type": "Postgres::Table",
+      "name": "public.vpc_configs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.vpc_configs IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "agents",
+      "type": "Postgres::Table",
+      "name": "public.agents",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.agents (\n      id serial,\n      arn character varying NOT NULL,\n      runtime_id character varying NOT NULL,\n      name character varying,\n      status character varying,\n      region character varying NOT NULL,\n      account_id character varying NOT NULL,\n      log_group character varying,\n      available_qualifiers text,\n      raw_metadata text,\n      source character varying,\n      deployment_status character varying,\n      execution_role_arn character varying,\n      config_hash character varying,\n      endpoint_name character varying,\n      endpoint_arn character varying,\n      endpoint_status character varying,\n      protocol character varying,\n      network_mode character varying,\n      agent_framework character varying,\n      authorizer_config text,\n      description text,\n      tags text,\n      deployed_at timestamp without time zone,\n      registered_at timestamp without time zone NOT NULL,\n      last_refreshed_at timestamp without time zone,\n      registry_record_id character varying,\n      registry_status character varying,\n      allowed_model_ids text,\n      harness_id character varying,\n      code_interpreter_id character varying,\n      vpc_subnet_ids text,\n      vpc_security_group_ids text,\n      vpc_config_id integer,\n      status_reason character varying,\n      code_uri character varying,\n      CONSTRAINT agents_pkey PRIMARY KEY (id),\n      CONSTRAINT agents_vpc_config_id_fkey FOREIGN KEY (vpc_config_id) REFERENCES public.vpc_configs(id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "agents",
+      "type": "Postgres::Table",
+      "name": "public.agents",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.agents IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "agentConfigEntries",
+      "type": "Postgres::Table",
+      "name": "public.agent_config_entries",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.agent_config_entries (\n      id serial,\n      agent_id integer NOT NULL,\n      key character varying NOT NULL,\n      value character varying,\n      is_secret boolean NOT NULL,\n      source character varying,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT agent_config_entries_pkey PRIMARY KEY (id),\n      CONSTRAINT uq_config_agent_key UNIQUE (agent_id, key),\n      CONSTRAINT agent_config_entries_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "agentConfigEntries",
+      "type": "Postgres::Table",
+      "name": "public.agent_config_entries",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.agent_config_entries IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "credentialProviders",
+      "type": "Postgres::Table",
+      "name": "public.credential_providers",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.credential_providers (\n      id serial,\n      agent_id integer NOT NULL,\n      name character varying NOT NULL,\n      vendor character varying,\n      callback_url character varying,\n      scopes character varying,\n      provider_type character varying,\n      created_at timestamp without time zone NOT NULL,\n      CONSTRAINT credential_providers_pkey PRIMARY KEY (id),\n      CONSTRAINT credential_providers_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "credentialProviders",
+      "type": "Postgres::Table",
+      "name": "public.credential_providers",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.credential_providers IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "agentIntegrations",
+      "type": "Postgres::Table",
+      "name": "public.agent_integrations",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.agent_integrations (\n      id serial,\n      agent_id integer NOT NULL,\n      integration_type character varying,\n      integration_config character varying,\n      credential_provider_id integer,\n      enabled boolean NOT NULL,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT agent_integrations_pkey PRIMARY KEY (id),\n      CONSTRAINT agent_integrations_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE,\n      CONSTRAINT agent_integrations_credential_provider_id_fkey FOREIGN KEY (credential_provider_id) REFERENCES public.credential_providers(id) ON DELETE SET NULL\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "agentIntegrations",
+      "type": "Postgres::Table",
+      "name": "public.agent_integrations",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.agent_integrations IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "approvalLogs",
+      "type": "Postgres::Table",
+      "name": "public.approval_logs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.approval_logs (\n      id serial,\n      request_id character varying NOT NULL,\n      session_id character varying,\n      agent_id integer,\n      tool_name character varying NOT NULL,\n      tool_input_summary text,\n      policy_name character varying,\n      pattern_type character varying NOT NULL,\n      status character varying NOT NULL,\n      requested_at timestamp without time zone DEFAULT now(),\n      decided_at timestamp without time zone,\n      decided_by character varying,\n      reason text,\n      CONSTRAINT approval_logs_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "approvalLogs",
+      "type": "Postgres::Table",
+      "name": "public.approval_logs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.approval_logs IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "approvalPolicies",
+      "type": "Postgres::Table",
+      "name": "public.approval_policies",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.approval_policies (\n      id serial,\n      name character varying NOT NULL,\n      policy_type character varying NOT NULL,\n      tool_match_rules text,\n      approval_mode character varying NOT NULL,\n      timeout_seconds integer NOT NULL,\n      agent_scope text,\n      approval_cache_ttl integer NOT NULL,\n      enabled boolean NOT NULL,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT approval_policies_pkey PRIMARY KEY (id),\n      CONSTRAINT approval_policies_name_key UNIQUE (name)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "approvalPolicies",
+      "type": "Postgres::Table",
+      "name": "public.approval_policies",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.approval_policies IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "auditAction",
+      "type": "Postgres::Table",
+      "name": "public.audit_action",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.audit_action (\n      id serial,\n      user_id character varying NOT NULL,\n      browser_session_id character varying NOT NULL,\n      action_category character varying NOT NULL,\n      action_type character varying NOT NULL,\n      resource_name character varying,\n      performed_at timestamp without time zone DEFAULT now() NOT NULL,\n      CONSTRAINT audit_action_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "auditAction",
+      "type": "Postgres::Table",
+      "name": "public.audit_action",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.audit_action IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "auditLogin",
+      "type": "Postgres::Table",
+      "name": "public.audit_login",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.audit_login (\n      id serial,\n      user_id character varying NOT NULL,\n      browser_session_id character varying NOT NULL,\n      logged_in_at timestamp without time zone DEFAULT now() NOT NULL,\n      CONSTRAINT audit_login_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "auditLogin",
+      "type": "Postgres::Table",
+      "name": "public.audit_login",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.audit_login IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "auditPageView",
+      "type": "Postgres::Table",
+      "name": "public.audit_page_view",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.audit_page_view (\n      id serial,\n      user_id character varying NOT NULL,\n      browser_session_id character varying NOT NULL,\n      page_name character varying NOT NULL,\n      entered_at timestamp without time zone NOT NULL,\n      duration_seconds integer,\n      CONSTRAINT audit_page_view_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "auditPageView",
+      "type": "Postgres::Table",
+      "name": "public.audit_page_view",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.audit_page_view IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "authorizerConfigs",
+      "type": "Postgres::Table",
+      "name": "public.authorizer_configs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.authorizer_configs (\n      id serial,\n      name character varying NOT NULL,\n      authorizer_type character varying NOT NULL,\n      pool_id character varying,\n      discovery_url character varying,\n      allowed_audience text,\n      allowed_clients text,\n      allowed_scopes text,\n      client_id character varying,\n      client_secret_arn character varying,\n      user_client_id character varying,\n      user_client_secret_arn character varying,\n      user_redirect_uri character varying,\n      tags text,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT authorizer_configs_pkey PRIMARY KEY (id),\n      CONSTRAINT authorizer_configs_name_key UNIQUE (name)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "authorizerConfigs",
+      "type": "Postgres::Table",
+      "name": "public.authorizer_configs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.authorizer_configs IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "authorizerCredentials",
+      "type": "Postgres::Table",
+      "name": "public.authorizer_credentials",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.authorizer_credentials (\n      id serial,\n      authorizer_config_id integer NOT NULL,\n      label character varying NOT NULL,\n      client_id character varying NOT NULL,\n      client_secret_arn character varying,\n      created_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT authorizer_credentials_pkey PRIMARY KEY (id),\n      CONSTRAINT authorizer_credentials_authorizer_config_id_fkey FOREIGN KEY (authorizer_config_id) REFERENCES public.authorizer_configs(id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "authorizerCredentials",
+      "type": "Postgres::Table",
+      "name": "public.authorizer_credentials",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.authorizer_credentials IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "evaluationTestCases",
+      "type": "Postgres::Table",
+      "name": "public.evaluation_test_cases",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.evaluation_test_cases (\n      id serial,\n      agent_id integer NOT NULL,\n      name character varying NOT NULL,\n      prompt text NOT NULL,\n      expected_response text,\n      evaluator_ids text NOT NULL,\n      pass_threshold double precision NOT NULL,\n      model_id character varying,\n      last_batch_evaluation_id character varying,\n      last_run_at timestamp without time zone,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT evaluation_test_cases_pkey PRIMARY KEY (id),\n      CONSTRAINT evaluation_test_cases_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "evaluationTestCases",
+      "type": "Postgres::Table",
+      "name": "public.evaluation_test_cases",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.evaluation_test_cases IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "evaluationRuns",
+      "type": "Postgres::Table",
+      "name": "public.evaluation_runs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.evaluation_runs (\n      id serial,\n      test_case_id integer NOT NULL,\n      session_id character varying NOT NULL,\n      status character varying NOT NULL,\n      results_json text NOT NULL,\n      errors_json text NOT NULL,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT evaluation_runs_pkey PRIMARY KEY (id),\n      CONSTRAINT evaluation_runs_test_case_id_fkey FOREIGN KEY (test_case_id) REFERENCES public.evaluation_test_cases(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "evaluationRuns",
+      "type": "Postgres::Table",
+      "name": "public.evaluation_runs",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.evaluation_runs IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "identityProviders",
+      "type": "Postgres::Table",
+      "name": "public.identity_providers",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.identity_providers (\n      id serial,\n      name character varying NOT NULL,\n      provider_type character varying NOT NULL,\n      issuer_url character varying NOT NULL,\n      client_id character varying NOT NULL,\n      client_secret_arn character varying,\n      client_type character varying,\n      scopes character varying,\n      audience character varying,\n      group_claim_path character varying,\n      group_mappings text,\n      status character varying NOT NULL,\n      jwks_uri character varying,\n      authorization_endpoint character varying,\n      token_endpoint character varying,\n      discovery_scopes text,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT identity_providers_pkey PRIMARY KEY (id),\n      CONSTRAINT identity_providers_name_key UNIQUE (name)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "identityProviders",
+      "type": "Postgres::Table",
+      "name": "public.identity_providers",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.identity_providers IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "invocationSessions",
+      "type": "Postgres::Table",
+      "name": "public.invocation_sessions",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.invocation_sessions (\n      agent_id integer NOT NULL,\n      session_id character varying,\n      qualifier character varying NOT NULL,\n      status character varying NOT NULL,\n      created_at timestamp without time zone NOT NULL,\n      user_id character varying,\n      hidden_at timestamp without time zone,\n      CONSTRAINT invocation_sessions_pkey PRIMARY KEY (session_id),\n      CONSTRAINT invocation_sessions_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "invocationSessions",
+      "type": "Postgres::Table",
+      "name": "public.invocation_sessions",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.invocation_sessions IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "invocations",
+      "type": "Postgres::Table",
+      "name": "public.invocations",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.invocations (\n      id serial,\n      session_id character varying NOT NULL,\n      invocation_id character varying NOT NULL,\n      request_id character varying,\n      client_invoke_time double precision,\n      client_done_time double precision,\n      agent_start_time double precision,\n      cold_start_latency_ms double precision,\n      client_duration_ms double precision,\n      input_tokens integer,\n      output_tokens integer,\n      estimated_cost double precision,\n      compute_cost double precision,\n      compute_cpu_cost double precision,\n      compute_memory_cost double precision,\n      idle_timeout_cost double precision,\n      idle_cpu_cost double precision,\n      idle_memory_cost double precision,\n      memory_retrievals integer,\n      memory_events_sent integer,\n      memory_estimated_cost double precision,\n      stm_cost double precision,\n      ltm_cost double precision,\n      cost_source character varying,\n      status character varying NOT NULL,\n      error_message text,\n      prompt_text text,\n      thinking_text text,\n      response_text text,\n      created_at timestamp without time zone NOT NULL,\n      CONSTRAINT invocations_pkey PRIMARY KEY (id),\n      CONSTRAINT invocations_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.invocation_sessions(session_id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "invocations",
+      "type": "Postgres::Table",
+      "name": "public.invocations",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.invocations IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentConfigEntriesAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_agent_config_entries_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_agent_config_entries_agent_id ON public.agent_config_entries USING btree (agent_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentConfigEntriesAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_agent_config_entries_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_agent_config_entries_agent_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentIntegrationsAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_agent_integrations_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_agent_integrations_agent_id ON public.agent_integrations USING btree (agent_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentIntegrationsAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_agent_integrations_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_agent_integrations_agent_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentsArn",
+      "type": "Postgres::Index",
+      "name": "public.ix_agents_arn",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE UNIQUE INDEX ix_agents_arn ON public.agents USING btree (arn)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentsArn",
+      "type": "Postgres::Index",
+      "name": "public.ix_agents_arn",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_agents_arn IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentsRuntimeId",
+      "type": "Postgres::Index",
+      "name": "public.ix_agents_runtime_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_agents_runtime_id ON public.agents USING btree (runtime_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixAgentsRuntimeId",
+      "type": "Postgres::Index",
+      "name": "public.ix_agents_runtime_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_agents_runtime_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixApprovalLogsAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_approval_logs_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_approval_logs_agent_id ON public.approval_logs USING btree (agent_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixApprovalLogsAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_approval_logs_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_approval_logs_agent_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixApprovalLogsRequestId",
+      "type": "Postgres::Index",
+      "name": "public.ix_approval_logs_request_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_approval_logs_request_id ON public.approval_logs USING btree (request_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixApprovalLogsRequestId",
+      "type": "Postgres::Index",
+      "name": "public.ix_approval_logs_request_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_approval_logs_request_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixApprovalLogsSessionId",
+      "type": "Postgres::Index",
+      "name": "public.ix_approval_logs_session_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_approval_logs_session_id ON public.approval_logs USING btree (session_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixApprovalLogsSessionId",
+      "type": "Postgres::Index",
+      "name": "public.ix_approval_logs_session_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_approval_logs_session_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixCredentialProvidersAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_credential_providers_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_credential_providers_agent_id ON public.credential_providers USING btree (agent_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixCredentialProvidersAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_credential_providers_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_credential_providers_agent_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixEvaluationRunsCreatedAt",
+      "type": "Postgres::Index",
+      "name": "public.ix_evaluation_runs_created_at",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_evaluation_runs_created_at ON public.evaluation_runs USING btree (created_at)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixEvaluationRunsCreatedAt",
+      "type": "Postgres::Index",
+      "name": "public.ix_evaluation_runs_created_at",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_evaluation_runs_created_at IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixEvaluationRunsTestCaseId",
+      "type": "Postgres::Index",
+      "name": "public.ix_evaluation_runs_test_case_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_evaluation_runs_test_case_id ON public.evaluation_runs USING btree (test_case_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixEvaluationRunsTestCaseId",
+      "type": "Postgres::Index",
+      "name": "public.ix_evaluation_runs_test_case_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_evaluation_runs_test_case_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixEvaluationTestCasesAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_evaluation_test_cases_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_evaluation_test_cases_agent_id ON public.evaluation_test_cases USING btree (agent_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixEvaluationTestCasesAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_evaluation_test_cases_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_evaluation_test_cases_agent_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationSessionsAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocation_sessions_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_invocation_sessions_agent_id ON public.invocation_sessions USING btree (agent_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationSessionsAgentId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocation_sessions_agent_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_invocation_sessions_agent_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationSessionsCreatedAt",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocation_sessions_created_at",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_invocation_sessions_created_at ON public.invocation_sessions USING btree (created_at)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationSessionsCreatedAt",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocation_sessions_created_at",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_invocation_sessions_created_at IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationSessionsUserId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocation_sessions_user_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_invocation_sessions_user_id ON public.invocation_sessions USING btree (user_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationSessionsUserId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocation_sessions_user_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_invocation_sessions_user_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationsCreatedAt",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocations_created_at",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_invocations_created_at ON public.invocations USING btree (created_at)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationsCreatedAt",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocations_created_at",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_invocations_created_at IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationsInvocationId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocations_invocation_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE UNIQUE INDEX ix_invocations_invocation_id ON public.invocations USING btree (invocation_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationsInvocationId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocations_invocation_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_invocations_invocation_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationsSessionId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocations_session_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE INDEX ix_invocations_session_id ON public.invocations USING btree (session_id)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixInvocationsSessionId",
+      "type": "Postgres::Index",
+      "name": "public.ix_invocations_session_id",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_invocations_session_id IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "siteSettings",
+      "type": "Postgres::Table",
+      "name": "public.site_settings",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.site_settings (\n      id serial,\n      key character varying NOT NULL,\n      value character varying NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT site_settings_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "siteSettings",
+      "type": "Postgres::Table",
+      "name": "public.site_settings",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.site_settings IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixSiteSettingsKey",
+      "type": "Postgres::Index",
+      "name": "public.ix_site_settings_key",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE UNIQUE INDEX ix_site_settings_key ON public.site_settings USING btree (key)",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "ixSiteSettingsKey",
+      "type": "Postgres::Index",
+      "name": "public.ix_site_settings_key",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON INDEX public.ix_site_settings_key IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "managedRoles",
+      "type": "Postgres::Table",
+      "name": "public.managed_roles",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.managed_roles (\n      id serial,\n      role_name character varying NOT NULL,\n      role_arn character varying NOT NULL,\n      role_type character varying NOT NULL,\n      description text,\n      policy_document text,\n      tags text,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT managed_roles_pkey PRIMARY KEY (id),\n      CONSTRAINT managed_roles_role_arn_key UNIQUE (role_arn)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "managedRoles",
+      "type": "Postgres::Table",
+      "name": "public.managed_roles",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.managed_roles IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "mcpServers",
+      "type": "Postgres::Table",
+      "name": "public.mcp_servers",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.mcp_servers (\n      id serial,\n      name character varying NOT NULL,\n      description text,\n      endpoint_url character varying NOT NULL,\n      transport_type character varying NOT NULL,\n      status character varying NOT NULL,\n      auth_type character varying NOT NULL,\n      oauth2_well_known_url character varying,\n      oauth2_client_id character varying,\n      oauth2_client_secret character varying,\n      has_oauth2_secret character varying,\n      oauth2_scopes character varying,\n      delegation_mode character varying NOT NULL,\n      obo_grant_type character varying,\n      oauth2_audience character varying,\n      api_key_header_name character varying,\n      has_admin_api_key character varying,\n      supports_elicitation character varying,\n      runtime_endpoint_url character varying,\n      registry_record_id character varying,\n      registry_status character varying,\n      tags text,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT mcp_servers_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "mcpServers",
+      "type": "Postgres::Table",
+      "name": "public.mcp_servers",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.mcp_servers IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "mcpServerAccess",
+      "type": "Postgres::Table",
+      "name": "public.mcp_server_access",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.mcp_server_access (\n      id serial,\n      server_id integer NOT NULL,\n      persona_id integer NOT NULL,\n      access_level character varying NOT NULL,\n      allowed_tool_names text,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT mcp_server_access_pkey PRIMARY KEY (id),\n      CONSTRAINT mcp_server_access_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.mcp_servers(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "mcpServerAccess",
+      "type": "Postgres::Table",
+      "name": "public.mcp_server_access",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.mcp_server_access IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "mcpTools",
+      "type": "Postgres::Table",
+      "name": "public.mcp_tools",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.mcp_tools (\n      id serial,\n      server_id integer NOT NULL,\n      tool_name character varying NOT NULL,\n      description text,\n      input_schema text,\n      last_refreshed_at timestamp without time zone NOT NULL,\n      CONSTRAINT mcp_tools_pkey PRIMARY KEY (id),\n      CONSTRAINT mcp_tools_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.mcp_servers(id) ON DELETE CASCADE\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "mcpTools",
+      "type": "Postgres::Table",
+      "name": "public.mcp_tools",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.mcp_tools IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "memories",
+      "type": "Postgres::Table",
+      "name": "public.memories",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.memories (\n      id serial,\n      name character varying NOT NULL,\n      description character varying,\n      arn character varying,\n      memory_id character varying,\n      region character varying NOT NULL,\n      account_id character varying NOT NULL,\n      status character varying NOT NULL,\n      event_expiry_duration integer NOT NULL,\n      memory_execution_role_arn character varying,\n      encryption_key_arn character varying,\n      strategies_config text,\n      strategies_response text,\n      tags text,\n      failure_reason character varying,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT memories_pkey PRIMARY KEY (id)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "memories",
+      "type": "Postgres::Table",
+      "name": "public.memories",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.memories IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "tagPolicies",
+      "type": "Postgres::Table",
+      "name": "public.tag_policies",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.tag_policies (\n      id serial,\n      key character varying NOT NULL,\n      default_value character varying,\n      source character varying,\n      required boolean NOT NULL,\n      show_on_card boolean NOT NULL,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT tag_policies_pkey PRIMARY KEY (id),\n      CONSTRAINT tag_policies_key_key UNIQUE (key)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "tagPolicies",
+      "type": "Postgres::Table",
+      "name": "public.tag_policies",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.tag_policies IS '[chant managed-by=chant]'",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "tagProfiles",
+      "type": "Postgres::Table",
+      "name": "public.tag_profiles",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "CREATE TABLE public.tag_profiles (\n      id serial,\n      name character varying NOT NULL,\n      tags text NOT NULL,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT tag_profiles_pkey PRIMARY KEY (id),\n      CONSTRAINT tag_profiles_name_key UNIQUE (name)\n  )",
+      "transactional": true
+    },
+    {
+      "kind": "statement",
+      "object": "tagProfiles",
+      "type": "Postgres::Table",
+      "name": "public.tag_profiles",
+      "class": "create",
+      "rule": "SQLPG200",
+      "sql": "COMMENT ON TABLE public.tag_profiles IS '[chant managed-by=chant]'",
+      "transactional": true
+    }
+  ],
+  "schema": {
+    "applyOrder": [
+      "a2aAgents",
+      "a2aAgentAccess",
+      "a2aAgentSkills",
+      "vpcConfigs",
+      "agents",
+      "agentConfigEntries",
+      "credentialProviders",
+      "agentIntegrations",
+      "approvalLogs",
+      "approvalPolicies",
+      "auditAction",
+      "auditLogin",
+      "auditPageView",
+      "authorizerConfigs",
+      "authorizerCredentials",
+      "evaluationTestCases",
+      "evaluationRuns",
+      "identityProviders",
+      "invocationSessions",
+      "invocations",
+      "ixAgentConfigEntriesAgentId",
+      "ixAgentIntegrationsAgentId",
+      "ixAgentsArn",
+      "ixAgentsRuntimeId",
+      "ixApprovalLogsAgentId",
+      "ixApprovalLogsRequestId",
+      "ixApprovalLogsSessionId",
+      "ixCredentialProvidersAgentId",
+      "ixEvaluationRunsCreatedAt",
+      "ixEvaluationRunsTestCaseId",
+      "ixEvaluationTestCasesAgentId",
+      "ixInvocationSessionsAgentId",
+      "ixInvocationSessionsCreatedAt",
+      "ixInvocationSessionsUserId",
+      "ixInvocationsCreatedAt",
+      "ixInvocationsInvocationId",
+      "ixInvocationsSessionId",
+      "siteSettings",
+      "ixSiteSettingsKey",
+      "managedRoles",
+      "mcpServers",
+      "mcpServerAccess",
+      "mcpTools",
+      "memories",
+      "tagPolicies",
+      "tagProfiles"
+    ],
+    "dialect": "postgres",
+    "objects": [
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "base_url",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "description",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "agent_version",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "documentation_url",
+            "type": "character varying"
+          },
+          {
+            "name": "provider_organization",
+            "type": "character varying"
+          },
+          {
+            "name": "provider_url",
+            "type": "character varying"
+          },
+          {
+            "name": "capabilities",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "authentication_schemes",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "default_input_modes",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "default_output_modes",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "agent_card_raw",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "auth_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_well_known_url",
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_client_id",
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_client_secret",
+            "type": "character varying"
+          },
+          {
+            "name": "has_oauth2_secret",
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_scopes",
+            "type": "character varying"
+          },
+          {
+            "name": "delegation_mode",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "obo_grant_type",
+            "type": "character varying"
+          },
+          {
+            "name": "agentcore_session_id",
+            "type": "character varying"
+          },
+          {
+            "name": "registry_record_id",
+            "type": "character varying"
+          },
+          {
+            "name": "registry_status",
+            "type": "character varying"
+          },
+          {
+            "name": "resource_tags",
+            "type": "text"
+          },
+          {
+            "name": "last_fetched_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.a2a_agents (\n      id serial,\n      base_url character varying NOT NULL,\n      name character varying NOT NULL,\n      description text NOT NULL,\n      agent_version character varying NOT NULL,\n      documentation_url character varying,\n      provider_organization character varying,\n      provider_url character varying,\n      capabilities text NOT NULL,\n      authentication_schemes text NOT NULL,\n      default_input_modes text NOT NULL,\n      default_output_modes text NOT NULL,\n      agent_card_raw text NOT NULL,\n      status character varying NOT NULL,\n      auth_type character varying NOT NULL,\n      oauth2_well_known_url character varying,\n      oauth2_client_id character varying,\n      oauth2_client_secret character varying,\n      has_oauth2_secret character varying,\n      oauth2_scopes character varying,\n      delegation_mode character varying NOT NULL,\n      obo_grant_type character varying,\n      agentcore_session_id character varying,\n      registry_record_id character varying,\n      registry_status character varying,\n      resource_tags text,\n      last_fetched_at timestamp without time zone,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT a2a_agents_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "a2aAgents",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "a2a_agents",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "a2a_agents_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.a2a_agents",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "agent_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "persona_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "access_level",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "allowed_skill_ids",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.a2a_agent_access (\n      id serial,\n      agent_id integer NOT NULL,\n      persona_id integer NOT NULL,\n      access_level character varying NOT NULL,\n      allowed_skill_ids text,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT a2a_agent_access_pkey PRIMARY KEY (id),\n      CONSTRAINT a2a_agent_access_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.a2a_agents(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "a2aAgents"
+        ],
+        "exclusions": [],
+        "export": "a2aAgentAccess",
+        "foreignKeys": [
+          {
+            "columns": [
+              "agent_id"
+            ],
+            "name": "a2a_agent_access_agent_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.a2a_agents",
+            "references": "a2aAgents"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "a2a_agent_access",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "a2a_agent_access_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.a2a_agent_access",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "agent_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "skill_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "description",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "tags",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "examples",
+            "type": "text"
+          },
+          {
+            "name": "input_modes",
+            "type": "text"
+          },
+          {
+            "name": "output_modes",
+            "type": "text"
+          },
+          {
+            "name": "last_refreshed_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.a2a_agent_skills (\n      id serial,\n      agent_id integer NOT NULL,\n      skill_id character varying NOT NULL,\n      name character varying NOT NULL,\n      description text NOT NULL,\n      tags text NOT NULL,\n      examples text,\n      input_modes text,\n      output_modes text,\n      last_refreshed_at timestamp without time zone NOT NULL,\n      CONSTRAINT a2a_agent_skills_pkey PRIMARY KEY (id),\n      CONSTRAINT a2a_agent_skills_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.a2a_agents(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "a2aAgents"
+        ],
+        "exclusions": [],
+        "export": "a2aAgentSkills",
+        "foreignKeys": [
+          {
+            "columns": [
+              "agent_id"
+            ],
+            "name": "a2a_agent_skills_agent_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.a2a_agents",
+            "references": "a2aAgents"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "a2a_agent_skills",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "a2a_agent_skills_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.a2a_agent_skills",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "description",
+            "type": "text"
+          },
+          {
+            "name": "vpc_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "subnet_ids",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "sg_ids",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.vpc_configs (\n      id serial,\n      name character varying NOT NULL,\n      description text,\n      vpc_id character varying NOT NULL,\n      subnet_ids text NOT NULL,\n      sg_ids text NOT NULL,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT vpc_configs_pkey PRIMARY KEY (id),\n      CONSTRAINT vpc_configs_name_key UNIQUE (name)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "vpcConfigs",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "vpc_configs",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "vpc_configs_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.vpc_configs",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "name"
+            ],
+            "name": "vpc_configs_name_key"
+          }
+        ]
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "arn",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "runtime_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "name",
+            "type": "character varying"
+          },
+          {
+            "name": "status",
+            "type": "character varying"
+          },
+          {
+            "name": "region",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "account_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "log_group",
+            "type": "character varying"
+          },
+          {
+            "name": "available_qualifiers",
+            "type": "text"
+          },
+          {
+            "name": "raw_metadata",
+            "type": "text"
+          },
+          {
+            "name": "source",
+            "type": "character varying"
+          },
+          {
+            "name": "deployment_status",
+            "type": "character varying"
+          },
+          {
+            "name": "execution_role_arn",
+            "type": "character varying"
+          },
+          {
+            "name": "config_hash",
+            "type": "character varying"
+          },
+          {
+            "name": "endpoint_name",
+            "type": "character varying"
+          },
+          {
+            "name": "endpoint_arn",
+            "type": "character varying"
+          },
+          {
+            "name": "endpoint_status",
+            "type": "character varying"
+          },
+          {
+            "name": "protocol",
+            "type": "character varying"
+          },
+          {
+            "name": "network_mode",
+            "type": "character varying"
+          },
+          {
+            "name": "agent_framework",
+            "type": "character varying"
+          },
+          {
+            "name": "authorizer_config",
+            "type": "text"
+          },
+          {
+            "name": "description",
+            "type": "text"
+          },
+          {
+            "name": "tags",
+            "type": "text"
+          },
+          {
+            "name": "deployed_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "registered_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "last_refreshed_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "registry_record_id",
+            "type": "character varying"
+          },
+          {
+            "name": "registry_status",
+            "type": "character varying"
+          },
+          {
+            "name": "allowed_model_ids",
+            "type": "text"
+          },
+          {
+            "name": "harness_id",
+            "type": "character varying"
+          },
+          {
+            "name": "code_interpreter_id",
+            "type": "character varying"
+          },
+          {
+            "name": "vpc_subnet_ids",
+            "type": "text"
+          },
+          {
+            "name": "vpc_security_group_ids",
+            "type": "text"
+          },
+          {
+            "name": "vpc_config_id",
+            "type": "integer"
+          },
+          {
+            "name": "status_reason",
+            "type": "character varying"
+          },
+          {
+            "name": "code_uri",
+            "type": "character varying"
+          }
+        ],
+        "ddl": "CREATE TABLE public.agents (\n      id serial,\n      arn character varying NOT NULL,\n      runtime_id character varying NOT NULL,\n      name character varying,\n      status character varying,\n      region character varying NOT NULL,\n      account_id character varying NOT NULL,\n      log_group character varying,\n      available_qualifiers text,\n      raw_metadata text,\n      source character varying,\n      deployment_status character varying,\n      execution_role_arn character varying,\n      config_hash character varying,\n      endpoint_name character varying,\n      endpoint_arn character varying,\n      endpoint_status character varying,\n      protocol character varying,\n      network_mode character varying,\n      agent_framework character varying,\n      authorizer_config text,\n      description text,\n      tags text,\n      deployed_at timestamp without time zone,\n      registered_at timestamp without time zone NOT NULL,\n      last_refreshed_at timestamp without time zone,\n      registry_record_id character varying,\n      registry_status character varying,\n      allowed_model_ids text,\n      harness_id character varying,\n      code_interpreter_id character varying,\n      vpc_subnet_ids text,\n      vpc_security_group_ids text,\n      vpc_config_id integer,\n      status_reason character varying,\n      code_uri character varying,\n      CONSTRAINT agents_pkey PRIMARY KEY (id),\n      CONSTRAINT agents_vpc_config_id_fkey FOREIGN KEY (vpc_config_id) REFERENCES public.vpc_configs(id)\n  )",
+        "dependsOn": [
+          "vpcConfigs"
+        ],
+        "exclusions": [],
+        "export": "agents",
+        "foreignKeys": [
+          {
+            "columns": [
+              "vpc_config_id"
+            ],
+            "name": "agents_vpc_config_id_fkey",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.vpc_configs",
+            "references": "vpcConfigs"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "agents",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "agents_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.agents",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "agent_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "key",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "value",
+            "type": "character varying"
+          },
+          {
+            "name": "is_secret",
+            "notNull": true,
+            "type": "boolean"
+          },
+          {
+            "name": "source",
+            "type": "character varying"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.agent_config_entries (\n      id serial,\n      agent_id integer NOT NULL,\n      key character varying NOT NULL,\n      value character varying,\n      is_secret boolean NOT NULL,\n      source character varying,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT agent_config_entries_pkey PRIMARY KEY (id),\n      CONSTRAINT uq_config_agent_key UNIQUE (agent_id, key),\n      CONSTRAINT agent_config_entries_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "agents"
+        ],
+        "exclusions": [],
+        "export": "agentConfigEntries",
+        "foreignKeys": [
+          {
+            "columns": [
+              "agent_id"
+            ],
+            "name": "agent_config_entries_agent_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.agents",
+            "references": "agents"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "agent_config_entries",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "agent_config_entries_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.agent_config_entries",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "agent_id",
+              "key"
+            ],
+            "name": "uq_config_agent_key"
+          }
+        ]
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "agent_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "vendor",
+            "type": "character varying"
+          },
+          {
+            "name": "callback_url",
+            "type": "character varying"
+          },
+          {
+            "name": "scopes",
+            "type": "character varying"
+          },
+          {
+            "name": "provider_type",
+            "type": "character varying"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.credential_providers (\n      id serial,\n      agent_id integer NOT NULL,\n      name character varying NOT NULL,\n      vendor character varying,\n      callback_url character varying,\n      scopes character varying,\n      provider_type character varying,\n      created_at timestamp without time zone NOT NULL,\n      CONSTRAINT credential_providers_pkey PRIMARY KEY (id),\n      CONSTRAINT credential_providers_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "agents"
+        ],
+        "exclusions": [],
+        "export": "credentialProviders",
+        "foreignKeys": [
+          {
+            "columns": [
+              "agent_id"
+            ],
+            "name": "credential_providers_agent_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.agents",
+            "references": "agents"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "credential_providers",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "credential_providers_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.credential_providers",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "agent_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "integration_type",
+            "type": "character varying"
+          },
+          {
+            "name": "integration_config",
+            "type": "character varying"
+          },
+          {
+            "name": "credential_provider_id",
+            "type": "integer"
+          },
+          {
+            "name": "enabled",
+            "notNull": true,
+            "type": "boolean"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.agent_integrations (\n      id serial,\n      agent_id integer NOT NULL,\n      integration_type character varying,\n      integration_config character varying,\n      credential_provider_id integer,\n      enabled boolean NOT NULL,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT agent_integrations_pkey PRIMARY KEY (id),\n      CONSTRAINT agent_integrations_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE,\n      CONSTRAINT agent_integrations_credential_provider_id_fkey FOREIGN KEY (credential_provider_id) REFERENCES public.credential_providers(id) ON DELETE SET NULL\n  )",
+        "dependsOn": [
+          "agents",
+          "credentialProviders"
+        ],
+        "exclusions": [],
+        "export": "agentIntegrations",
+        "foreignKeys": [
+          {
+            "columns": [
+              "agent_id"
+            ],
+            "name": "agent_integrations_agent_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.agents",
+            "references": "agents"
+          },
+          {
+            "columns": [
+              "credential_provider_id"
+            ],
+            "name": "agent_integrations_credential_provider_id_fkey",
+            "onDelete": "SET NULL",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.credential_providers",
+            "references": "credentialProviders"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "agent_integrations",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "agent_integrations_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.agent_integrations",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "request_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "session_id",
+            "type": "character varying"
+          },
+          {
+            "name": "agent_id",
+            "type": "integer"
+          },
+          {
+            "name": "tool_name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "tool_input_summary",
+            "type": "text"
+          },
+          {
+            "name": "policy_name",
+            "type": "character varying"
+          },
+          {
+            "name": "pattern_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "default": "now()",
+            "name": "requested_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "decided_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "decided_by",
+            "type": "character varying"
+          },
+          {
+            "name": "reason",
+            "type": "text"
+          }
+        ],
+        "ddl": "CREATE TABLE public.approval_logs (\n      id serial,\n      request_id character varying NOT NULL,\n      session_id character varying,\n      agent_id integer,\n      tool_name character varying NOT NULL,\n      tool_input_summary text,\n      policy_name character varying,\n      pattern_type character varying NOT NULL,\n      status character varying NOT NULL,\n      requested_at timestamp without time zone DEFAULT now(),\n      decided_at timestamp without time zone,\n      decided_by character varying,\n      reason text,\n      CONSTRAINT approval_logs_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "approvalLogs",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "approval_logs",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "approval_logs_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.approval_logs",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "policy_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "tool_match_rules",
+            "type": "text"
+          },
+          {
+            "name": "approval_mode",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "timeout_seconds",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "agent_scope",
+            "type": "text"
+          },
+          {
+            "name": "approval_cache_ttl",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "enabled",
+            "notNull": true,
+            "type": "boolean"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.approval_policies (\n      id serial,\n      name character varying NOT NULL,\n      policy_type character varying NOT NULL,\n      tool_match_rules text,\n      approval_mode character varying NOT NULL,\n      timeout_seconds integer NOT NULL,\n      agent_scope text,\n      approval_cache_ttl integer NOT NULL,\n      enabled boolean NOT NULL,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT approval_policies_pkey PRIMARY KEY (id),\n      CONSTRAINT approval_policies_name_key UNIQUE (name)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "approvalPolicies",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "approval_policies",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "approval_policies_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.approval_policies",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "name"
+            ],
+            "name": "approval_policies_name_key"
+          }
+        ]
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "user_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "browser_session_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "action_category",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "action_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "resource_name",
+            "type": "character varying"
+          },
+          {
+            "default": "now()",
+            "name": "performed_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.audit_action (\n      id serial,\n      user_id character varying NOT NULL,\n      browser_session_id character varying NOT NULL,\n      action_category character varying NOT NULL,\n      action_type character varying NOT NULL,\n      resource_name character varying,\n      performed_at timestamp without time zone DEFAULT now() NOT NULL,\n      CONSTRAINT audit_action_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "auditAction",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "audit_action",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "audit_action_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.audit_action",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "user_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "browser_session_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "default": "now()",
+            "name": "logged_in_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.audit_login (\n      id serial,\n      user_id character varying NOT NULL,\n      browser_session_id character varying NOT NULL,\n      logged_in_at timestamp without time zone DEFAULT now() NOT NULL,\n      CONSTRAINT audit_login_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "auditLogin",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "audit_login",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "audit_login_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.audit_login",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "user_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "browser_session_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "page_name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "entered_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "duration_seconds",
+            "type": "integer"
+          }
+        ],
+        "ddl": "CREATE TABLE public.audit_page_view (\n      id serial,\n      user_id character varying NOT NULL,\n      browser_session_id character varying NOT NULL,\n      page_name character varying NOT NULL,\n      entered_at timestamp without time zone NOT NULL,\n      duration_seconds integer,\n      CONSTRAINT audit_page_view_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "auditPageView",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "audit_page_view",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "audit_page_view_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.audit_page_view",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "authorizer_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "pool_id",
+            "type": "character varying"
+          },
+          {
+            "name": "discovery_url",
+            "type": "character varying"
+          },
+          {
+            "name": "allowed_audience",
+            "type": "text"
+          },
+          {
+            "name": "allowed_clients",
+            "type": "text"
+          },
+          {
+            "name": "allowed_scopes",
+            "type": "text"
+          },
+          {
+            "name": "client_id",
+            "type": "character varying"
+          },
+          {
+            "name": "client_secret_arn",
+            "type": "character varying"
+          },
+          {
+            "name": "user_client_id",
+            "type": "character varying"
+          },
+          {
+            "name": "user_client_secret_arn",
+            "type": "character varying"
+          },
+          {
+            "name": "user_redirect_uri",
+            "type": "character varying"
+          },
+          {
+            "name": "tags",
+            "type": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.authorizer_configs (\n      id serial,\n      name character varying NOT NULL,\n      authorizer_type character varying NOT NULL,\n      pool_id character varying,\n      discovery_url character varying,\n      allowed_audience text,\n      allowed_clients text,\n      allowed_scopes text,\n      client_id character varying,\n      client_secret_arn character varying,\n      user_client_id character varying,\n      user_client_secret_arn character varying,\n      user_redirect_uri character varying,\n      tags text,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT authorizer_configs_pkey PRIMARY KEY (id),\n      CONSTRAINT authorizer_configs_name_key UNIQUE (name)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "authorizerConfigs",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "authorizer_configs",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "authorizer_configs_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.authorizer_configs",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "name"
+            ],
+            "name": "authorizer_configs_name_key"
+          }
+        ]
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "authorizer_config_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "label",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "client_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "client_secret_arn",
+            "type": "character varying"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.authorizer_credentials (\n      id serial,\n      authorizer_config_id integer NOT NULL,\n      label character varying NOT NULL,\n      client_id character varying NOT NULL,\n      client_secret_arn character varying,\n      created_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT authorizer_credentials_pkey PRIMARY KEY (id),\n      CONSTRAINT authorizer_credentials_authorizer_config_id_fkey FOREIGN KEY (authorizer_config_id) REFERENCES public.authorizer_configs(id)\n  )",
+        "dependsOn": [
+          "authorizerConfigs"
+        ],
+        "exclusions": [],
+        "export": "authorizerCredentials",
+        "foreignKeys": [
+          {
+            "columns": [
+              "authorizer_config_id"
+            ],
+            "name": "authorizer_credentials_authorizer_config_id_fkey",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.authorizer_configs",
+            "references": "authorizerConfigs"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "authorizer_credentials",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "authorizer_credentials_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.authorizer_credentials",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "agent_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "prompt",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "expected_response",
+            "type": "text"
+          },
+          {
+            "name": "evaluator_ids",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "pass_threshold",
+            "notNull": true,
+            "type": "double precision"
+          },
+          {
+            "name": "model_id",
+            "type": "character varying"
+          },
+          {
+            "name": "last_batch_evaluation_id",
+            "type": "character varying"
+          },
+          {
+            "name": "last_run_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.evaluation_test_cases (\n      id serial,\n      agent_id integer NOT NULL,\n      name character varying NOT NULL,\n      prompt text NOT NULL,\n      expected_response text,\n      evaluator_ids text NOT NULL,\n      pass_threshold double precision NOT NULL,\n      model_id character varying,\n      last_batch_evaluation_id character varying,\n      last_run_at timestamp without time zone,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT evaluation_test_cases_pkey PRIMARY KEY (id),\n      CONSTRAINT evaluation_test_cases_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "agents"
+        ],
+        "exclusions": [],
+        "export": "evaluationTestCases",
+        "foreignKeys": [
+          {
+            "columns": [
+              "agent_id"
+            ],
+            "name": "evaluation_test_cases_agent_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.agents",
+            "references": "agents"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "evaluation_test_cases",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "evaluation_test_cases_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.evaluation_test_cases",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "test_case_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "session_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "results_json",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "errors_json",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.evaluation_runs (\n      id serial,\n      test_case_id integer NOT NULL,\n      session_id character varying NOT NULL,\n      status character varying NOT NULL,\n      results_json text NOT NULL,\n      errors_json text NOT NULL,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT evaluation_runs_pkey PRIMARY KEY (id),\n      CONSTRAINT evaluation_runs_test_case_id_fkey FOREIGN KEY (test_case_id) REFERENCES public.evaluation_test_cases(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "evaluationTestCases"
+        ],
+        "exclusions": [],
+        "export": "evaluationRuns",
+        "foreignKeys": [
+          {
+            "columns": [
+              "test_case_id"
+            ],
+            "name": "evaluation_runs_test_case_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.evaluation_test_cases",
+            "references": "evaluationTestCases"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "evaluation_runs",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "evaluation_runs_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.evaluation_runs",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "provider_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "issuer_url",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "client_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "client_secret_arn",
+            "type": "character varying"
+          },
+          {
+            "name": "client_type",
+            "type": "character varying"
+          },
+          {
+            "name": "scopes",
+            "type": "character varying"
+          },
+          {
+            "name": "audience",
+            "type": "character varying"
+          },
+          {
+            "name": "group_claim_path",
+            "type": "character varying"
+          },
+          {
+            "name": "group_mappings",
+            "type": "text"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "jwks_uri",
+            "type": "character varying"
+          },
+          {
+            "name": "authorization_endpoint",
+            "type": "character varying"
+          },
+          {
+            "name": "token_endpoint",
+            "type": "character varying"
+          },
+          {
+            "name": "discovery_scopes",
+            "type": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.identity_providers (\n      id serial,\n      name character varying NOT NULL,\n      provider_type character varying NOT NULL,\n      issuer_url character varying NOT NULL,\n      client_id character varying NOT NULL,\n      client_secret_arn character varying,\n      client_type character varying,\n      scopes character varying,\n      audience character varying,\n      group_claim_path character varying,\n      group_mappings text,\n      status character varying NOT NULL,\n      jwks_uri character varying,\n      authorization_endpoint character varying,\n      token_endpoint character varying,\n      discovery_scopes text,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT identity_providers_pkey PRIMARY KEY (id),\n      CONSTRAINT identity_providers_name_key UNIQUE (name)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "identityProviders",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "identity_providers",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "identity_providers_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.identity_providers",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "name"
+            ],
+            "name": "identity_providers_name_key"
+          }
+        ]
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "agent_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "session_id",
+            "type": "character varying"
+          },
+          {
+            "name": "qualifier",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "user_id",
+            "type": "character varying"
+          },
+          {
+            "name": "hidden_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.invocation_sessions (\n      agent_id integer NOT NULL,\n      session_id character varying,\n      qualifier character varying NOT NULL,\n      status character varying NOT NULL,\n      created_at timestamp without time zone NOT NULL,\n      user_id character varying,\n      hidden_at timestamp without time zone,\n      CONSTRAINT invocation_sessions_pkey PRIMARY KEY (session_id),\n      CONSTRAINT invocation_sessions_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.agents(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "agents"
+        ],
+        "exclusions": [],
+        "export": "invocationSessions",
+        "foreignKeys": [
+          {
+            "columns": [
+              "agent_id"
+            ],
+            "name": "invocation_sessions_agent_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.agents",
+            "references": "agents"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "invocation_sessions",
+        "primaryKey": {
+          "columns": [
+            "session_id"
+          ],
+          "name": "invocation_sessions_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.invocation_sessions",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "session_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "invocation_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "request_id",
+            "type": "character varying"
+          },
+          {
+            "name": "client_invoke_time",
+            "type": "double precision"
+          },
+          {
+            "name": "client_done_time",
+            "type": "double precision"
+          },
+          {
+            "name": "agent_start_time",
+            "type": "double precision"
+          },
+          {
+            "name": "cold_start_latency_ms",
+            "type": "double precision"
+          },
+          {
+            "name": "client_duration_ms",
+            "type": "double precision"
+          },
+          {
+            "name": "input_tokens",
+            "type": "integer"
+          },
+          {
+            "name": "output_tokens",
+            "type": "integer"
+          },
+          {
+            "name": "estimated_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "compute_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "compute_cpu_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "compute_memory_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "idle_timeout_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "idle_cpu_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "idle_memory_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "memory_retrievals",
+            "type": "integer"
+          },
+          {
+            "name": "memory_events_sent",
+            "type": "integer"
+          },
+          {
+            "name": "memory_estimated_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "stm_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "ltm_cost",
+            "type": "double precision"
+          },
+          {
+            "name": "cost_source",
+            "type": "character varying"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "error_message",
+            "type": "text"
+          },
+          {
+            "name": "prompt_text",
+            "type": "text"
+          },
+          {
+            "name": "thinking_text",
+            "type": "text"
+          },
+          {
+            "name": "response_text",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.invocations (\n      id serial,\n      session_id character varying NOT NULL,\n      invocation_id character varying NOT NULL,\n      request_id character varying,\n      client_invoke_time double precision,\n      client_done_time double precision,\n      agent_start_time double precision,\n      cold_start_latency_ms double precision,\n      client_duration_ms double precision,\n      input_tokens integer,\n      output_tokens integer,\n      estimated_cost double precision,\n      compute_cost double precision,\n      compute_cpu_cost double precision,\n      compute_memory_cost double precision,\n      idle_timeout_cost double precision,\n      idle_cpu_cost double precision,\n      idle_memory_cost double precision,\n      memory_retrievals integer,\n      memory_events_sent integer,\n      memory_estimated_cost double precision,\n      stm_cost double precision,\n      ltm_cost double precision,\n      cost_source character varying,\n      status character varying NOT NULL,\n      error_message text,\n      prompt_text text,\n      thinking_text text,\n      response_text text,\n      created_at timestamp without time zone NOT NULL,\n      CONSTRAINT invocations_pkey PRIMARY KEY (id),\n      CONSTRAINT invocations_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.invocation_sessions(session_id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "invocationSessions"
+        ],
+        "exclusions": [],
+        "export": "invocations",
+        "foreignKeys": [
+          {
+            "columns": [
+              "session_id"
+            ],
+            "name": "invocations_session_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "session_id"
+            ],
+            "refTable": "public.invocation_sessions",
+            "references": "invocationSessions"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "invocations",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "invocations_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.invocations",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "ddl": "CREATE INDEX ix_agent_config_entries_agent_id ON public.agent_config_entries USING btree (agent_id)",
+        "dependsOn": [
+          "agentConfigEntries"
+        ],
+        "elements": [
+          {
+            "column": "agent_id",
+            "expr": "agent_id"
+          }
+        ],
+        "export": "ixAgentConfigEntriesAgentId",
+        "method": "btree",
+        "name": "ix_agent_config_entries_agent_id",
+        "schema": "public",
+        "sqlName": "public.ix_agent_config_entries_agent_id",
+        "table": "agentConfigEntries",
+        "tableName": "public.agent_config_entries",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_agent_integrations_agent_id ON public.agent_integrations USING btree (agent_id)",
+        "dependsOn": [
+          "agentIntegrations"
+        ],
+        "elements": [
+          {
+            "column": "agent_id",
+            "expr": "agent_id"
+          }
+        ],
+        "export": "ixAgentIntegrationsAgentId",
+        "method": "btree",
+        "name": "ix_agent_integrations_agent_id",
+        "schema": "public",
+        "sqlName": "public.ix_agent_integrations_agent_id",
+        "table": "agentIntegrations",
+        "tableName": "public.agent_integrations",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE UNIQUE INDEX ix_agents_arn ON public.agents USING btree (arn)",
+        "dependsOn": [
+          "agents"
+        ],
+        "elements": [
+          {
+            "column": "arn",
+            "expr": "arn"
+          }
+        ],
+        "export": "ixAgentsArn",
+        "method": "btree",
+        "name": "ix_agents_arn",
+        "schema": "public",
+        "sqlName": "public.ix_agents_arn",
+        "table": "agents",
+        "tableName": "public.agents",
+        "type": "Postgres::Index",
+        "unique": true
+      },
+      {
+        "ddl": "CREATE INDEX ix_agents_runtime_id ON public.agents USING btree (runtime_id)",
+        "dependsOn": [
+          "agents"
+        ],
+        "elements": [
+          {
+            "column": "runtime_id",
+            "expr": "runtime_id"
+          }
+        ],
+        "export": "ixAgentsRuntimeId",
+        "method": "btree",
+        "name": "ix_agents_runtime_id",
+        "schema": "public",
+        "sqlName": "public.ix_agents_runtime_id",
+        "table": "agents",
+        "tableName": "public.agents",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_approval_logs_agent_id ON public.approval_logs USING btree (agent_id)",
+        "dependsOn": [
+          "approvalLogs"
+        ],
+        "elements": [
+          {
+            "column": "agent_id",
+            "expr": "agent_id"
+          }
+        ],
+        "export": "ixApprovalLogsAgentId",
+        "method": "btree",
+        "name": "ix_approval_logs_agent_id",
+        "schema": "public",
+        "sqlName": "public.ix_approval_logs_agent_id",
+        "table": "approvalLogs",
+        "tableName": "public.approval_logs",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_approval_logs_request_id ON public.approval_logs USING btree (request_id)",
+        "dependsOn": [
+          "approvalLogs"
+        ],
+        "elements": [
+          {
+            "column": "request_id",
+            "expr": "request_id"
+          }
+        ],
+        "export": "ixApprovalLogsRequestId",
+        "method": "btree",
+        "name": "ix_approval_logs_request_id",
+        "schema": "public",
+        "sqlName": "public.ix_approval_logs_request_id",
+        "table": "approvalLogs",
+        "tableName": "public.approval_logs",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_approval_logs_session_id ON public.approval_logs USING btree (session_id)",
+        "dependsOn": [
+          "approvalLogs"
+        ],
+        "elements": [
+          {
+            "column": "session_id",
+            "expr": "session_id"
+          }
+        ],
+        "export": "ixApprovalLogsSessionId",
+        "method": "btree",
+        "name": "ix_approval_logs_session_id",
+        "schema": "public",
+        "sqlName": "public.ix_approval_logs_session_id",
+        "table": "approvalLogs",
+        "tableName": "public.approval_logs",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_credential_providers_agent_id ON public.credential_providers USING btree (agent_id)",
+        "dependsOn": [
+          "credentialProviders"
+        ],
+        "elements": [
+          {
+            "column": "agent_id",
+            "expr": "agent_id"
+          }
+        ],
+        "export": "ixCredentialProvidersAgentId",
+        "method": "btree",
+        "name": "ix_credential_providers_agent_id",
+        "schema": "public",
+        "sqlName": "public.ix_credential_providers_agent_id",
+        "table": "credentialProviders",
+        "tableName": "public.credential_providers",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_evaluation_runs_created_at ON public.evaluation_runs USING btree (created_at)",
+        "dependsOn": [
+          "evaluationRuns"
+        ],
+        "elements": [
+          {
+            "column": "created_at",
+            "expr": "created_at"
+          }
+        ],
+        "export": "ixEvaluationRunsCreatedAt",
+        "method": "btree",
+        "name": "ix_evaluation_runs_created_at",
+        "schema": "public",
+        "sqlName": "public.ix_evaluation_runs_created_at",
+        "table": "evaluationRuns",
+        "tableName": "public.evaluation_runs",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_evaluation_runs_test_case_id ON public.evaluation_runs USING btree (test_case_id)",
+        "dependsOn": [
+          "evaluationRuns"
+        ],
+        "elements": [
+          {
+            "column": "test_case_id",
+            "expr": "test_case_id"
+          }
+        ],
+        "export": "ixEvaluationRunsTestCaseId",
+        "method": "btree",
+        "name": "ix_evaluation_runs_test_case_id",
+        "schema": "public",
+        "sqlName": "public.ix_evaluation_runs_test_case_id",
+        "table": "evaluationRuns",
+        "tableName": "public.evaluation_runs",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_evaluation_test_cases_agent_id ON public.evaluation_test_cases USING btree (agent_id)",
+        "dependsOn": [
+          "evaluationTestCases"
+        ],
+        "elements": [
+          {
+            "column": "agent_id",
+            "expr": "agent_id"
+          }
+        ],
+        "export": "ixEvaluationTestCasesAgentId",
+        "method": "btree",
+        "name": "ix_evaluation_test_cases_agent_id",
+        "schema": "public",
+        "sqlName": "public.ix_evaluation_test_cases_agent_id",
+        "table": "evaluationTestCases",
+        "tableName": "public.evaluation_test_cases",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_invocation_sessions_agent_id ON public.invocation_sessions USING btree (agent_id)",
+        "dependsOn": [
+          "invocationSessions"
+        ],
+        "elements": [
+          {
+            "column": "agent_id",
+            "expr": "agent_id"
+          }
+        ],
+        "export": "ixInvocationSessionsAgentId",
+        "method": "btree",
+        "name": "ix_invocation_sessions_agent_id",
+        "schema": "public",
+        "sqlName": "public.ix_invocation_sessions_agent_id",
+        "table": "invocationSessions",
+        "tableName": "public.invocation_sessions",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_invocation_sessions_created_at ON public.invocation_sessions USING btree (created_at)",
+        "dependsOn": [
+          "invocationSessions"
+        ],
+        "elements": [
+          {
+            "column": "created_at",
+            "expr": "created_at"
+          }
+        ],
+        "export": "ixInvocationSessionsCreatedAt",
+        "method": "btree",
+        "name": "ix_invocation_sessions_created_at",
+        "schema": "public",
+        "sqlName": "public.ix_invocation_sessions_created_at",
+        "table": "invocationSessions",
+        "tableName": "public.invocation_sessions",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_invocation_sessions_user_id ON public.invocation_sessions USING btree (user_id)",
+        "dependsOn": [
+          "invocationSessions"
+        ],
+        "elements": [
+          {
+            "column": "user_id",
+            "expr": "user_id"
+          }
+        ],
+        "export": "ixInvocationSessionsUserId",
+        "method": "btree",
+        "name": "ix_invocation_sessions_user_id",
+        "schema": "public",
+        "sqlName": "public.ix_invocation_sessions_user_id",
+        "table": "invocationSessions",
+        "tableName": "public.invocation_sessions",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE INDEX ix_invocations_created_at ON public.invocations USING btree (created_at)",
+        "dependsOn": [
+          "invocations"
+        ],
+        "elements": [
+          {
+            "column": "created_at",
+            "expr": "created_at"
+          }
+        ],
+        "export": "ixInvocationsCreatedAt",
+        "method": "btree",
+        "name": "ix_invocations_created_at",
+        "schema": "public",
+        "sqlName": "public.ix_invocations_created_at",
+        "table": "invocations",
+        "tableName": "public.invocations",
+        "type": "Postgres::Index"
+      },
+      {
+        "ddl": "CREATE UNIQUE INDEX ix_invocations_invocation_id ON public.invocations USING btree (invocation_id)",
+        "dependsOn": [
+          "invocations"
+        ],
+        "elements": [
+          {
+            "column": "invocation_id",
+            "expr": "invocation_id"
+          }
+        ],
+        "export": "ixInvocationsInvocationId",
+        "method": "btree",
+        "name": "ix_invocations_invocation_id",
+        "schema": "public",
+        "sqlName": "public.ix_invocations_invocation_id",
+        "table": "invocations",
+        "tableName": "public.invocations",
+        "type": "Postgres::Index",
+        "unique": true
+      },
+      {
+        "ddl": "CREATE INDEX ix_invocations_session_id ON public.invocations USING btree (session_id)",
+        "dependsOn": [
+          "invocations"
+        ],
+        "elements": [
+          {
+            "column": "session_id",
+            "expr": "session_id"
+          }
+        ],
+        "export": "ixInvocationsSessionId",
+        "method": "btree",
+        "name": "ix_invocations_session_id",
+        "schema": "public",
+        "sqlName": "public.ix_invocations_session_id",
+        "table": "invocations",
+        "tableName": "public.invocations",
+        "type": "Postgres::Index"
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "key",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "value",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.site_settings (\n      id serial,\n      key character varying NOT NULL,\n      value character varying NOT NULL,\n      updated_at timestamp without time zone,\n      CONSTRAINT site_settings_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "siteSettings",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "site_settings",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "site_settings_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.site_settings",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "ddl": "CREATE UNIQUE INDEX ix_site_settings_key ON public.site_settings USING btree (key)",
+        "dependsOn": [
+          "siteSettings"
+        ],
+        "elements": [
+          {
+            "column": "key",
+            "expr": "key"
+          }
+        ],
+        "export": "ixSiteSettingsKey",
+        "method": "btree",
+        "name": "ix_site_settings_key",
+        "schema": "public",
+        "sqlName": "public.ix_site_settings_key",
+        "table": "siteSettings",
+        "tableName": "public.site_settings",
+        "type": "Postgres::Index",
+        "unique": true
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "role_name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "role_arn",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "role_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "description",
+            "type": "text"
+          },
+          {
+            "name": "policy_document",
+            "type": "text"
+          },
+          {
+            "name": "tags",
+            "type": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.managed_roles (\n      id serial,\n      role_name character varying NOT NULL,\n      role_arn character varying NOT NULL,\n      role_type character varying NOT NULL,\n      description text,\n      policy_document text,\n      tags text,\n      created_at timestamp without time zone DEFAULT now(),\n      updated_at timestamp without time zone DEFAULT now(),\n      CONSTRAINT managed_roles_pkey PRIMARY KEY (id),\n      CONSTRAINT managed_roles_role_arn_key UNIQUE (role_arn)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "managedRoles",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "managed_roles",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "managed_roles_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.managed_roles",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "role_arn"
+            ],
+            "name": "managed_roles_role_arn_key"
+          }
+        ]
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "description",
+            "type": "text"
+          },
+          {
+            "name": "endpoint_url",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "transport_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "auth_type",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_well_known_url",
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_client_id",
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_client_secret",
+            "type": "character varying"
+          },
+          {
+            "name": "has_oauth2_secret",
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_scopes",
+            "type": "character varying"
+          },
+          {
+            "name": "delegation_mode",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "obo_grant_type",
+            "type": "character varying"
+          },
+          {
+            "name": "oauth2_audience",
+            "type": "character varying"
+          },
+          {
+            "name": "api_key_header_name",
+            "type": "character varying"
+          },
+          {
+            "name": "has_admin_api_key",
+            "type": "character varying"
+          },
+          {
+            "name": "supports_elicitation",
+            "type": "character varying"
+          },
+          {
+            "name": "runtime_endpoint_url",
+            "type": "character varying"
+          },
+          {
+            "name": "registry_record_id",
+            "type": "character varying"
+          },
+          {
+            "name": "registry_status",
+            "type": "character varying"
+          },
+          {
+            "name": "tags",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.mcp_servers (\n      id serial,\n      name character varying NOT NULL,\n      description text,\n      endpoint_url character varying NOT NULL,\n      transport_type character varying NOT NULL,\n      status character varying NOT NULL,\n      auth_type character varying NOT NULL,\n      oauth2_well_known_url character varying,\n      oauth2_client_id character varying,\n      oauth2_client_secret character varying,\n      has_oauth2_secret character varying,\n      oauth2_scopes character varying,\n      delegation_mode character varying NOT NULL,\n      obo_grant_type character varying,\n      oauth2_audience character varying,\n      api_key_header_name character varying,\n      has_admin_api_key character varying,\n      supports_elicitation character varying,\n      runtime_endpoint_url character varying,\n      registry_record_id character varying,\n      registry_status character varying,\n      tags text,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT mcp_servers_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "mcpServers",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "mcp_servers",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "mcp_servers_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.mcp_servers",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "server_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "persona_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "access_level",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "allowed_tool_names",
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.mcp_server_access (\n      id serial,\n      server_id integer NOT NULL,\n      persona_id integer NOT NULL,\n      access_level character varying NOT NULL,\n      allowed_tool_names text,\n      created_at timestamp without time zone NOT NULL,\n      updated_at timestamp without time zone NOT NULL,\n      CONSTRAINT mcp_server_access_pkey PRIMARY KEY (id),\n      CONSTRAINT mcp_server_access_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.mcp_servers(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "mcpServers"
+        ],
+        "exclusions": [],
+        "export": "mcpServerAccess",
+        "foreignKeys": [
+          {
+            "columns": [
+              "server_id"
+            ],
+            "name": "mcp_server_access_server_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.mcp_servers",
+            "references": "mcpServers"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "mcp_server_access",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "mcp_server_access_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.mcp_server_access",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "server_id",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "tool_name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "description",
+            "type": "text"
+          },
+          {
+            "name": "input_schema",
+            "type": "text"
+          },
+          {
+            "name": "last_refreshed_at",
+            "notNull": true,
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.mcp_tools (\n      id serial,\n      server_id integer NOT NULL,\n      tool_name character varying NOT NULL,\n      description text,\n      input_schema text,\n      last_refreshed_at timestamp without time zone NOT NULL,\n      CONSTRAINT mcp_tools_pkey PRIMARY KEY (id),\n      CONSTRAINT mcp_tools_server_id_fkey FOREIGN KEY (server_id) REFERENCES public.mcp_servers(id) ON DELETE CASCADE\n  )",
+        "dependsOn": [
+          "mcpServers"
+        ],
+        "exclusions": [],
+        "export": "mcpTools",
+        "foreignKeys": [
+          {
+            "columns": [
+              "server_id"
+            ],
+            "name": "mcp_tools_server_id_fkey",
+            "onDelete": "CASCADE",
+            "refColumns": [
+              "id"
+            ],
+            "refTable": "public.mcp_servers",
+            "references": "mcpServers"
+          }
+        ],
+        "inherits": [],
+        "like": [],
+        "name": "mcp_tools",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "mcp_tools_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.mcp_tools",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "description",
+            "type": "character varying"
+          },
+          {
+            "name": "arn",
+            "type": "character varying"
+          },
+          {
+            "name": "memory_id",
+            "type": "character varying"
+          },
+          {
+            "name": "region",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "account_id",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "status",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "event_expiry_duration",
+            "notNull": true,
+            "type": "integer"
+          },
+          {
+            "name": "memory_execution_role_arn",
+            "type": "character varying"
+          },
+          {
+            "name": "encryption_key_arn",
+            "type": "character varying"
+          },
+          {
+            "name": "strategies_config",
+            "type": "text"
+          },
+          {
+            "name": "strategies_response",
+            "type": "text"
+          },
+          {
+            "name": "tags",
+            "type": "text"
+          },
+          {
+            "name": "failure_reason",
+            "type": "character varying"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.memories (\n      id serial,\n      name character varying NOT NULL,\n      description character varying,\n      arn character varying,\n      memory_id character varying,\n      region character varying NOT NULL,\n      account_id character varying NOT NULL,\n      status character varying NOT NULL,\n      event_expiry_duration integer NOT NULL,\n      memory_execution_role_arn character varying,\n      encryption_key_arn character varying,\n      strategies_config text,\n      strategies_response text,\n      tags text,\n      failure_reason character varying,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT memories_pkey PRIMARY KEY (id)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "memories",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "memories",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "memories_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.memories",
+        "type": "Postgres::Table",
+        "uniques": []
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "key",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "default_value",
+            "type": "character varying"
+          },
+          {
+            "name": "source",
+            "type": "character varying"
+          },
+          {
+            "name": "required",
+            "notNull": true,
+            "type": "boolean"
+          },
+          {
+            "name": "show_on_card",
+            "notNull": true,
+            "type": "boolean"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.tag_policies (\n      id serial,\n      key character varying NOT NULL,\n      default_value character varying,\n      source character varying,\n      required boolean NOT NULL,\n      show_on_card boolean NOT NULL,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT tag_policies_pkey PRIMARY KEY (id),\n      CONSTRAINT tag_policies_key_key UNIQUE (key)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "tagPolicies",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "tag_policies",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "tag_policies_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.tag_policies",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "key"
+            ],
+            "name": "tag_policies_key_key"
+          }
+        ]
+      },
+      {
+        "checks": [],
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial"
+          },
+          {
+            "name": "name",
+            "notNull": true,
+            "type": "character varying"
+          },
+          {
+            "name": "tags",
+            "notNull": true,
+            "type": "text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp without time zone"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp without time zone"
+          }
+        ],
+        "ddl": "CREATE TABLE public.tag_profiles (\n      id serial,\n      name character varying NOT NULL,\n      tags text NOT NULL,\n      created_at timestamp without time zone,\n      updated_at timestamp without time zone,\n      CONSTRAINT tag_profiles_pkey PRIMARY KEY (id),\n      CONSTRAINT tag_profiles_name_key UNIQUE (name)\n  )",
+        "dependsOn": [],
+        "exclusions": [],
+        "export": "tagProfiles",
+        "foreignKeys": [],
+        "inherits": [],
+        "like": [],
+        "name": "tag_profiles",
+        "primaryKey": {
+          "columns": [
+            "id"
+          ],
+          "name": "tag_profiles_pkey"
+        },
+        "schema": "public",
+        "sqlName": "public.tag_profiles",
+        "type": "Postgres::Table",
+        "uniques": [
+          {
+            "columns": [
+              "name"
+            ],
+            "name": "tag_profiles_name_key"
+          }
+        ]
+      }
+    ],
+    "postgresMajor": 18
+  }
+}

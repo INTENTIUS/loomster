@@ -134,6 +134,26 @@ tunnel-host:
 tunnel port="5432":
     bash scripts/tunnel.sh {{port}}
 
+# ── Loom's database schema, with SQL Yodeler (#78; docs guides/migrate-the-database) ──
+# `just db <command>` runs yodel in db/ against this deployment's database
+# ({project}-{env}-{instance}): status, plan, drift, approve, report as the
+# read-only user; apply, baseline, reader as the master user; lint, new <name>,
+# docs, test offline. On AWS it needs the tunnel host (`just tunnel-host`); on
+# the local stack it forwards to Floci's RDS itself.
+db *args:
+    bash scripts/db/yodel.sh {{args}}
+
+# Write db/src/schema.ts from the schema the vendored Loom version creates
+# (its own init_db on a throwaway Postgres). After a Loom bump, then
+# `just db new loom-<version>`. Needs Docker.
+db-schema:
+    bash scripts/db/schema.sh
+
+# Replay every migration into a throwaway Postgres and check each ends at the
+# schema it recorded (CI's schema job runs the same). Needs Docker.
+db-replay:
+    bash scripts/db/replay.sh
+
 # ── Loom's operator make targets (#39; docs reference/make-targets) ─────────
 # Gated ones (import-sqlite, reset-db, credentials-delete) stop at their gate:
 # `chant approve <op> approve-<op>`, then run the same verb again.

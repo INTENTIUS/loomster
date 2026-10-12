@@ -10,6 +10,10 @@
 # endpoint/port from loom-db's `oConnectEndpoint`/`oRdsPort`, the RDS Proxy
 # on production tiers (as Loom's tunnel targets `O_RDS_PROXY_ENDPOINT`).
 # Stacks are named {LOOM_PROJECT}-{LOOM_ENV}-{LOOM_INSTANCE}-<component>.
+# LOOM_TUNNEL_TARGET=instance forwards to the RDS instance itself
+# (`oRdsEndpoint`) instead: schema migrations (scripts/db/yodel.sh) take a
+# session-level advisory lock and run DDL, which belong on the instance, not
+# behind the proxy.
 # Runs until Ctrl-C. Needs the AWS CLI's Session Manager plugin.
 set -euo pipefail
 
@@ -25,8 +29,13 @@ command -v session-manager-plugin >/dev/null 2>&1 || {
 
 INSTANCE_ID="$(out "$PREFIX-tunnel-host" oInstanceId)"
 [ -n "$INSTANCE_ID" ] || { echo "tunnel: no $PREFIX-tunnel-host stack; deploy it with: just tunnel-host" >&2; exit 1; }
-HOST="$(out "$PREFIX-loom-db" oConnectEndpoint)"
-[ -n "$HOST" ] || { echo "tunnel: $PREFIX-loom-db has no oConnectEndpoint" >&2; exit 1; }
+case "${LOOM_TUNNEL_TARGET:-connect}" in
+  connect) ENDPOINT_KEY=oConnectEndpoint ;;
+  instance) ENDPOINT_KEY=oRdsEndpoint ;;
+  *) echo "tunnel: LOOM_TUNNEL_TARGET must be connect or instance" >&2; exit 1 ;;
+esac
+HOST="$(out "$PREFIX-loom-db" "$ENDPOINT_KEY")"
+[ -n "$HOST" ] || { echo "tunnel: $PREFIX-loom-db has no $ENDPOINT_KEY" >&2; exit 1; }
 PORT="$(out "$PREFIX-loom-db" oRdsPort)"
 PORT="${PORT:-5432}"
 SECRET="$(out "$PREFIX-loom-db" oRdsCredentialsSecretArn)"

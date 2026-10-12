@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "ops", "scripts", ".chant", "chant.config.ts"],
+  "include": ["src", "ops", "scripts", ".chant", "chant.config.ts", "db"],
   // ops/dist/ is `chant build ops`'s output (op.json per Op), nested inside
   // the included "ops" dir and gitignored.
   "exclude": ["node_modules", "ops/dist"]

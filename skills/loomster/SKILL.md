@@ -53,6 +53,9 @@ from `just cognito-token` (production tiers) or a temporary client (light).
 | Restore | `npm run restore` | stops at a gate before the cutover |
 | Drift | `npm run watch`; `npm run reconcile` | reconcile opens a PR, never changes the cloud |
 | Tunnel to the database | `just tunnel-host`, then `just tunnel` | optional SSM host |
+| Loom's schema (SQL Yodeler, `db/`) | `just db status`, `just db plan`, `just db drift` | read-only; on AWS needs the tunnel host |
+| A Loom bump's schema migration | `just db-schema`, `just db new loom-<version>`, `just db lint`, `just db-replay` | offline or Docker only; commit `db/src` and the migration |
+| Apply or record schema changes | `just db apply`, `just db baseline`, `just db reader` | only when the person asked; `just db approve` is theirs to run at a terminal |
 | Loom's operator make targets | `just credentials`, `just memory ...`, `just fix-sequences`, `just cognito-token`, `just cognito-client-id` | `reset-db`, `import-sqlite`, `credentials-delete`, `set-passwords` are never over MCP: a person runs and approves them |
 | Audit the CI YAML | `just audit` | |
 | Tear down | `chant run loom-teardown` | stops at a gate |

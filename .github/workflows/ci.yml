@@ -38,3 +38,37 @@ jobs:
         run: npm test
       - name: build ops
         run: npm run ops:build
+
+  # Loom's schema (db/, SQL Yodeler, #78): lint every migration, then replay
+  # them all into a throwaway Postgres (the RDS engine's major version) and
+  # check each ends at the schema it recorded. Needs no deployment and no
+  # credentials; a plan against a deployment runs where the database is
+  # reachable (`just db plan`), since the databases are in private subnets.
+  schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: loom
+          POSTGRES_PASSWORD: replay
+          POSTGRES_DB: loom
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U loom -d loom" --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      REPLAY_POSTGRES_URL: postgres://127.0.0.1:5432/loom
+      REPLAY_POSTGRES_USER: loom
+      REPLAY_POSTGRES_PASSWORD: replay
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: yodel lint
+        run: npx yodel lint
+        working-directory: db
+      - name: replay the migrations
+        run: bash scripts/db/replay.sh

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Production deployment of awslabs/loom (pinned v1.9.0) on chant \u2014 component-based, tiered light/production/production-ha, generated CI.",
+  "description": "Production deployment of awslabs/loom (pinned v1.9.0) on chant — component-based, tiered light/production/production-ha, generated CI.",
   "scripts": {
     "tsc": "tsc --noEmit",
     "lint": "chant lint .",
@@ -37,15 +37,19 @@
     "vendor": "bash scripts/vendor-loom.sh"
   },
   "dependencies": {
-    "@intentius/chant": "^0.124.15",
-    "@intentius/chant-lexicon-aws": "^0.124.15",
-    "@intentius/chant-lexicon-docker": "^0.124.15",
-    "@intentius/chant-lexicon-forgejo": "^0.124.15",
-    "@intentius/chant-lexicon-github": "^0.124.15",
-    "@intentius/chant-lexicon-gitlab": "^0.124.15"
+    "@intentius/chant": "^0.124.21",
+    "@intentius/chant-lexicon-aws": "^0.124.21",
+    "@intentius/chant-lexicon-docker": "^0.124.21",
+    "@intentius/chant-lexicon-forgejo": "^0.124.21",
+    "@intentius/chant-lexicon-github": "^0.124.21",
+    "@intentius/chant-lexicon-gitlab": "^0.124.21",
+    "@intentius/chant-lexicon-sql": "^0.124.21",
+    "@intentius/sql-yodeler": "^0.9.0",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.9"
