@@ -213,14 +213,17 @@ validate:
 # Claims (test/claims.sh, docs reference/claims): one per documented
 # capability, each run plain and under BREAK=1. Static claims run as they are;
 # floci and aws claims stop at the human gate unless a person types "run" or
-# granted them (`just grant`). Rows land in test/.state/claims.json.
+# granted them (`just grant`). Rows land in test/claims-record.json (committed),
+# and docs reference/validation is rewritten from it (npm run claims:page).
 # `just claims` runs every claim; `just claims params,teardown/covers-components` some.
 claims names="":
-    bash test/claims.sh {{ if names == "" { "" } else { "--only " + names } }} --record test/.state/claims.json
+    bash test/claims.sh {{ if names == "" { "" } else { "--only " + names } }} --record test/claims-record.json
+    node scripts/claims-page.mjs
 
 # The claims the change since base can affect (test/claims-affected.sh says why).
 claims-affected base="origin/main":
-    bash test/claims.sh --affected {{base}} --record test/.state/claims.json
+    bash test/claims.sh --affected {{base}} --record test/claims-record.json
+    node scripts/claims-page.mjs
 
 # A person grants a coding agent runs of named claims, areas or e2e/<name>
 # (2 runs each, for 4 hours, by default): `just grant backend/deploy-agent --runs 1`.

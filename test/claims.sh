@@ -19,6 +19,13 @@
 #                                     emulator, or a real AWS account
 #   # tier: any | light | production | production-ha
 #   # summary: <one line: the documented statement it proves>
+#   # order: <number>                 optional, 50 by default: within a target,
+#                                     lower runs first
+#
+# Claims run static first, then floci, then aws, and by order within each, so
+# the cheap ones fail fast. The aws claims of one run share one deployment
+# (test/claims-aws.sh claims_aws_ensure): each adds the components it needs,
+# and a claim's BREAK undoes itself on exit so it never breaks a later claim.
 #
 # and it prints exactly one line:
 #
@@ -113,6 +120,15 @@ else
   selected="$all_names"
 fi
 [ -n "$selected" ] || { echo "claims: no claims under test/claims/" >&2; exit 0; }
+
+# Static, then floci, then aws; by the order header within each, then by name.
+order_of() { local o; o="$(header "$CLAIMS_DIR/$1.sh" order)"; [[ "$o" =~ ^[0-9]+$ ]] && echo "$o" || echo 50; }
+selected="$(for n in $selected; do
+  case "$(awk -F'\t' -v n="$n" '$1 == n { print $2; exit }' <<<"$CATALOG")" in
+    static) r=0 ;; floci) r=1 ;; aws) r=2 ;; *) r=3 ;;
+  esac
+  printf '%s\t%05d\t%s\n' "$r" "$(order_of "$n")" "$n"
+done | sort -t$'\t' -k1,1n -k2,2n -k3,3 | cut -f3)"
 if [ -n "$record" ] && ! command -v jq >/dev/null 2>&1; then
   echo "claims: --record needs jq" >&2; exit 2
 fi
@@ -121,6 +137,8 @@ field() { awk -F'\t' -v n="$1" -v i="$2" '$1 == n { print $i; exit }' <<<"$CATAL
 
 LOG_DIR="$HERE/.state/claims-logs/$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$LOG_DIR"
+# One id per run: the aws claims vendor Loom once per run (claims_aws_ensure).
+export LOOM_CLAIMS_RUN_ID="${LOG_DIR##*/}"
 
 # ── the gate ────────────────────────────────────────────────────────────────
 

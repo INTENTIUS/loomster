@@ -1,0 +1,102 @@
+[
+  {
+    "claim": "backend/deploy-agent",
+    "target": "aws",
+    "tier": "light",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with the task role denied: agent loomster_claim_c49490_brk_1791823177 ended FAILED after 46s (failed)",
+    "timestamp": "2026-10-12T16:40:29Z",
+    "sha": "bd7ac01"
+  },
+  {
+    "claim": "backend/deploy-agent",
+    "target": "aws",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "Loom deployed loomster_claim_c49490_run_1791822788 to READY in 306s on us-east-1 and it answered one invoke",
+    "timestamp": "2026-10-12T16:38:46Z",
+    "sha": "bd7ac01"
+  },
+  {
+    "claim": "cognito/user-client",
+    "target": "static",
+    "tier": "any",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with a shared pool that names no user client: light: a loom-frontend docker-build lacks VITE_COGNITO_USER_CLIENT_ID from loom-cognito's oUserClientId; production: a loom-frontend docker-build lacks VITE_COGNITO_USER_CLIENT_ID from loom-cognito's oUserClientId; production-ha: a loom-frontend docker-build lacks VITE_COGNITO_USER_CLIENT_ID from loom-cognito's oUserClientId",
+    "timestamp": "2026-10-12T22:15:49Z",
+    "sha": "12a1d76"
+  },
+  {
+    "claim": "cognito/user-client",
+    "target": "static",
+    "tier": "any",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "light, production and production-ha: the user client allows password sign-in, and every frontend build passes its id from loom-cognito's oUserClientId",
+    "timestamp": "2026-10-12T22:15:45Z",
+    "sha": "12a1d76"
+  },
+  {
+    "claim": "params/reach-build",
+    "target": "static",
+    "tier": "any",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with the variables unset: LOOM_DB_PASSWORD not in loom-db; LOOM_CPU_ARCHITECTURE=ARM64 not in loom-backend (CpuArchitecture X86_64)",
+    "timestamp": "2026-10-12T22:15:51Z",
+    "sha": "12a1d76"
+  },
+  {
+    "claim": "params/reach-build",
+    "target": "static",
+    "tier": "any",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "the password reached loom-db and ARM64 reached the backend task definition",
+    "timestamp": "2026-10-12T22:15:50Z",
+    "sha": "12a1d76"
+  },
+  {
+    "claim": "params/reach-deploy",
+    "target": "static",
+    "tier": "any",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with LOOM_DB_PASSWORD unset: LOOM_DB_PASSWORD is not in the template cfn-deploy got",
+    "timestamp": "2026-10-12T22:15:54Z",
+    "sha": "12a1d76"
+  },
+  {
+    "claim": "params/reach-deploy",
+    "target": "static",
+    "tier": "any",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "the template cfn-deploy got for loom-db was synthesized in the run and holds LOOM_DB_PASSWORD",
+    "timestamp": "2026-10-12T22:15:53Z",
+    "sha": "12a1d76"
+  },
+  {
+    "claim": "teardown/covers-components",
+    "target": "static",
+    "tier": "any",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with loom-agents dropped: not in the teardown order: loom-agents",
+    "timestamp": "2026-10-12T22:15:56Z",
+    "sha": "12a1d76"
+  },
+  {
+    "claim": "teardown/covers-components",
+    "target": "static",
+    "tier": "any",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "all 7 components are in the teardown order, consumers first",
+    "timestamp": "2026-10-12T22:15:55Z",
+    "sha": "12a1d76"
+  }
+]
