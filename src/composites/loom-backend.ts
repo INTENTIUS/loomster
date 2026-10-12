@@ -150,6 +150,13 @@ export interface LoomBackendProps {
   // ── Other Loom app-level knobs (author-time, env-driven — never a hardcoded literal; chant#897) ──
   allowedOrigins?: string;
   registryId?: string;
+  /**
+   * Sets `LOOM_USE_SYSTEM_TRUST_STORE=true`: the backend verifies TLS against
+   * the OS trust store (Loom v1.6.1+, `truststore`), for deployments behind a
+   * TLS-inspecting corporate proxy. Default: off (the variable is not set,
+   * as in Loom's own template).
+   */
+  useSystemTrustStore?: boolean;
   litellmProxyBaseUrl?: string;
   /** Default: `litellmProxyBaseUrl` — matches Loom's own "leave empty to reuse pLitellmProxyBaseUrl" default. */
   litellmDiscoveryBaseUrl?: string;
@@ -434,6 +441,13 @@ function buildRoles(
             { Effect: "Allow", Action: ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream", "bedrock:CountTokens"], Resource: [inferenceProfileArn, foundationModelArn] },
             // List operations have no resource-level scoping (model catalog discovery).
             { Effect: "Allow", Action: ["bedrock:ListFoundationModels", "bedrock:ListInferenceProfiles"], Resource: "*" },
+            // Loom v1.8.0+ invokes mantle-only models (Gemma 4, the OpenAI-compatible
+            // Responses API) on https://bedrock-mantle.<region>.api.aws through
+            // `POST /api/agents/models/invoke-test` (app/services/bedrock_invocation.py).
+            // That endpoint authorizes under its own `bedrock-mantle` namespace, which
+            // the bedrock:Invoke* grants above don't cover; Loom's ecs.yaml omits it,
+            // so its invoke-test is denied for those models. Inference only.
+            { Effect: "Allow", Action: ["bedrock-mantle:CreateInference"], Resource: "*" },
           ],
         } as unknown as string,
       }),
@@ -689,6 +703,7 @@ export const LoomBackend = Composite<LoomBackendProps, LoomBackendResult>((props
     new TaskDefinition_KeyValuePair({ Name: "LOOM_REGISTRY_ID", Value: props.registryId ?? "" }),
     new TaskDefinition_KeyValuePair({ Name: "LOOM_LITELLM_PROXY_BASE_URL", Value: props.litellmProxyBaseUrl ?? "" }),
     new TaskDefinition_KeyValuePair({ Name: "LOOM_LITELLM_DISCOVERY_BASE_URL", Value: litellmDiscoveryBaseUrl }),
+    ...(props.useSystemTrustStore ? [new TaskDefinition_KeyValuePair({ Name: "LOOM_USE_SYSTEM_TRUST_STORE", Value: "true" })] : []),
     new TaskDefinition_KeyValuePair({ Name: "LOG_LEVEL", Value: "info" }),
     // Light tier (#46): LOOM_DATABASE_URL as plain env when the deployable
     // stack pre-built it (Floci doesn't inject Secrets). `LOOM_DATABASE_URL`

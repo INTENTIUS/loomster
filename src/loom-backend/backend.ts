@@ -44,6 +44,7 @@ export const backend = LoomBackend({
   cognitoRegion: params.cognitoRegion,
   allowedOrigins: params.allowedOrigins,
   registryId: params.registryId,
+  useSystemTrustStore: params.useSystemTrustStore,
   litellmProxyBaseUrl: params.litellmProxyBaseUrl,
   litellmDiscoveryBaseUrl: params.litellmDiscoveryBaseUrl,
   litellmProxyApiKeySecretArn: params.litellmProxyApiKeySecretArn,

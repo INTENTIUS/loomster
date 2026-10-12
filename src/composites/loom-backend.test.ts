@@ -118,6 +118,19 @@ describe("LoomBackend — overrides", () => {
     const secretNames = (container.Secrets as any[]).map((s) => (s as any).props.Name);
     expect(secretNames).toContain("LOOM_LITELLM_PROXY_API_KEY");
   });
+
+  test("LOOM_USE_SYSTEM_TRUST_STORE is unset by default and \"true\" when useSystemTrustStore is on (#13)", () => {
+    const envOf = (props: LoomBackendProps) =>
+      ((((LoomBackend(props).taskDefinition as any).props.ContainerDefinitions[0] as any).props.Environment) as any[]).map((e) => (e as any).props);
+    expect(envOf(baseProps()).find((e) => e.Name === "LOOM_USE_SYSTEM_TRUST_STORE")).toBeUndefined();
+    expect(envOf(baseProps({ useSystemTrustStore: true })).find((e) => e.Name === "LOOM_USE_SYSTEM_TRUST_STORE")?.Value).toBe("true");
+  });
+
+  test("the task role may invoke bedrock-mantle models (#8)", () => {
+    const policies = ((LoomBackend(baseProps()).taskRole as any).props.Policies as any[]).map((p) => (p as any).props);
+    const actions = policies.flatMap((p) => (p.PolicyDocument as any).Statement.flatMap((s: any) => [].concat(s.Action)));
+    expect(actions).toContain("bedrock-mantle:CreateInference");
+  });
 });
 
 describe("LoomBackend — naming and tags", () => {
