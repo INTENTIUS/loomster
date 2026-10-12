@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# A person starts this, or grants it to an agent with `just grant e2e/forgejo-runtime`
+# (test/human-gate.sh). Agents do not run it otherwise.
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/human-gate.sh"
+human_gate "the Forgejo Actions runtime E2E: act in Docker, deploying the light tier's infra to Floci" e2e/forgejo-runtime
 
 # Forgejo Actions runtime E2E — the Forgejo counterpart to
 # ./github-runtime-e2e.sh. Forgejo Actions is a GitHub-Actions dialect and runs

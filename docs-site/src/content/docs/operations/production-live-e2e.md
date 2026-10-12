@@ -76,6 +76,12 @@ export LOOM_CPU_ARCHITECTURE=ARM64       # match your built images (ARM64 on App
 just production-live-e2e                  # or: production-ha-live-e2e
 ```
 
+The script stops at a human gate first: type `run` in your terminal to start it.
+A coding agent can only start it under a grant you give it
+(`just grant e2e/production-live`). What this run proves, and what it leaves to
+individual claims such as `backend/deploy-agent`, is listed in
+[Claims](/loomster/reference/claims/).
+
 The script vendors Loom, synthesizes, deploys all seven stacks, then asserts:
 
 - all 7 stacks reach `CREATE_COMPLETE` / `UPDATE_COMPLETE`,

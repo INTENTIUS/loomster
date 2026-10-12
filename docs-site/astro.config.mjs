@@ -52,6 +52,7 @@ export default defineConfig({
 						{ label: 'Seeded defaults', slug: 'reference/seeding' },
 						{ label: 'Naming & Tagging', slug: 'reference/naming' },
 						{ label: 'Local caveats', slug: 'reference/local-caveats' },
+						{ label: 'Claims', slug: 'reference/claims' },
 					],
 				},
 			],

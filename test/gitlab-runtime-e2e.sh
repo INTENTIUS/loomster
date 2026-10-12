@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# A person starts this, or grants it to an agent with `just grant e2e/gitlab-runtime`
+# (test/human-gate.sh). Agents do not run it otherwise.
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/human-gate.sh"
+human_gate "the GitLab runtime E2E: gitlab-ci-local in Docker, deploying the light tier's infra to Floci" e2e/gitlab-runtime
 
 # GitLab runtime E2E (chant#892): build the real, discovered-component GitLab
 # pipeline shape and ACTUALLY RUN it in Docker via gitlab-ci-local, deploying
