@@ -44,6 +44,23 @@ CA_STACK_ORDER="loom-agents downstream-stub loom-backend loom-frontend loom-db l
 ca_log() { echo "[claims-aws] $*" >&2; }
 
 ca() { AWS_PAGER="" aws --region "${AWS_REGION:-us-east-1}" --output json "$@" </dev/null; }
+
+# Wait for a stack delete, logging its status every 30 s. A stack delete can run
+# for many minutes (RDS, AgentCore ENIs) and `aws cloudformation wait` prints
+# nothing, which the gate's stall watch reads as a hang and kills.
+ca_wait_deleted() {
+  local s="$1" st waited=0
+  while :; do
+    st="$(ca cloudformation describe-stacks --stack-name "$s" --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo GONE)"
+    case "$st" in
+      GONE|DELETE_COMPLETE) return 0 ;;
+      DELETE_FAILED) return 1 ;;
+    esac
+    [ "$waited" -lt 3600 ] || return 1
+    ca_log "waiting for $s to delete ($st, ${waited}s)"
+    sleep 30; waited=$((waited + 30))
+  done
+}
 # Budgets and Cost Explorer answer in us-east-1 only.
 ca_global() { AWS_PAGER="" aws --region us-east-1 --output json "$@" </dev/null; }
 
@@ -196,12 +213,12 @@ claims_aws_cleanup() { # [--list]
     grep -qx "stack $s" <<<"$listing" || continue
     ca_log "deleting $s"
     ca cloudformation delete-stack --stack-name "$s" >/dev/null || true
-    ca cloudformation wait stack-delete-complete --stack-name "$s" || ca_log "$s did not delete cleanly"
+    ca_wait_deleted "$s" || ca_log "$s did not delete cleanly"
   done
   # Any other stack with the prefix (a component added since this list).
   for s in $(ca_stacks); do
     ca cloudformation delete-stack --stack-name "$s" >/dev/null || true
-    ca cloudformation wait stack-delete-complete --stack-name "$s" || ca_log "$s did not delete cleanly"
+    ca_wait_deleted "$s" || ca_log "$s did not delete cleanly"
   done
   # What the stacks keep on purpose: the artifact bucket and the DB snapshot.
   for r in $(ca_buckets); do ca_drop_bucket "$r" || ca_log "bucket $r did not delete"; done
