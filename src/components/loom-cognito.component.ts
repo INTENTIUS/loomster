@@ -3,7 +3,7 @@ import { loomCognitoStackName } from "../lib/component-stack-names";
 
 /**
  * The `loom-cognito` identity stack (chant#888) — Cognito UserPool, hosted-UI
- * domain, resource server (23-scope catalog on full tier), M2M client, and
+ * domain, resource server (21-scope catalog on full tier), M2M client, and
  * (production/production-ha) user client + RBAC groups + Managed Login
  * branding. `infra` archetype — no build, just apply. The template is what
  * `chant build src/loom-cognito --lexicon aws` synthesizes from

@@ -3,7 +3,7 @@
  * `loom-cognito` half, and the **shared-identity-across-Looms** pattern
  * (chant#898's other settled decision): `identity.mode:
  * "reference-existing"` points this Loom instance at one org-level Cognito
- * pool a platform/security team owns — groups and the 23-scope catalog are
+ * pool a platform/security team owns — groups and the 21-scope catalog are
  * defined ONCE at the org level, not re-provisioned per Loom instance.
  * `chant build src/examples/byo/loom-cognito --lexicon aws` creates zero
  * Cognito resources.
