@@ -18,9 +18,13 @@
 #      its demo agent), poll until READY or FAILED, expect READY;
 #   4. invoke it once through POST /api/agents/<id>/invoke and expect a chunk
 #      and no error event; then delete the agent.
-# BREAK=1 reuses the deployment, attaches an inline deny on AgentCore, Bedrock
-# and iam:PassRole to the backend task role (removed on exit), and expects the
-# agent deploy or the invoke to fail.
+# BREAK=1 reuses the deployment and strips the task role's runtime grants (#1,
+# fixed in #54) in effect: it attaches an inline Deny on the AgentCore,
+# Bedrock, registry and iam:PassRole/CreateRole/CreateServiceLinkedRole
+# actions those statements allow. An explicit Deny overrides them without
+# editing the CloudFormation-managed policies, so nothing drifts, and the
+# claim removes it on exit (the cleanup does too). It expects the agent deploy
+# or the invoke to fail.
 #
 # Needs: aws, jq, curl, docker (running), python3, node_modules (npm ci), AWS
 # credentials, and LOOM_CLAIMS_ACCOUNT_ID naming the account they resolve to,
@@ -185,10 +189,11 @@ if [ -n "${BREAK:-}" ]; then
   aws iam put-role-policy --role-name "$BREAK_ROLE" --policy-name "$CLAIMS_BREAK_POLICY" --policy-document '{
     "Version": "2012-10-17",
     "Statement": [{ "Effect": "Deny", "Resource": "*",
-      "Action": ["bedrock-agentcore:*", "bedrock:*", "iam:PassRole", "iam:CreateRole", "iam:CreateServiceLinkedRole"] }]
+      "Action": ["bedrock-agentcore:*", "bedrock-agentcore-control:*", "bedrock:*", "agent-registry:*",
+                 "iam:PassRole", "iam:CreateRole", "iam:CreateServiceLinkedRole"] }]
   }' || { BREAK_ROLE=""; stop "could not attach the deny to $role_arn"; }
   BROKEN=1
-  log "denied AgentCore, Bedrock and iam:PassRole to $BREAK_ROLE; waiting 30 s for IAM to apply it"
+  log "denied AgentCore, Bedrock, the registry and iam:PassRole to $BREAK_ROLE; waiting 30 s for IAM to apply it"
   sleep 30
 fi
 
@@ -237,7 +242,7 @@ fi
 grep -q '^event: chunk' <<<"$out" || stop "invoke streamed no chunk: $(head -c 300 <<<"$out")"
 
 if [ -n "${BREAK:-}" ]; then
-  say fail "with AgentCore, Bedrock and iam:PassRole denied to the task role, the agent still reached READY and answered"
+  say fail "with AgentCore, Bedrock, the registry and iam:PassRole denied to the task role, the agent still reached READY and answered"
 else
   say pass "Loom deployed $AGENT_NAME to READY in ${elapsed}s on $ACCT/$AWS_REGION and it answered one invoke"
 fi
