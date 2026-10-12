@@ -43,25 +43,15 @@
  * isn't part of the #882 composite this file consumes — both stay out of
  * scope until either lands there.
  *
- * **Scope boundary.** `./loom-backend.ts`'s own file header ("Scope boundary
- * (chant#893, agent runtime)") notes that Loom's real backend `TaskRole`
- * also needs Bedrock/AgentCore invoke, an `iam:PassRole` grant on
- * shared-foundation's `agentRole`, an AgentCore-Identity-managed Secrets
- * Manager grant, and CloudWatch-Logs vended-log-delivery permissions —
- * deliberately left out of #889's own scope, to "extend this role (or
- * compose an additional one) in #893." This file takes the "compose an
- * additional one" branch, scoped to what THIS composite's own agents need
- * to operate: `buildAgentExecutionPolicies` below grants Bedrock invoke, the
+ * **Agent execution policies.** `buildAgentExecutionPolicies` below grants
+ * each chant-managed agent what it needs to run: Bedrock invoke, the
  * CloudWatch Logs delivery pipeline AgentCore Runtime ships vended logs
  * through, and read access to AgentCore-Identity-managed Secrets Manager
- * credential-provider secrets — attached to each agent's own
+ * credential-provider secrets. They attach to each agent's own
  * composite-created role via `AgentCoreAgent`'s `Policies` prop (the #882
- * composite always provisions its own role; it has no "reference-existing
- * role" seam to plug shared-foundation's `agentRole` into directly).
- * Attaching an equivalent grant onto the *backend's* TaskRole (so it can
- * dynamically `iam:PassRole`/invoke these runtimes) needs loom-backend to
- * expose its TaskRole name as a stack output first — a follow-up, not this
- * file's job.
+ * composite always provisions its own role). The backend's grants for
+ * deploying and invoking agents from the UI live on its task role in
+ * `./loom-backend.ts` (loomster#1).
  *
  * Tiers (chant#890): `light` = the Strands agent only, `PUBLIC` network mode
  * (matches Loom's own `create_runtime` default), Memory at the #882
@@ -193,7 +183,7 @@ function tagList(tags: Record<string, string>): TagList {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Execution-role extension (see file header "Scope boundary"). Module-level
+// Execution-role extension (see file header "Agent execution policies"). Module-level
 // so EVL001/EVL002 apply the same way they do to every sibling composite's
 // own buildXxx() helper — a plain, unconditional construction, never an `if`
 // wrapping a `new Xxx(...)` (chant's EVL002).
