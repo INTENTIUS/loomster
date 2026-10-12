@@ -129,7 +129,14 @@ npm run vendor   # or: just vendor
 `scripts/vendor-loom.sh` resolves `refs/tags/v1.9.0`, checks it against a sha
 pinned in the script (a tag is mutable, so this fails loudly if it's ever
 force-moved), then sparse-checks out just `backend/`, `frontend/`, and `agents/`
-into `vendor/loom` (gitignored).
+into `vendor/loom` (gitignored). It then applies loomster's patches in
+`scripts/loom-patches/`, failing if one no longer applies:
+
+- `0001-cognito-endpoint-override.patch`: an opt-in Cognito endpoint for local
+  login against Floci; unset on real tiers.
+- `0002-ssrf-guard-prefer-ipv4.patch`: Loom's SSRF guard connects to an
+  arbitrary resolved address, so on an IPv4-only VPC a backend task could pick
+  Cognito's IPv6 address and reject every login. It now prefers IPv4.
 
 Not required for typecheck/test/synth, which never touch `vendor/loom`. **Run it
 right before a deploy, not before `chant lint .`**. Unlike `tsc`, a whole-project
