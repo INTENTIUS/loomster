@@ -43,7 +43,7 @@ IAM is first-class reference-existing across the board:
 - **`loom-backend`'s execution + task roles** — `provision | reference-existing`
   via `LOOM_BACKEND_EXECUTION_ROLE_ARN` / `LOOM_BACKEND_TASK_ROLE_ARN`. A referenced
   execution role needs ECR-pull + logs-write; the task role needs whatever the app
-  itself calls.
+  itself calls (see [what a BYO backend task role must grant](#what-a-byo-backend-task-role-must-grant)).
 - **`loom-frontend`'s execution role** — `provision | reference-existing` via
   `LOOM_FRONTEND_EXECUTION_ROLE_ARN`. It needs ECR-pull + logs-write; there's no task
   role, matching Loom's own template.
@@ -51,3 +51,40 @@ IAM is first-class reference-existing across the board:
 None of this forks a composite. `src/examples/byo/` wires every one of these to
 `reference-existing` against one set of platform-owned resources, with no edits
 under `src/composites/`.
+
+## What a BYO backend task role must grant
+
+With `LOOM_BACKEND_TASK_ROLE_ARN` set, chant creates no task role, so the role you
+hand over has to carry what Loom's backend calls at runtime. The provisioned role
+in `src/composites/loom-backend.ts` (`buildRoles`) is the reference; it ports Loom
+v1.9.0's `backend/iac/ecs.yaml` `TaskRole`. Trust `ecs-tasks.amazonaws.com` and
+grant, with `<acct>` your account and `<project>` your `LOOM_PROJECT` (default `loom`):
+
+| Purpose | Actions | Resource |
+| --- | --- | --- |
+| Model invoke | `bedrock:InvokeModel`, `InvokeModelWithResponseStream`, `CountTokens` | `arn:aws:bedrock:*:*:inference-profile/*`, `arn:aws:bedrock:*::foundation-model/*` |
+| Model catalog | `bedrock:ListFoundationModels`, `ListInferenceProfiles` | `*` |
+| AgentCore data + control plane | `bedrock-agentcore:*` | `arn:aws:bedrock-agentcore:*:<acct>:*` |
+| Runtime versions/endpoints | `bedrock-agentcore:ListAgentRuntimeVersions`, `ListAgentRuntimeEndpoints` | `*` (no resource type in IAM) |
+| Agent runtime lifecycle | `bedrock-agentcore-control:{Create,Get,Update,Delete}AgentRuntime[Endpoint]`, `ListAgentRuntimeVersions`, `ListAgentRuntimeEndpoints` | `arn:aws:bedrock-agentcore:*:<acct>:runtime/*` |
+| Agent Registry | `agent-registry:GetRegistry`, `{Create,Get,Update,Delete}RegistryRecord`, `ListRegistryRecords`, `SubmitRegistryRecordForApproval`, `UpdateRegistryRecordStatus`, `SearchDiscoverableRegistryRecords` | `arn:aws:agent-registry:*:<acct>:registry/*` |
+| VPC-mode agents | `iam:CreateServiceLinkedRole` with `iam:AWSServiceName = network.bedrock-agentcore.amazonaws.com` | `arn:aws:iam::<acct>:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreNetwork` |
+| Agent roles (deploy, import) | `iam:PassRole`, `GetRole`, `ListRolePolicies`, `GetRolePolicy`, `ListRoleTags`, `ListAttachedRolePolicies` | `arn:aws:iam::<acct>:role/<project>-*` |
+| Agent log groups | `logs:CreateLogGroup`, `DeleteLogGroup`, `CreateLogStream`, `PutLogEvents`, `FilterLogEvents`, `GetLogEvents`, `DescribeLogStreams` | `log-group:/aws/bedrock-agentcore/*`, `log-group:/aws/vendedlogs/bedrock-agentcore/*` |
+| Vended-log delivery | `logs:PutDeliveryDestination`, `DeleteDeliveryDestination`, `PutDeliverySource` | `delivery-destination:loom-*`, `delivery-source:loom-*` |
+| | `logs:CreateDelivery`, `DeleteDelivery` | `delivery:*` |
+| | `logs:DescribeDeliveries`, `DescribeLogGroups`, `DeleteDeliverySource` | `*` |
+| App secrets | `secretsmanager:GetSecretValue`, `CreateSecret`, `DeleteSecret`, `PutSecretValue` | `secret:loom/*`, `secret:bedrock-agentcore-identity!*` |
+| DB secret | `secretsmanager:GetSecretValue` + `kms:Decrypt`, `kms:GenerateDataKey` | loom-db's `oRdsSecretArn` and `oSecretsKmsKeyArn` |
+| Artifacts | `s3:GetObject`, `PutObject` / `s3:ListBucket` | the artifact bucket's objects / the bucket |
+| Cognito | `cognito-idp:ListUserPools` on `*`; `AdminListGroupsForUser`, `ListUsers`, `ListUsersInGroup`, `ListGroups`, `AdminGetUser`, `DescribeUserPool` | `userpool/*` in the deploy region |
+
+The `loom/` and `loom-` prefixes are hardcoded in Loom's application code, so they
+don't follow `LOOM_PROJECT`. Any agent execution role you want Loom to deploy with
+(including a BYO `LOOM_AGENT_ROLE_ARN`) has to be named `<project>-*`, or the role
+grant above has to cover its name.
+
+`test/claims/backend/task-role.sh` checks the provisioned role against this list
+with `aws iam simulate-custom-policy`. To check a BYO role, run
+`aws iam simulate-principal-policy --policy-source-arn <your role arn>` with the
+same actions and resources listed in that script.

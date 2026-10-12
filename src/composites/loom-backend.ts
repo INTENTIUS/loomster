@@ -14,16 +14,10 @@
  * `../components/loom-backend.component.ts` for how the cross-stack inputs
  * below are actually resolved at deploy time.
  *
- * **Scope boundary (chant#893, agent runtime).** Loom's real `TaskRole` also
- * carries the full Bedrock/AgentCore invoke+control-plane permission set, an
- * `iam:PassRole` grant for `loom-role-*`, a `bedrock-agentcore-identity!`-
- * prefixed Secrets Manager grant, and a CloudWatch Logs delivery-pipeline
- * grant for AgentCore-vended logs — all of that is the agent runtime's own
- * concern (#889's acceptance scope explicitly excludes #893), so this
- * composite's `taskRole` only carries what #889 itself is responsible for:
- * S3 read/write on the artifact bucket, Cognito group/user lookups against
- * the pool #888 provisions, and Secrets Manager read on the DB connection
- * secret. Extend this role (or compose an additional one) in #893, not here.
+ * The task role carries Loom v1.9.0's full backend `TaskRole` grant set
+ * (Bedrock, AgentCore runtime + control plane, Agent Registry, role
+ * import/PassRole, app secrets, vended-log delivery); see `buildRoles` for
+ * the two statements left out and why (loomster#1).
  *
  * Every physical name and tag comes from the shared naming helper
  * (`../lib/naming.ts`, chant#897); nothing here is a literal (LOOM001).
@@ -301,7 +295,6 @@ function buildRoles(
   const logGroupArnWildcard = Sub`${logGroupArn}:*`;
   const artifactBucketArn = Sub`arn:${AWS.Partition}:s3:::${props.artifactBucket}`;
   const artifactBucketArnWildcard = Sub`arn:${AWS.Partition}:s3:::${props.artifactBucket}/*`;
-  const cognitoUserPoolArn = Sub`arn:${AWS.Partition}:cognito-idp:${AWS.Region}:${AWS.AccountId}:userpool/${props.cognitoUserPoolId ?? ""}`;
 
   // naming.name(...) is a method call — EVL001 requires every `new Xxx(...)`
   // property value outside the Composite factory body to be statically
@@ -346,14 +339,50 @@ function buildRoles(
     Tags: tags,
   }, defs?.executionRole));
 
-  // Scope boundary — see file header. Only what #889 itself needs: the
-  // artifact bucket, Cognito group/user lookups, and the DB secret (the
-  // application code's own runtime read, distinct from the execution role's
-  // container-launch-time Secrets injection above).
+  // Task role: what Loom's backend calls at runtime, ported statement by
+  // statement from Loom v1.9.0 backend/iac/ecs.yaml `TaskRole` (loomster#1).
+  // Names Loom's application code hardcodes (`loom/...` secrets, `loom-...`
+  // log delivery sources/destinations) stay literal. IAM roles follow
+  // loomster's naming (`role/${project}-*`, which covers shared-foundation's
+  // `naming.name("agent-role")` and is Loom's own `role/loom-*` at the
+  // default project).
+  //
+  // Left out on purpose:
+  // - Loom's `S3LoomBucketsPolicy` (s3 on `loom-*`): the app only touches
+  //   LOOM_ARTIFACT_BUCKET, which the artifact-bucket policy covers.
+  // - Loom's `CloudFormationPolicy` (`stack/loom-role-*`): nothing under
+  //   backend/app calls CloudFormation; those stacks come from Loom's own
+  //   deploy scripts, which loomster replaces with chant.
   const taskRoleName = naming.name("task-role");
   const artifactBucketPolicyName = naming.name("artifact-bucket-policy");
   const cognitoPolicyName = naming.name("cognito-policy");
   const dbSecretPolicyName = naming.name("db-secret-policy");
+  const bedrockPolicyName = naming.name("bedrock-policy");
+  const agentCorePolicyName = naming.name("agentcore-policy");
+  const agentCoreControlPolicyName = naming.name("agentcore-control-policy");
+  const agentRegistryPolicyName = naming.name("agent-registry-policy");
+  const agentCoreSlrPolicyName = naming.name("agentcore-slr-policy");
+  const agentLogsPolicyName = naming.name("agent-logs-policy");
+  const iamRolesPolicyName = naming.name("iam-roles-policy");
+  const appSecretsPolicyName = naming.name("app-secrets-policy");
+  const taskSecretsKmsPolicyName = naming.name("task-secrets-kms-policy");
+
+  const inferenceProfileArn = Sub`arn:${AWS.Partition}:bedrock:*:*:inference-profile/*`;
+  const foundationModelArn = Sub`arn:${AWS.Partition}:bedrock:*::foundation-model/*`;
+  const agentCoreAccountArn = Sub`arn:${AWS.Partition}:bedrock-agentcore:*:${AWS.AccountId}:*`;
+  const agentRuntimeArn = Sub`arn:${AWS.Partition}:bedrock-agentcore:*:${AWS.AccountId}:runtime/*`;
+  const agentRegistryArn = Sub`arn:${AWS.Partition}:agent-registry:*:${AWS.AccountId}:registry/*`;
+  const agentCoreSlrArn = Sub`arn:${AWS.Partition}:iam::${AWS.AccountId}:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreNetwork`;
+  const agentLogGroupArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:log-group:/aws/bedrock-agentcore/*`;
+  const agentVendedLogGroupArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:log-group:/aws/vendedlogs/bedrock-agentcore/*`;
+  const deliveryDestinationArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:delivery-destination:loom-*`;
+  const deliverySourceArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:delivery-source:loom-*`;
+  const deliveryArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:delivery:*`;
+  const projectRolePattern = `${props.naming.project}-*`;
+  const projectRolesArn = Sub`arn:${AWS.Partition}:iam::${AWS.AccountId}:role/${projectRolePattern}`;
+  const agentCoreIdentitySecretArn = Sub`arn:${AWS.Partition}:secretsmanager:*:${AWS.AccountId}:secret:bedrock-agentcore-identity!*`;
+  const loomAppSecretArn = Sub`arn:${AWS.Partition}:secretsmanager:*:${AWS.AccountId}:secret:loom/*`;
+  const anyUserPoolArn = Sub`arn:${AWS.Partition}:cognito-idp:${AWS.Region}:${AWS.AccountId}:userpool/*`;
 
   const taskRole = new Role(mergeDefaults({
     RoleName: taskRoleName,
@@ -374,10 +403,14 @@ function buildRoles(
         PolicyDocument: {
           Version: "2012-10-17",
           Statement: [
+            // ListUserPools has no resource-level scoping. The authorizer UI
+            // lists the region's pools and describes whichever one is picked,
+            // so the pool actions cover any pool in this account + region.
+            { Effect: "Allow", Action: ["cognito-idp:ListUserPools"], Resource: "*" },
             {
               Effect: "Allow",
               Action: ["cognito-idp:AdminListGroupsForUser", "cognito-idp:ListUsers", "cognito-idp:ListUsersInGroup", "cognito-idp:ListGroups", "cognito-idp:AdminGetUser", "cognito-idp:DescribeUserPool"],
-              Resource: cognitoUserPoolArn,
+              Resource: anyUserPoolArn,
             },
           ],
         } as unknown as string,
@@ -385,6 +418,161 @@ function buildRoles(
       new Role_Policy({
         PolicyName: dbSecretPolicyName,
         PolicyDocument: { Version: "2012-10-17", Statement: [{ Effect: "Allow", Action: ["secretsmanager:GetSecretValue"], Resource: props.databaseSecretArn }] } as unknown as string,
+      }),
+      // The DB secret and Loom's own app secrets are read (and created) by the
+      // app itself, so the task role needs the key too, not only the
+      // execution role.
+      new Role_Policy({
+        PolicyName: taskSecretsKmsPolicyName,
+        PolicyDocument: { Version: "2012-10-17", Statement: [{ Effect: "Allow", Action: ["kms:Decrypt", "kms:GenerateDataKey"], Resource: props.secretsKmsKeyArn }] } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: bedrockPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            { Effect: "Allow", Action: ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream", "bedrock:CountTokens"], Resource: [inferenceProfileArn, foundationModelArn] },
+            // List operations have no resource-level scoping (model catalog discovery).
+            { Effect: "Allow", Action: ["bedrock:ListFoundationModels", "bedrock:ListInferenceProfiles"], Resource: "*" },
+          ],
+        } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: agentCorePolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            { Effect: "Allow", Action: ["bedrock-agentcore:*"], Resource: agentCoreAccountArn },
+            // IAM models these two with no resource type, so the account-scoped
+            // wildcard above never matches them (the IAM policy simulator
+            // denies them against any runtime ARN). Loom's ecs.yaml has the
+            // same gap; they need Resource "*" (loomster#19).
+            { Effect: "Allow", Action: ["bedrock-agentcore:ListAgentRuntimeVersions", "bedrock-agentcore:ListAgentRuntimeEndpoints"], Resource: "*" },
+          ],
+        } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: agentCoreControlPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: [
+                "bedrock-agentcore-control:CreateAgentRuntime",
+                "bedrock-agentcore-control:CreateAgentRuntimeEndpoint",
+                "bedrock-agentcore-control:GetAgentRuntime",
+                "bedrock-agentcore-control:GetAgentRuntimeEndpoint",
+                "bedrock-agentcore-control:UpdateAgentRuntime",
+                "bedrock-agentcore-control:UpdateAgentRuntimeEndpoint",
+                "bedrock-agentcore-control:DeleteAgentRuntime",
+                "bedrock-agentcore-control:DeleteAgentRuntimeEndpoint",
+                // Not in Loom's ecs.yaml: agentcore.py lists a runtime's
+                // endpoints and versions (loomster#19).
+                "bedrock-agentcore-control:ListAgentRuntimeVersions",
+                "bedrock-agentcore-control:ListAgentRuntimeEndpoints",
+              ],
+              Resource: agentRuntimeArn,
+            },
+          ],
+        } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: agentRegistryPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: [
+                "agent-registry:GetRegistry",
+                "agent-registry:CreateRegistryRecord",
+                "agent-registry:GetRegistryRecord",
+                "agent-registry:ListRegistryRecords",
+                "agent-registry:SubmitRegistryRecordForApproval",
+                "agent-registry:UpdateRegistryRecordStatus",
+                "agent-registry:UpdateRegistryRecord",
+                "agent-registry:DeleteRegistryRecord",
+                "agent-registry:SearchDiscoverableRegistryRecords",
+              ],
+              Resource: agentRegistryArn,
+            },
+          ],
+        } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: agentCoreSlrPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            // VPC-mode runtimes need this service-linked role, which AWS
+            // creates on the first VPC-mode CreateAgentRuntime in the account.
+            {
+              Effect: "Allow",
+              Action: ["iam:CreateServiceLinkedRole"],
+              Resource: agentCoreSlrArn,
+              Condition: { StringEquals: { "iam:AWSServiceName": "network.bedrock-agentcore.amazonaws.com" } },
+            },
+          ],
+        } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: agentLogsPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: ["logs:CreateLogGroup", "logs:DeleteLogGroup", "logs:CreateLogStream", "logs:PutLogEvents", "logs:FilterLogEvents", "logs:GetLogEvents", "logs:DescribeLogStreams"],
+              Resource: [agentLogGroupArn, agentVendedLogGroupArn],
+            },
+            // Vended-log delivery pipeline for AgentCore runtimes (observability.py).
+            {
+              Effect: "Allow",
+              Action: ["logs:PutDeliveryDestination", "logs:DeleteDeliveryDestination", "logs:PutDeliverySource"],
+              Resource: [deliveryDestinationArn, deliverySourceArn],
+            },
+            { Effect: "Allow", Action: ["logs:CreateDelivery", "logs:DeleteDelivery"], Resource: deliveryArn },
+            // No resource-level scoping for these. Loom scopes DescribeLogGroups
+            // and DeleteDeliverySource to the log-group/delivery-source ARNs
+            // above, which the IAM policy simulator denies; they need "*".
+            { Effect: "Allow", Action: ["logs:DescribeDeliveries", "logs:DescribeLogGroups", "logs:DeleteDeliverySource"], Resource: "*" },
+          ],
+        } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: iamRolesPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: ["iam:PassRole", "iam:GetRole", "iam:ListRolePolicies", "iam:GetRolePolicy", "iam:ListRoleTags", "iam:ListAttachedRolePolicies"],
+              Resource: projectRolesArn,
+            },
+          ],
+        } as unknown as string,
+      }),
+      new Role_Policy({
+        PolicyName: appSecretsPolicyName,
+        PolicyDocument: {
+          Version: "2012-10-17",
+          Statement: [
+            // OAuth2 credential providers keep their secrets under this
+            // prefix; the AgentCore control plane needs it on create/delete.
+            {
+              Effect: "Allow",
+              Action: ["secretsmanager:GetSecretValue", "secretsmanager:CreateSecret", "secretsmanager:DeleteSecret", "secretsmanager:PutSecretValue"],
+              Resource: agentCoreIdentitySecretArn,
+            },
+            // Loom-managed secrets: MCP API keys, OAuth2 client secrets, authorizer credentials.
+            {
+              Effect: "Allow",
+              Action: ["secretsmanager:GetSecretValue", "secretsmanager:CreateSecret", "secretsmanager:DeleteSecret", "secretsmanager:PutSecretValue"],
+              Resource: loomAppSecretArn,
+            },
+          ],
+        } as unknown as string,
       }),
     ],
     Tags: tags,
