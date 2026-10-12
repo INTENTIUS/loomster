@@ -39,6 +39,30 @@ jobs:
       - name: build ops
         run: npm run ops:build
 
+  # CloudFormation Guard rules (policies/production.guard, #27): every
+  # production-tier template passes, and the violations fixture fails every
+  # rule. The upgrade Op runs the same rules before it changes anything.
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CFN_GUARD_VERSION: "3.2.1"
+      CFN_GUARD_SHA256: 09c2b8cfd81d513374a8da89d4805dc55006a3da52bbf598e272022d4d198e94
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: install cfn-guard
+        run: |
+          curl -fsSL -o /tmp/cfn-guard.tar.gz "https://github.com/aws-cloudformation/cloudformation-guard/releases/download/${CFN_GUARD_VERSION}/cfn-guard-v3-x86_64-ubuntu-latest.tar.gz"
+          echo "${CFN_GUARD_SHA256}  /tmp/cfn-guard.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/cfn-guard.tar.gz -C /tmp
+          echo "/tmp/cfn-guard-v3-x86_64-ubuntu-latest" >> "$GITHUB_PATH"
+      - name: check the rules
+        run: bash scripts/policy/check.sh
+
   # Loom's schema (db/, SQL Yodeler, #78): lint every migration, then replay
   # them all into a throwaway Postgres (the RDS engine's major version) and
   # check each ends at the schema it recorded. Needs no deployment and no

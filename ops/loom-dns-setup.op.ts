@@ -21,6 +21,7 @@
  */
 
 import { Op, phase, shell } from "@intentius/chant/op";
+import { preflightPhase } from "./lib/preflight";
 import { ensureZoneScript, awaitDelegationScript } from "./lib/dns-setup";
 
 const domain = process.env.LOOM_DOMAIN_NAME ?? "loom.example.com";
@@ -29,7 +30,10 @@ export default Op({
   name: "loom-dns-setup",
   overview: `Ensure and delegate the Route53 zone for ${domain}: create it (idempotent), print the NS records to add at your DNS provider, then wait for the delegation to resolve so a custom-domain production deploy's ACM cert validates. Local executor, human-in-the-loop.`,
   labels: { DnsSetup: "true" },
+  // A person starts and approves this Op; an agent never does over MCP (#25).
+  neverOverMcp: true,
   phases: [
+    preflightPhase({ env: process.env.LOOM_ENV ?? "dev" }),
     phase("EnsureZone", [shell(ensureZoneScript(domain), { profile: "fastIdempotent" })]),
     phase("AwaitDelegation", [shell(awaitDelegationScript(domain), { profile: "longInfra" })]),
   ],

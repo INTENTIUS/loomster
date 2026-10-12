@@ -13,9 +13,12 @@ run the verbs below. Nothing in `src/` changes between runs; two settings vary:
 - `LOOM_TIER`: `light`, `production` or `production-ha`.
 - The target: Floci (a local AWS emulator, no account) or a real AWS account.
 
-chant is the CLI. It also serves an MCP server (`chant serve mcp`, stdio) with
-`build`, `lint`, `list`, `describe`, `diff` and the Op tools. This skill is the
-layer above: the lifecycle a Loom operator runs. The docs are at
+chant is the CLI. It also serves an MCP server (`chant serve mcp`, stdio), which
+the repo's `.mcp.json` registers. Its tools: `build`, `lint`, `explain`,
+`import`, `composites` (the composite catalog), `search`, `lifecycle-diff` and
+`lifecycle-snapshot`, and the Op tools `op-list`, `op-status`, `op-report`,
+`op-run` (takes `env`) and `op-approve`. This skill is the layer above: the
+lifecycle a Loom operator runs. The docs are at
 https://intentius.io/loomster/ and https://intentius.io/loomster/llms.txt lists
 every page; each task page has a prompt for you.
 
@@ -98,6 +101,13 @@ https://intentius.io/loomster/reference/parameters/.
 
 - Never run `chant approve` or `just grant`; a person approves gates and grants
   claim runs.
+- Some Ops are never run over MCP: `op-run` refuses them and `op-approve`
+  refuses their gates. They are every gated Op (teardown, restore, rotate,
+  upgrade, dns-setup, the schema migrate Op, reset-db, import-sqlite,
+  credentials-delete) and the ungated ones that change a deployment
+  (upgrade-light, restore-drill, tunnel-host, cognito-export, set-passwords).
+  When the person wants one, give them the `chant run` command to run
+  themselves; don't run it through a shell to get around the refusal.
 - Never deploy to or delete from a real AWS account unless the person asked for
   that in this session. Confirm the account with `aws sts get-caller-identity`
   first.

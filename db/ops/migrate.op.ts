@@ -13,6 +13,8 @@ const digest = stepOutput(plan, "stdout");
 export const op = Op({
   name: `migrate-${deployment}`,
   overview: `Apply the pending migrations of Loom's schema to ${deployment}, behind an approval bound to their plan digest`,
+  // Schema changes are a person's to start and approve, never an agent's over MCP (#25).
+  neverOverMcp: true,
   phases: [
     phase("Plan", [plan]),
     phase("Approve", [gate(`approve-migrate-${deployment}`, { plan: digest })]),

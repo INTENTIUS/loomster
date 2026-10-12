@@ -33,6 +33,7 @@ import {
   acmRequestScript,
   acmSwapListenerScript,
 } from "./rotation";
+import { preflightPhase, stackPrefixOf } from "./preflight";
 
 export interface LoomRotateOpConfig {
   naming: LoomNamingParams;
@@ -65,7 +66,9 @@ export function buildLoomRotateOp(config: LoomRotateOpConfig): InstanceType<type
           rdsProxyName: refs.rdsProxyName,
         });
 
+  const prefix = stackPrefixOf(naming);
   const phases = [
+    preflightPhase({ env: naming.env, stacks: ["shared-foundation", "loom-cognito", "loom-db"].map((c) => `${prefix}-${c}`) }),
     phase("PrepareCognitoRotation", [
       shell(
         cognitoCreateReplacementClientScript({
@@ -109,6 +112,8 @@ export function buildLoomRotateOp(config: LoomRotateOpConfig): InstanceType<type
     name: opName,
     overview: `Rotate Cognito/RDS credentials${domainName ? " + ACM certificate" : ""} for the Loom "${tier}" deployment (env=${naming.env})`,
     labels: { Tier: tier, Env: naming.env },
+    // A person starts and approves this Op; an agent never does over MCP (#25).
+    neverOverMcp: true,
     phases,
   });
 }

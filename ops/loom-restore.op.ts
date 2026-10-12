@@ -23,6 +23,7 @@
  */
 
 import { Op, phase, gate, shell } from "@intentius/chant/op";
+import { preflightPhase, stackPrefixOf } from "./lib/preflight";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { stackRefs } from "./lib/stack-refs";
 import { restoreScript, cutoverScript, type RestoreRefs } from "./lib/restore";
@@ -42,7 +43,10 @@ export default Op({
   name: "loom-restore",
   overview: `Restore the Loom database and cut over to it (env=${naming.env}, instance=${naming.instance}): restore to a new instance (snapshot or PITR), approve, then repoint the connection secret and redeploy the backend. Gated — cutover is destructive.`,
   labels: { Env: naming.env, Restore: "true" },
+  // A person starts and approves this Op; an agent never does over MCP (#25).
+  neverOverMcp: true,
   phases: [
+    preflightPhase({ env: naming.env, stacks: ["shared-foundation", "loom-db", "loom-backend"].map((c) => `${stackPrefixOf(naming)}-${c}`) }),
     phase("Restore", [shell(restoreScript(restoreRefs), { profile: "longInfra" })]),
     phase("Approve", [
       gate("approve-loom-restore", {

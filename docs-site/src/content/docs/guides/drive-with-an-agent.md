@@ -21,9 +21,11 @@ another), and the repository cloned with `npm install` run.
    from locking itself out. Agents that load skills from the repository find it
    on their own.
 
-2. Wire [chant](/loomster/concepts/glossary/#chant)'s MCP server, optionally. `chant serve mcp` (stdio) exposes
-   `build`, `lint`, `list`, `describe`, `diff` and the Op tools, for inspecting
-   and building the graph directly.
+2. Wire [chant](/loomster/concepts/glossary/#chant)'s MCP server, optionally. The repository's `.mcp.json`
+   registers `chant serve mcp` (stdio), so an agent that reads project MCP
+   config picks it up. It exposes `build`, `lint`, `explain`, `import`,
+   `composites`, `search`, `lifecycle-diff`, `lifecycle-snapshot` and the Op
+   tools (`op-list`, `op-status`, `op-report`, `op-run`, `op-approve`).
 
 3. Give it a page. Every tutorial, guide and getting-started page has an
    "Optional: hand this page to your coding agent" prompt under its title, and
@@ -34,10 +36,15 @@ another), and the repository cloned with `npm install` run.
    `chant approve` or `just grant`, never deploys to or deletes from a real
    account unless you asked in that session, never registers an identity
    provider in Loom, and never pushes or edits the `chant/lifecycle` branch.
-   The repository enforces two of those:
+   The repository enforces three of those:
 
    - A gated [Op](/loomster/concepts/glossary/#op) stops at exit 3 until a person
      approves ([Gated Ops](/loomster/concepts/gated-ops/)).
+   - Every gated Op, and the ungated ones that change a deployment
+     (upgrade-light, restore-drill, tunnel-host, cognito-export,
+     set-passwords), is marked never over MCP: `op-run` refuses to start it and
+     `op-approve` refuses its gates, whichever channel reached them. A person
+     runs it with `chant run`.
    - Claims and E2E scripts that hold real infrastructure stop at a human gate
      that needs a person at a terminal. You let an agent run named ones with
      `just grant <claim>`, which allows 2 runs in 4 hours by default

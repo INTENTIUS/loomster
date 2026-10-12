@@ -30,6 +30,7 @@
  */
 
 import { Op, phase, gate, shell } from "@intentius/chant/op";
+import { preflightPhase } from "./lib/preflight";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { teardownStackOrder, deleteStackScript } from "./lib/teardown-plan";
 import { operatorRefs, ownedCredentialProvidersScript } from "./lib/operator";
@@ -48,7 +49,10 @@ export default Op({
   name: "loom-teardown",
   overview: `Decommission the Loom deployment (env=${naming.env}, instance=${naming.instance}): gated; deletes the credential providers this Loom recorded, then owned-only, marker-scoped stack deletes, no foreign deletes`,
   labels: { Env: naming.env, Teardown: "true" },
+  // A person starts and approves this Op; an agent never does over MCP (#25).
+  neverOverMcp: true,
   phases: [
+    preflightPhase({ env: naming.env }),
     phase("Approve", [
       gate("approve-loom-teardown", {
         timeout: "72h",

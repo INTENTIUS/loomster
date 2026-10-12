@@ -13,6 +13,7 @@
  */
 
 import { Op, phase, shell } from "@intentius/chant/op";
+import { preflightPhase, stackPrefixOf } from "./lib/preflight";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { operatorRefs, setPasswordsScript } from "./lib/operator";
 
@@ -24,5 +25,8 @@ export default Op({
   overview: `Set a permanent Cognito password (LOOM_COGNITO_PASSWORD) for LOOM_COGNITO_USERS, or every user still in FORCE_CHANGE_PASSWORD (env=${naming.env}, instance=${naming.instance}). Never over MCP.`,
   labels: { Env: naming.env },
   neverOverMcp: true,
-  phases: [phase("SetPasswords", [shell(setPasswordsScript(refs.cognitoStackName), { profile: "fastIdempotent" })])],
+  phases: [
+    preflightPhase({ env: naming.env, stacks: ["loom-cognito"].map((c) => `${stackPrefixOf(naming)}-${c}`) }),
+    phase("SetPasswords", [shell(setPasswordsScript(refs.cognitoStackName), { profile: "fastIdempotent" })]),
+  ],
 });

@@ -19,6 +19,7 @@
  */
 
 import { Op, phase, shell } from "@intentius/chant/op";
+import { preflightPhase } from "./lib/preflight";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { deployAgentRoleScript, importAgentRoleScript } from "./lib/agent-role";
 
@@ -30,6 +31,7 @@ export default Op({
   overview: `Create one Loom agent's execution role the way Loom's role.yaml does and register it in Loom (env=${naming.env}): deploy ${refs.stackPrefix}-agent-role-<agent> for LOOM_AGENT_ROLE_AGENT, then import it under Security > Roles tagged into LOOM_AGENT_ROLE_GROUP. Idempotent, ungated, local executor.`,
   labels: { Env: naming.env },
   phases: [
+    preflightPhase({ env: naming.env }),
     phase("Deploy", [shell(deployAgentRoleScript(refs), { profile: "longInfra" })]),
     phase("Import", [shell(importAgentRoleScript(refs), { profile: "fastIdempotent" })]),
   ],

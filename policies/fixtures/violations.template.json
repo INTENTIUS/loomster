@@ -1,0 +1,38 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "One resource breaking each rule in ../production.guard, so scripts/policy/check.sh can show every rule still fails what it should.",
+  "Resources": {
+    "PublicUnencryptedDb": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": { "StorageEncrypted": false, "DeletionProtection": false, "PubliclyAccessible": true }
+    },
+    "OpenBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "PublicAccessBlockConfiguration": { "BlockPublicAcls": false, "BlockPublicPolicy": true, "IgnorePublicAcls": true, "RestrictPublicBuckets": true }
+      }
+    },
+    "PrivilegedTask": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": { "ContainerDefinitions": [{ "Name": "app", "Image": "app", "Privileged": true }] }
+    },
+    "PlainLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": { "LogGroupName": "plain" }
+    },
+    "OpenSsh": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "ssh from anywhere",
+        "SecurityGroupIngress": [{ "IpProtocol": "tcp", "CidrIp": "0.0.0.0/0", "FromPort": 22, "ToPort": 22 }]
+      }
+    },
+    "AdminRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Principal": { "Service": "ecs-tasks.amazonaws.com" }, "Action": "sts:AssumeRole" }] },
+        "Policies": [{ "PolicyName": "admin", "PolicyDocument": { "Version": "2012-10-17", "Statement": [{ "Effect": "Allow", "Action": "*", "Resource": "*" }] } }]
+      }
+    }
+  }
+}

@@ -104,6 +104,11 @@ production-ha-live-e2e:
 # Everything CI-relevant.
 check: build lint test
 
+# CloudFormation Guard rules (policies/production.guard): every production-tier
+# template passes and the violations fixture fails each rule. Needs cfn-guard.
+policy:
+    bash scripts/policy/check.sh
+
 # Local run — browsable Loom on a laptop (#49, epic #45). On-demand, needs Docker.
 local-up:
     bash scripts/local/local-up.sh

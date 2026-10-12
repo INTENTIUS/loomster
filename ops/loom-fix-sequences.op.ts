@@ -12,6 +12,7 @@
  */
 
 import { Op, phase, shell } from "@intentius/chant/op";
+import { preflightPhase, stackPrefixOf } from "./lib/preflight";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { operatorRefs, fixSequencesScript } from "./lib/operator";
 
@@ -22,5 +23,8 @@ export default Op({
   name: "loom-fix-sequences",
   overview: `Reset the Loom database's id sequences to each table's max id (env=${naming.env}, instance=${naming.instance}) with fix_sequences.py, as a one-off backend task. Idempotent, ungated.`,
   labels: { Env: naming.env },
-  phases: [phase("FixSequences", [shell(fixSequencesScript(refs.backend), { profile: "longInfra" })])],
+  phases: [
+    preflightPhase({ env: naming.env, stacks: ["loom-db", "loom-backend"].map((c) => `${stackPrefixOf(naming)}-${c}`) }),
+    phase("FixSequences", [shell(fixSequencesScript(refs.backend), { profile: "longInfra" })]),
+  ],
 });

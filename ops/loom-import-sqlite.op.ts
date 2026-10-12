@@ -15,6 +15,7 @@
  */
 
 import { Op, phase, gate, shell } from "@intentius/chant/op";
+import { preflightPhase, stackPrefixOf } from "./lib/preflight";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { operatorRefs, importSqliteScript } from "./lib/operator";
 import { snapshotBeforeScript } from "./lib/rds-safety";
@@ -28,6 +29,7 @@ export default Op({
   labels: { Env: naming.env },
   neverOverMcp: true,
   phases: [
+    preflightPhase({ env: naming.env, stacks: ["shared-foundation", "loom-db", "loom-backend"].map((c) => `${stackPrefixOf(naming)}-${c}`) }),
     phase("Snapshot", [shell(snapshotBeforeScript({ dbInstanceIdentifier: refs.dbInstanceIdentifier }), { profile: "longInfra" })]),
     phase("Approve", [
       gate("approve-loom-import-sqlite", {
