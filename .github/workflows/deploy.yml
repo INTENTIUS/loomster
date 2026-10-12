@@ -48,6 +48,11 @@ jobs:
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2
 
+      # The account-level service-linked roles a first deploy needs (#38);
+      # a no-op once they exist.
+      - name: Bootstrap the account (chant run loom-bootstrap)
+        run: npx chant run loom-bootstrap
+
       # Dependency-ordered build -> publish (by digest) -> apply -> verify for
       # every component. `chant run --components all` derives the order from dependsOn.
       - name: Deploy (chant run --components all)

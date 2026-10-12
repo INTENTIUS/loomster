@@ -182,6 +182,7 @@ exit 3, `chant approve <op> <gate>` records the approval, and the next
 | `loom-restore` | Restore the DB (snapshot or PITR) to a new instance, then cut the backend over to it (repoint secret + redeploy). | Yes — cutover is destructive |
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes, in reverse `chant graph --components` order. No foreign deletes. | Yes |
 | `loom-dns-setup` | Create + delegate a custom-domain Route53 zone, wait for the delegation to resolve. Human-in-the-loop, local. | No |
+| `loom-bootstrap` | Once per account: create the ECS and AgentCore runtime-identity service-linked roles if missing (Loom's `make ecs.init`/`agentcore.init`). Idempotent. | No |
 
 ```
 npm run ops:build                            # ops/dist/ops/<name>/op.json

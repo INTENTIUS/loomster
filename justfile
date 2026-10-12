@@ -111,6 +111,12 @@ local-up:
 local-down:
     bash scripts/local/local-down.sh
 
+# Once per AWS account, before the first deploy: the ECS and AgentCore
+# runtime-identity service-linked roles (Loom's make ecs.init/agentcore.init),
+# created only if missing (#38).
+bootstrap:
+    npx chant run loom-bootstrap
+
 # One Loom agent's execution role, the way Loom's role.yaml makes it: deploy the
 # role stack and register it in Loom tagged into the group (#2).
 # `just agent-role support_bot support`; LOOM_API_BASE_URL/LOOM_API_TOKEN as for loom-seed.
