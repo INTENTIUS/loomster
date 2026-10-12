@@ -9,8 +9,8 @@ human_gate "the production E2E against Floci: a local emulator on :4566 and Dock
 #
 # The {github,gitlab,forgejo}-runtime-e2e scripts prove the *light* tier deploys
 # through the generated CI pipeline. This proves the *production* tiers deploy at
-# all: it stands the full stack up end to end against the AgentCore-enabled Floci
-# emulator, against a bring-your-own VPC (production requires a referenced
+# all: it stands the full stack up end to end against the Floci
+# emulator (2.2.0+, which emulates AgentCore), against a bring-your-own VPC (production requires a referenced
 # network), and asserts every tier-distinguishing resource actually creates —
 # RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend
 # autoscaling, and both agent runtimes (assistant + harness). For production-ha
@@ -32,7 +32,7 @@ case "$TIER" in
 esac
 
 REGION="${AWS_REGION:-us-east-1}"
-FLOCI_IMAGE="ghcr.io/lex00/floci:agentcore"
+FLOCI_IMAGE="${FLOCI_IMAGE:-floci/floci:2.2.0}"
 FLOCI_NAME="floci-prod-e2e"
 export AWS_ENDPOINT_URL="http://localhost:4566" AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_REGION="$REGION"
 export LOOM_TIER="$TIER" LOOM_ENV=floci LOOM_INSTANCE=a AWS_ACCOUNT_ID=000000000000
@@ -45,12 +45,24 @@ export LOOM_DOMAIN_NAME="loom.floci.test"
 
 aws() { command aws --endpoint-url "$AWS_ENDPOINT_URL" --region "$REGION" "$@"; }
 
-cleanup() { docker rm -f "$FLOCI_NAME" >/dev/null 2>&1 || true; }
+cleanup() {
+  docker rm -f "$FLOCI_NAME" >/dev/null 2>&1 || true
+  ids="$(docker ps -aq --filter "network=$FLOCI_NAME-net" 2>/dev/null)"; [ -n "$ids" ] && docker rm -f $ids >/dev/null 2>&1
+  docker network rm "$FLOCI_NAME-net" >/dev/null 2>&1 || true
+  vols="$(docker volume ls -q --filter "name=floci-aws-$FLOCI_NAME-" 2>/dev/null)"; [ -n "$vols" ] && docker volume rm $vols >/dev/null 2>&1
+}
 trap cleanup EXIT
 
 echo "=== [1/5] fresh Floci ($FLOCI_IMAGE) ==="
 docker rm -f "$FLOCI_NAME" floci >/dev/null 2>&1 || true
-docker run -d --rm -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock --name "$FLOCI_NAME" "$FLOCI_IMAGE" >/dev/null
+# Floci 2.x reaches its ECR registry by container name, which only resolves on a
+# user-defined network, so Floci and the containers it spawns share one.
+# The resource namespace names its child containers and volumes after this run,
+# so cleanup removes exactly those.
+docker network create "$FLOCI_NAME-net" >/dev/null 2>&1 || true
+docker run -d --rm -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock \
+  --network "$FLOCI_NAME-net" -e FLOCI_SERVICES_DOCKER_NETWORK="$FLOCI_NAME-net" -e FLOCI_SERVICES_ECR_DOCKER_NETWORK="$FLOCI_NAME-net" -e FLOCI_DOCKER_RESOURCE_NAMESPACE="$FLOCI_NAME" \
+  --name "$FLOCI_NAME" "$FLOCI_IMAGE" >/dev/null
 for i in $(seq 1 30); do
   [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4566/_localstack/health 2>/dev/null)" = "200" ] && break
   sleep 2

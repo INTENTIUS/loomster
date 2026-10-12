@@ -16,9 +16,10 @@
  */
 
 import { Service, Network, env } from "@intentius/chant-lexicon-docker";
-import { loomLocalProxy } from "./proxy";
+import { loomLocalProxy, loopbackPublishedPort } from "./proxy";
 
 const NETWORK = "loomNet";
+const LISTEN_PORT = 8080;
 
 /**
  * Shared network — app services + proxy resolve each other by name, and Floci
@@ -34,14 +35,23 @@ export const loomBackend = new Service({
   image: env("LOOM_BACKEND_IMAGE", { default: "loom-local-backend:latest" }),
   environment: {
     LOOM_DATABASE_URL: env("LOOM_DATABASE_URL"),
-    // LOOM_COGNITO_USER_POOL_ID is deliberately unset on the local tier (#50):
-    // Floci's Cognito can't mint validatable JWTs (it returns opaque tokens,
-    // and the Cognito validator fetches JWKS from real AWS for a pool that only
-    // exists in Floci). With no pool id and no active external IdP, Loom's own
-    // dev bypass engages (backend/app/dependencies/auth.py `get_current_user`):
-    // every request is a `local-dev` user with the admin groups + all scopes.
-    // That is Loom's sanctioned local-dev auth path — the app is fully usable
-    // without a real IdP. Production/production-ha use the real Cognito pool.
+    // LOOM_COGNITO_USER_POOL_ID is deliberately unset on the local tier (#50,
+    // re-checked in loomster#3). Floci's Cognito now issues RS256 JWTs and
+    // serves a JWKS, but Loom can't validate them: its Cognito validator
+    // hardcodes the issuer/JWKS to https://cognito-idp.<region>.amazonaws.com,
+    // and its generic OIDC path fetches JWKS through net_guard.safe_get, which
+    // (v1.7.0+) only allows https to public addresses. Floci (even with its
+    // TLS on) sits on a private Docker address, and its access tokens carry
+    // no `aud`, which that path checks. The frontend's Cognito login also posts
+    // to the real cognito-idp.<region>.amazonaws.com. So the local tier runs Loom's own
+    // dev bypass: with no pool id and no active external IdP, every request is
+    // a `local-dev` user with the admin groups + all scopes.
+    // v1.6.1+ needs the explicit opt-in below; v1.8.1+ also requires a
+    // loopback client and no forwarding headers, which the proxy provides by
+    // running in this container's network namespace (see ./proxy.ts). Earlier
+    // versions ignore the variable. awslabs/loom#79 plans to remove the bypass.
+    // Production/production-ha use the real Cognito pool.
+    LOOM_ALLOW_UNAUTHENTICATED_LOCAL_DEV: "true",
     LOOM_COGNITO_REGION: env("AWS_REGION", { default: "us-east-1" }),
     LOOM_ARTIFACT_BUCKET: env("LOOM_ARTIFACT_BUCKET"),
     AWS_ENDPOINT_URL: env("AWS_ENDPOINT_URL"),
@@ -51,6 +61,9 @@ export const loomBackend = new Service({
     LOOM_ALLOWED_ORIGINS: env("LOOM_ALLOWED_ORIGINS", { default: "http://localhost:8080" }),
     LOG_LEVEL: "info",
   },
+  // The proxy shares this container's network namespace (loopback mode), so
+  // its listener is published here, on the host's 127.0.0.1 only.
+  ports: [loopbackPublishedPort(LISTEN_PORT)],
   networks: [NETWORK],
   restart: "unless-stopped",
 });
@@ -62,9 +75,14 @@ export const loomFrontend = new Service({
   restart: "unless-stopped",
 });
 
-/** Reverse proxy (#48) — one browsable origin, mirrors Loom's ALB routing. */
+/**
+ * Reverse proxy (#48) — one browsable origin, mirrors Loom's ALB routing. Runs
+ * in the backend's network namespace and reaches it over 127.0.0.1 (#3), so
+ * Loom v1.8.1+ treats proxied requests as loopback for its dev-auth bypass.
+ */
 export const loomProxy = loomLocalProxy({
-  listenPort: 8080,
+  listenPort: LISTEN_PORT,
+  backendOverLoopback: true,
   backendService: "loomBackend",
   frontendService: "loomFrontend",
   servicePort: 8000,

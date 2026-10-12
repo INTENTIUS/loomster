@@ -47,7 +47,7 @@ stdio) for inspecting and building the graph. From the checkout, ask your agent 
 ## Run it locally
 
 ```
-just local-up     # browsable, authenticated Loom (needs Docker, no AWS account)
+just local-up     # browsable Loom, dev-auth bypass, no login (needs Docker, no AWS account)
 just local-down   # tear it down
 ```
 
