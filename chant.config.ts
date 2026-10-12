@@ -139,6 +139,13 @@ export default {
     assistantCodePrefix: { type: "string", default: "strands_agent/agent.zip", env: "LOOM_ASSISTANT_CODE_PREFIX" },
     agentsBedrockModelArns: { type: "string", required: false, env: "LOOM_AGENTS_BEDROCK_MODEL_ARNS" },
     agentsMemoryEventExpiryDays: { type: "number", required: false, env: "LOOM_AGENTS_MEMORY_EVENT_EXPIRY_DAYS" },
+
+    // ── loom-agent-role (one stack per Loom agent, `chant run loom-agent-role`) ──
+    agentRoleAgent: { type: "string", required: false, env: "LOOM_AGENT_ROLE_AGENT" },
+    agentRoleGroup: { type: "string", required: false, env: "LOOM_AGENT_ROLE_GROUP" },
+    agentRoleMemoryArn: { type: "string", required: false, env: "LOOM_AGENT_ROLE_MEMORY_ARN" },
+    agentRoleCodeInterpreter: { type: "boolean", required: false, env: "LOOM_AGENT_ROLE_CODE_INTERPRETER" },
+    agentRoleBedrockModelArns: { type: "string", required: false, env: "LOOM_AGENT_ROLE_BEDROCK_MODEL_ARNS" },
   },
   lint: {
     overrides: [

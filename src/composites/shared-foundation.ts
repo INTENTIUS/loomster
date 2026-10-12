@@ -5,8 +5,8 @@
  * (v1.9.0) into one composite emitting one CloudFormation stack: the ALB +
  * listener/rules/target-groups, ACM cert, Route53 zone + record, KMS key,
  * S3 artifact bucket, 2 ECR repos, security groups, ECS cluster, PrivateLink
- * VPCEndpointService, and the agent IAM role (its policy still matches v1.6.0's
- * role.yaml; the v1.9.0 per-agent credential-provider scoping is #2). Every service/agent Loom
+ * VPCEndpointService, and the shared agent IAM role (v1.9.0 role.yaml's
+ * statements at every-agent scope, see ./loom-agent-role.ts). Every service/agent Loom
  * deploys depends on this stack's outputs (`stackOutput("shared-foundation",
  * "<key>")` — see src/shared-foundation/outputs.ts for the exact key list).
  *
@@ -92,9 +92,9 @@ import {
   SubIntrinsic,
   AWS,
   ECRActions,
-  LogsActions,
 } from "@intentius/chant-lexicon-aws";
 import { loomNaming, type LoomNaming, type LoomNamingParams } from "../lib/naming";
+import { loomAgentRoleStatements, AGENTCORE_ASSUME_ROLE_POLICY } from "./loom-agent-role";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Seams (chant#898) — each area independently provisioned, referenced, or
@@ -140,11 +140,13 @@ export type EcrSeam =
   | { mode: "omit" };
 
 /**
- * The Bedrock AgentCore execution role (Loom's `role.yaml`). Scoped here to
- * what this composite itself creates (artifact bucket, ECR KMS key, logs) —
- * the full agent-runtime permission set (Bedrock model invoke, AgentCore
- * workload identity, Secrets Manager, memory, code interpreter) belongs to
- * the agent-runtime composite (chant#893), out of scope for shared-foundation.
+ * The shared Bedrock AgentCore execution role: the one the seed imports into
+ * Loom and its demo agent deploys with. It carries Loom v1.9.0 `role.yaml`'s
+ * statements at every-agent scope (`./loom-agent-role.ts`, `agentName: "*"`),
+ * with Code Interpreter and any memory in this account, plus pull/read on
+ * what this stack creates (ECR, the artifact bucket, the ECR KMS key). One
+ * role per agent, the way Loom intends, is `./loom-agent-role.ts`
+ * (`chant run loom-agent-role`).
  */
 export type AgentRoleSeam =
   | { mode?: "provision"; bedrockModelArns?: string[] }
@@ -633,24 +635,26 @@ function buildArtifactBucketPolicy(bucketRef: string, bucketArn: string) {
 function buildAgentRole(
   naming: LoomNaming,
   tags: TagList,
-  bedrockModelArns: string[],
+  bedrockModelArns: string[] | undefined,
   ecrKmsKeyArn: string | undefined,
   artifactBucketArn: string,
 ) {
   const roleName = naming.name("agent-role");
   const policyName = naming.name("agent-policy");
 
-  // Plain array construction, not a resource constructor — chant's
-  // EVL001/EVL002 only govern `new Xxx(...)` calls, so building this
-  // conditionally with ordinary pushes is fine.
-  const statements: Record<string, unknown>[] = [
-    {
-      Effect: "Allow",
-      Action: ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
-      Resource: bedrockModelArns,
-    },
+  // Loom's role.yaml statements at every-agent scope, flattened into this
+  // role's one inline policy. Plain array construction, not a resource
+  // constructor — chant's EVL001/EVL002 only govern `new Xxx(...)` calls, so
+  // building this conditionally with ordinary pushes is fine.
+  const loom = loomAgentRoleStatements({
+    agentName: "*",
+    bedrockModelArns,
+    memoryArn: Sub`arn:${AWS.Partition}:bedrock-agentcore:*:${AWS.AccountId}:memory/*` as unknown as string,
+    codeInterpreter: true,
+  });
+  // concat, not a spread: EVL004 only accepts spreads of a const.
+  const statements: Record<string, unknown>[] = Object.values(loom).flat().concat([
     { Effect: "Allow", Action: ECRActions.Pull, Resource: "*" },
-    { Effect: "Allow", Action: LogsActions.Write, Resource: "*" },
     {
       Effect: "Allow",
       Action: ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
@@ -661,22 +665,16 @@ function buildAgentRole(
       // through chant's tagged-template `Sub` (chant#918).
       Resource: [artifactBucketArn, Sub`${artifactBucketArn}/*`],
     },
-  ];
+  ]);
   if (ecrKmsKeyArn) {
     statements.push({ Effect: "Allow", Action: ["kms:Decrypt", "kms:GenerateDataKey"], Resource: ecrKmsKeyArn });
   }
 
-  const assumeRolePolicyDocument = {
-    Version: "2012-10-17",
-    Statement: [
-      { Effect: "Allow", Principal: { Service: "bedrock-agentcore.amazonaws.com" }, Action: "sts:AssumeRole" },
-    ],
-  };
   const policyDocument = { Version: "2012-10-17", Statement: statements };
 
   const agentRole = new Role({
     RoleName: roleName,
-    AssumeRolePolicyDocument: assumeRolePolicyDocument,
+    AssumeRolePolicyDocument: AGENTCORE_ASSUME_ROLE_POLICY,
     Policies: [new Role_Policy({ PolicyName: policyName, PolicyDocument: policyDocument as unknown as string })],
     Tags: tags,
   });
@@ -1008,10 +1006,10 @@ export const SharedFoundation = Composite<SharedFoundationProps, SharedFoundatio
     ? buildPrivateLink(naming, tags, vpcId, privateSubnetIds as string[], props.privateLink?.agentRuntimePort ?? 443, props.loggingBucketName)
     : undefined;
 
-  // ── Agent IAM role (Loom's role.yaml, scoped to this stack's own resources) ──
+  // ── Agent IAM role (Loom's role.yaml at every-agent scope) ──
   const agentRoleMode = props.agentRole?.mode ?? "provision";
-  const bedrockModelArns =
-    (props.agentRole?.mode === "provision" && props.agentRole.bedrockModelArns) || ["arn:aws:bedrock:*::foundation-model/*"];
+  // Unset: loom-agent-role's default (this account's inference profiles + every foundation model).
+  const bedrockModelArns = props.agentRole?.mode === "provision" ? props.agentRole.bedrockModelArns : undefined;
   const agentRoleResult = agentRoleMode === "provision"
     ? buildAgentRole(naming, tags, bedrockModelArns, ecrKmsKeyArn, artifactBucket.Arn as string)
     : undefined;
