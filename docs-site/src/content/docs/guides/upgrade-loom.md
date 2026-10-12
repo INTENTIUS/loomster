@@ -1,0 +1,138 @@
+---
+title: Upgrade Loom
+description: Move the pinned Loom release, run the tier's upgrade Op, which snapshots the database and rolls the backend and frontend, and run the one-time scripts and manual steps a release needs, including v1.6 to v1.9.
+prompt: |
+  Read https://intentius.io/loomster/guides/upgrade-loom/ and, for the Loom release the person names, update the pin in scripts/vendor-loom.sh and the version mentions, run `npm run vendor`, and summarize the upstream release notes for the range.
+  Open a pull request with the pin change. Run an upgrade Op only if the person asked for it in this session, and stop at its gate.
+  Never run `chant approve` or `just grant`, never deploy to or delete from a real AWS account unless the person asked for that in this session, never register an identity provider in Loom, and never push or edit the `chant/lifecycle` branch.
+---
+
+## Result
+
+The deployment running a new Loom release, its schema migrated, with a
+pre-upgrade snapshot to fall back on.
+
+## Prerequisites
+
+The deployment's `LOOM_*` variables and AWS credentials, Docker for the image
+builds, and the upstream release notes and `DEPLOYMENT.md` for the range you're
+crossing.
+
+## Steps
+
+### 1. Move the pin
+
+The pin in `scripts/vendor-loom.sh` is a tag plus the commit it must resolve to:
+
+```
+git ls-remote --tags https://github.com/awslabs/loom 'refs/tags/v1.9.0^{}'
+# a3050669f5b4c83210a44ed4346f17e01641e82f  refs/tags/v1.9.0^{}
+```
+
+Update `LOOM_TAG` and `LOOM_EXPECTED_SHA`, and the version in `README.md`,
+`package.json` and the `justfile`. Then fetch:
+
+```
+npm run vendor
+```
+
+The script fails if the tag moved, if `backend/Dockerfile`, `backend/scripts/`
+or the agent sources are missing, if a patch in `scripts/loom-patches/` no
+longer applies, or if `backend/Dockerfile` lost its `COPY backend/app/ ./app/`
+line. loomster adds `COPY backend/scripts/ ./scripts/` after that line so the
+image carries Loom's maintenance scripts.
+
+Keep `vendor/loom` for the upgrade run, and remove it before `chant lint .`,
+which would otherwise lint it as project code.
+
+### 2. Run the upgrade Op
+
+Loom has no migration tool: when a backend task starts, it creates new tables
+and adds new columns. So the [Op](/loomster/concepts/glossary/#op)'s Migrate phase is the backend roll itself,
+`chant run --components loom-backend`, and a healthy new task is one that has
+migrated.
+
+| [Tier](/loomster/concepts/tiers-and-instances/) | Phases | On failure |
+|---|---|---|
+| `light` | Snapshot, Migrate, Apply | the component's own rollback to the previous task definition |
+| `production`, `production-ha` | Snapshot, Approve, Migrate, Apply, Scripts | Rollback restores the pre-upgrade snapshot to a new instance |
+
+Migrate rolls the backend, Apply the frontend, Scripts runs the one-time
+scripts. The gate sits before Migrate, the point of no return for the schema.
+
+```
+chant run loom-upgrade-light               # light: no gate
+
+export LOOM_UPGRADE_SCRIPTS="migrate_oauth2_secrets.py --apply"
+chant run loom-upgrade-production          # stops at Approve, exit 3
+chant approve loom-upgrade-production approve-loom-upgrade-production
+chant run loom-upgrade-production          # snapshots again, then continues
+```
+
+Each component synthesizes its own template from your variables, so there is no
+separate synth step. Snapshot names the snapshot `<db-instance>-upgrade-<timestamp>`
+and waits for it.
+
+If a gated run fails after the snapshot, Rollback restores the latest manual
+snapshot to `<db-instance>-restored-<timestamp>` without cutting over. To get the
+pre-upgrade data back, cut over with `loom-restore`
+(`LOOM_RESTORE_SNAPSHOT_ID=<the -upgrade- snapshot>`,
+[Back up and restore](/loomster/guides/back-up-and-restore/)). The backend's own
+rollback puts the previous task definition back but doesn't undo the schema.
+
+### 3. Run one-time scripts
+
+On the production tiers, list them in `LOOM_UPGRADE_SCRIPTS`, comma-separated,
+each a script name (`.py` optional) and its arguments:
+
+```
+LOOM_UPGRADE_SCRIPTS="migrate_oauth2_secrets.py --apply,drop_permission_requests.py --apply"
+```
+
+Each runs in order as a one-off Fargate task from the backend service's current
+task definition (its image, task role, environment, secrets and network), as
+`python -m scripts.<name> [args]` from `/app`. Its log output is printed, and the
+first non-zero exit fails the phase.
+
+On light, run one by hand:
+
+```
+CLUSTER=<project>-<env>-<instance>-shared-foundation-cluster
+SERVICE=<project>-<env>-<instance>-loom-backend-backend-svc
+TD=$(aws ecs describe-services --cluster $CLUSTER --services $SERVICE --query 'services[0].taskDefinition' --output text)
+NET=$(aws ecs describe-services --cluster $CLUSTER --services $SERVICE --query 'services[0].networkConfiguration' --output json)
+aws ecs run-task --cluster $CLUSTER --task-definition $TD --launch-type FARGATE \
+  --network-configuration "$NET" \
+  --overrides '{"containerOverrides":[{"name":"backend","command":["python","-m","scripts.migrate_oauth2_secrets","--apply"]}]}'
+```
+
+## From v1.6 to v1.9
+
+Three changes in v1.9.0 need attention.
+
+OAuth2 client secrets move to Secrets Manager. MCP and A2A OAuth2 client secrets
+leave the database for `loom/mcp/{id}/...` and `loom/a2a/{id}/...`. The backend
+moves a row the first time its secret is used; `migrate_oauth2_secrets.py --apply`
+moves all of them and clears the column, reading each secret back first. Without
+`--apply` it only reports. The backend task role grants the `secret:loom/*`
+access both paths need ([Security](/loomster/reference/security/#backend-task-role)).
+
+Loom no longer creates IAM roles. An agent can't deploy without a `role_arn`
+registered under Security > IAM roles and tagged into its group. Agents whose
+role an older Loom created won't redeploy until that role is registered. List
+them before upgrading and register each role after. loomster's task role never
+had IAM write access, so such roles are unlikely here. Integrations (S3, Lambda,
+DynamoDB) now record configuration only; add the IAM statement to the agent's
+role ([Create an execution role per agent](/loomster/guides/create-an-execution-role-per-agent/)).
+
+Permission requests are gone. `drop_permission_requests.py --apply` drops the
+unused `permission_requests` table and its history. It's optional.
+
+`fix_sequences.py` isn't needed for an upgrade or for `loom-restore`, whose
+snapshot and point-in-time restores are physical copies. It's in the image for a
+logical data load: `LOOM_UPGRADE_SCRIPTS=fix_sequences.py`.
+
+## Next
+
+[Validation](/loomster/reference/validation/) to rerun `just validate` against the
+upgraded deployment, and [What's new](/loomster/reference/whats-new/).

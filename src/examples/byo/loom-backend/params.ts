@@ -9,7 +9,7 @@
  * `../loom-db/params.ts`, and `../loom-cognito/params.ts`, as if resolved
  * from those three stacks' outputs.
  *
- * **Known gap (see docs/adoption.md):** `LoomBackend` (chant#889,
+ * **Known gap (see https://intentius.io/loomster/reference/adoption-seams/):** `LoomBackend` (chant#889,
  * `../../../composites/loom-backend.ts`) does not yet expose a
  * `reference-existing` seam for its own execution/task IAM roles — it always
  * provisions both, regardless of how upstream network/data/identity are
@@ -48,7 +48,7 @@ export const databaseSecretArn = "arn:aws:secretsmanager:us-east-1:123456789012:
  * has no field for this (it models only the endpoint + the two secret ARNs),
  * so an externally-managed DB's secrets KMS key has no `stackOutput("loom-db",
  * ...)` to flow through today — a second facet of the same gap documented
- * above, tracked in docs/adoption.md rather than patched here.
+ * above, tracked in https://intentius.io/loomster/reference/adoption-seams/ rather than patched here.
  */
 export const secretsKmsKeyArn = "arn:aws:kms:us-east-1:123456789012:key/3333cccc-33cc-33cc-33cc-3333cccc3333";
 

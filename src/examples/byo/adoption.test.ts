@@ -16,7 +16,7 @@
  *    per-instance pool, ever.
  *
  * It also draws two documented boundaries rather than papering over them
- * (see docs/adoption.md for the full writeup):
+ * (see https://intentius.io/loomster/reference/adoption-seams/ for the full writeup):
  *
  * - PrivateLink has no independent `omit` seam yet — it is gated purely by
  *   tier (`fullTier` in `../../composites/shared-foundation.ts`). This file
@@ -25,7 +25,7 @@
  *   there.
  * - There is no bastion composite anywhere in this codebase (Loom's own
  *   upstream template has none either) — nothing to omit, so nothing is
- *   tested here. Noted in docs/adoption.md instead of a fabricated test.
+ *   tested here. Noted in https://intentius.io/loomster/reference/adoption-seams/ instead of a fabricated test.
  *
  * Zero edits to any file under `../../composites/` — every fixture below
  * either imports the shipped example modules unmodified or calls the
@@ -125,13 +125,13 @@ describe("BYO-everything example (chant#898) — shared-foundation", () => {
     expect(cert.CertificateArn).toBe("arn:aws:acm:us-east-1:123456789012:certificate/2222bbbb-22bb-22bb-22bb-2222bbbb2222");
   });
 
-  test("produces valid CloudFormation with no dangling refs (WAW042 S3 TLS-deny is a separate, pre-existing gap — see docs/adoption.md)", () => {
+  test("produces valid CloudFormation with no dangling refs (WAW042 S3 TLS-deny is a separate, pre-existing gap — see https://intentius.io/loomster/reference/adoption-seams/)", () => {
     // `chant build` on this directory currently exits non-zero because of
     // WAW042 (the artifact bucket has no explicit Deny-non-TLS policy) — a
     // gap in `../../composites/shared-foundation.ts` this example does not
     // introduce and this test does not paper over (reproduces identically
     // on the repo's real, unmodified `src/shared-foundation` stack too, and
-    // is tracked separately — see docs/adoption.md's "Known gaps" section).
+    // is tracked separately — see https://intentius.io/loomster/reference/adoption-seams/'s "Known gaps" section).
     // Synthesizing directly (bypassing chant build's post-synth pipeline,
     // same convention `../../composites/*.test.ts` already uses) proves the
     // *seam wiring itself* is sound independent of that unrelated gap.
@@ -208,7 +208,7 @@ describe("BYO-everything example (chant#898) — loom-backend / loom-frontend", 
     for (const expected of ["executionRole", "taskRole", "taskDefinition", "service", "logGroup", "logsKmsKey"]) {
       expect(names).toContain(expected);
     }
-    // Known gap (docs/adoption.md): LoomBackend always provisions its own
+    // Known gap (https://intentius.io/loomster/reference/adoption-seams/): LoomBackend always provisions its own
     // execution/task roles — there is no reference-existing seam for them
     // yet, unlike every upstream piece it depends on. Documented, not hidden.
     expect(names).toContain("executionRole");
@@ -275,7 +275,7 @@ describe("BYO-everything example (chant#898) — omit for optional add-ons", () 
     assertNoDanglingRefs(template);
   });
 
-  test("PrivateLink: no independent seam yet — tier is the only current lever (documented gap, docs/adoption.md)", () => {
+  test("PrivateLink: no independent seam yet — tier is the only current lever (documented gap, https://intentius.io/loomster/reference/adoption-seams/)", () => {
     const lightInstance = SharedFoundation({
       naming: { ...naming, tier: "light" },
       network: { mode: "reference-existing" as const, vpcId: "vpc-1", publicSubnetIds: ["subnet-pub1", "subnet-pub2"] },

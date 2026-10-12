@@ -16,7 +16,7 @@ just claims-affected                          # the claims your change can affec
 bash test/claims.sh --list                    # name, target, tier, statement
 ```
 
-## What a claim declares and prints
+## Claim header and output
 
 The header of each script declares:
 
@@ -33,7 +33,7 @@ CLAIM claim=<name> verdict=pass|caught|fail|pending [detail]
 ```
 
 `pending` means the claim can't run here or yet, and the detail says what it
-needs. A Floci claim also says what Floci can't prove; IAM is the usual one,
+needs. A [Floci](/loomster/concepts/glossary/#floci) claim also says what Floci can't prove; IAM is the usual one,
 since the emulator doesn't enforce it.
 
 ## BREAK
@@ -43,7 +43,7 @@ claim breaks its own property on purpose (unsets the variable, drops the
 component, denies the IAM action) and must print `caught`. A claim that still
 prints `pass` there can't fail, and the runner records it as `fail`.
 
-`just claims` writes a row per claim and run (claim, target, tier, run, verdict,
+`just claims` writes a row per claim and run (claim, target, [tier](/loomster/concepts/glossary/#tier), run, verdict,
 detail, time, git sha) to `test/.state/claims.json`.
 
 ## The gate and grants

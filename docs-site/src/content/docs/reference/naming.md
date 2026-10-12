@@ -19,9 +19,9 @@ account ids, or sizes in any composite.
 - **`instance`** is the tenant/boundary segment. Mandatory. This is what lets N
   Loom instances coexist in one AWS account or spread across many without
   collision (the multi-boundary topology). The **CFN stack names** are namespaced by
-  the same `{project}-{env}-{instance}` prefix — a component `loom-db` deploys to a
-  stack `loom-prod-a-loom-db` — so two deployments never collide on stack names
-  either, only on the `instance` boundary. Two tiers were run side by side in one
+  the same `{project}-{env}-{instance}` prefix (a component `loom-db` deploys to a
+  stack `loom-prod-a-loom-db`), so two deployments never collide on stack names
+  either, only on the `instance` boundary. Two [tiers](/loomster/concepts/glossary/#tier) were run side by side in one
   account this way (`production` as instance `a`, `production-ha` as instance `b`).
 - **`component`** is the composite's own name, e.g. `loom-db`, `shared-foundation`.
 - **`resource`** is the specific resource within the component, e.g. `instance`,
@@ -55,7 +55,7 @@ same physical name.
 
 The uniqueness suffix on `s3Bucket` / `cognitoDomain` is a short hash of
 `accountId:region`, falling back to `region` alone when the account id is unknown
-at author time (as with a reference-existing seam). It's deterministic. The same
+at author time (as with a reference-existing [seam](/loomster/concepts/glossary/#seam)). It's deterministic. The same
 account/region pair always produces the same suffix, and two different accounts
 or regions always produce different ones.
 

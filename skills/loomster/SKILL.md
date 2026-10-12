@@ -1,107 +1,110 @@
 ---
 skill: loomster
-description: Drive a Loom deployment on chant — deploy a tier, seed it, validate every screen, back it up, reconcile drift. The capability map for agents operating this repo.
+description: Drive a Loom deployment on chant: run it locally, deploy a tier, seed it, validate every screen, back it up, reconcile drift. The capability map for agents operating this repo.
 user-invocable: true
 ---
 
 # Operating loomster
 
 loomster deploys [awslabs/loom](https://github.com/awslabs/loom) `v1.9.0` as typed
-infrastructure on chant. You drive it from this repo — clone, install, then run
-the verbs below. Nothing in `src/` changes between runs; two parameters do the
-varying:
+infrastructure on chant. You drive it from this repo: clone, `npm install`, then
+run the verbs below. Nothing in `src/` changes between runs; two settings vary:
 
-- **`LOOM_TIER`** — `light` | `production` | `production-ha`.
-- **Target** — Floci (a local AWS emulator, no account) or a real AWS account.
+- `LOOM_TIER`: `light`, `production` or `production-ha`.
+- The target: Floci (a local AWS emulator, no account) or a real AWS account.
 
-chant is the CLI. It also serves an MCP server (`chant serve mcp`, stdio) exposing
-`build` / `lint` / `list` / `describe` / `diff` / Op tools — wire it into your
-agent to inspect and build the graph directly. This skill is the layer above that:
-the lifecycle a Loom operator actually runs.
+chant is the CLI. It also serves an MCP server (`chant serve mcp`, stdio) with
+`build`, `lint`, `list`, `describe`, `diff` and the Op tools. This skill is the
+layer above: the lifecycle a Loom operator runs. The docs are at
+https://intentius.io/loomster/ and https://intentius.io/loomster/llms.txt lists
+every page; each task page has a prompt for you.
 
-## Golden paths
+## Paths, cheapest first
 
-Pick the cheapest one that answers the question in front of you.
+1. Local, no AWS account. `just local-up` builds Loom's images and runs the app on
+   Floci at `http://localhost:8080` with a real Cognito login (it prints the
+   password); `just validate` checks every screen; `just local-down` stops it.
+   Use it for every question that doesn't need a real account.
+2. Light on AWS. The cheapest real deployment: an ALB, RDS and Cognito, on a VPC
+   it builds. Only when the person asked for a deploy to their account.
+3. Production or production-ha. HTTPS on a custom domain, PrivateLink, RDS
+   Proxy, Multi-AZ on production-ha. Needs the person's VPC and domain.
 
-1. **Local (no AWS account).** `just local-up` builds Loom's real images and stands
-   the full app on Floci at `http://localhost:8080`. `just local-down` tears it
-   down. Use for every "does it work" question that doesn't need a real account.
-2. **Light on real AWS.** The cheapest self-contained real deployment — a real ALB,
-   RDS, and Cognito. This is the only tier applied to a live account today.
-3. **Production / production-ha.** HTTPS, a custom domain, PrivateLink, Multi-AZ.
-   These synthesize and pass the fidelity audit, and deploy end to end on Floci
-   (`just production-floci-e2e`), but haven't been applied to a live account yet.
+All three have run end to end on a real account; the status, with what no run
+has shown, is https://intentius.io/loomster/reference/validation/. On AWS the
+served app's sign-in form isn't wired, so use Loom through its API with a token
+from `just cognito-token` (production tiers) or a temporary client (light).
 
 ## Command map
 
 | Goal | Command | Notes |
 |---|---|---|
-| Run the full app locally | `just local-up` / `just local-down` | Floci, no AWS account |
-| Synthesize a stack | `npm run synth` | writes `dist/*.template.json` |
-| Typecheck / lint / test | `just check` | run before every deploy |
-| Set up a custom domain | `LOOM_DOMAIN_NAME=<domain> npm run dns-setup` | creates + waits for Route53 delegation; do the NS step at your provider |
-| Deploy a component | `chant run <op>` or the component pipeline | tier via `LOOM_TIER` |
-| Seed the app | `npm run seed` | **via Loom's API, never the DB** — see Guardrails |
-| Prove it's usable | `npm run validate` | walks every screen; the deploy gate |
-| Back up | `npm run backup` + `npm run cognito-export` | RDS snapshot + Cognito export |
-| Verify a backup restores | `npm run restore-drill` | restores to a throwaway instance, asserts health, deletes it — non-destructive |
-| Restore | `npm run restore` | gated cutover; see `operations/backup-restore.md` |
-| Reconcile cloud → code | `npm run reconcile` | opens a PR, never mutates the cloud |
-| Audit the CI YAML | `just audit` | security audit of the generated pipeline |
-| Tear down | `chant run loom-teardown` | |
-| Loom's operator make targets | `just credentials`, `just memory ...`, `just fix-sequences`, `just cognito-token` | `reset-db`, `import-sqlite`, `credentials-delete`, `set-passwords` are never over MCP: a person runs and approves them |
+| Run the app locally | `just local-up` / `just local-down` | Floci, no AWS account |
+| Typecheck, lint, test | `just check` | before every change; `npm run lint:docs` for the docs |
+| Synthesize | `npm run synth` | writes `dist/*.template.json` |
+| First deploy in an account | `just bootstrap` | the ECS and AgentCore service-linked roles |
+| Deploy | `npx chant run --components all --env <env>` | one component: `--components <name>` |
+| Custom domain | `LOOM_DOMAIN_NAME=<domain> npm run dns-setup` | creates the zone, waits for the NS delegation |
+| Seed | `npm run seed` | through Loom's API; needs `LOOM_API_BASE_URL` and `LOOM_API_TOKEN` off the local stack |
+| Validate | `npm run validate` / `just validate` | every screen; the deploy is done when this passes |
+| An agent's own role | `just agent-role <agent> <group>` | deploys the role stack and registers it in Loom |
+| Back up | `npm run backup`, `npm run cognito-export` | RDS snapshot, Cognito users |
+| Prove a backup restores | `npm run restore-drill` | throwaway instance, deleted after; no gate |
+| Restore | `npm run restore` | stops at a gate before the cutover |
+| Drift | `npm run watch`; `npm run reconcile` | reconcile opens a PR, never changes the cloud |
+| Tunnel to the database | `just tunnel-host`, then `just tunnel` | optional SSM host |
+| Loom's operator make targets | `just credentials`, `just memory ...`, `just fix-sequences`, `just cognito-token`, `just cognito-client-id` | `reset-db`, `import-sqlite`, `credentials-delete`, `set-passwords` are never over MCP: a person runs and approves them |
+| Audit the CI YAML | `just audit` | |
+| Tear down | `chant run loom-teardown` | stops at a gate |
 
-Discover the rest with `chant list` (entities), `chant run list` (Ops + status),
-and `chant describe <component>` (effective config for one stack).
-
-## Deploy sequence
-
-Components deploy in dependency order (`chant list --components` shows the wave
-order): `shared-foundation` and `loom-cognito` first, then `loom-db`,
-`loom-frontend`, `loom-backend`, then `loom-agents`. Cross-stack values resolve
-through `stackOutput(...)`, so you set inputs once. After the stacks are up, the
-app database is nearly empty — **seed, then validate**.
+`chant run list` shows every Op and its last run; `chant describe <component>`
+shows one stack's effective config.
 
 ## Seeding
 
-A fresh Loom's own database seeds almost nothing: no IAM role or authorizer in the
-Security screen, so no agent can be created. `npm run seed` registers what loomster
-provisioned into Loom through **Loom's own API**. Profiles:
+A fresh Loom database holds almost nothing, so the Security screen has no IAM
+role or authorizer and no agent can be deployed. `npm run seed` registers what
+loomster provisioned through Loom's own API. Profiles (`LOOM_SEED_PROFILE`):
 
-- **`foundation`** (prod default) — the config floor: agent-role import, Cognito
-  authorizer, loomster tag profile. Nothing invented.
-- **`demo`** (light default) — foundation plus catalog entries, the Security tabs,
-  and a few runtime invocations, so every screen has something real to show.
-- **`none`** — skip.
+- `foundation`, the production tiers' default: the agent role, a Cognito
+  authorizer, a `loomster` tag profile. Nothing billable.
+- `demo`, light's default: foundation plus an agent, a memory, an MCP server, an
+  A2A agent, an approval policy, a few invocations, an evaluation test case and
+  run, and a skill when a registry is set. Billable on a real account.
+- `none`.
 
-Override with `LOOM_SEED_PROFILE`. `npm run validate` fails if any screen a profile
-claims to seed comes up empty.
+Loom's screens (v1.9.0 sidebar): Catalog; Agents (tabs Details, Invoke,
+Evaluations), Memory, Integrations (MCP Servers, A2A Agents), Skills; Security
+(Identity providers, IAM roles, Authorizers, Approval policies), Analytics
+(Costs, User activity); Settings (General, Models, Networking, Infrastructure,
+Tagging). Rows without a `loom:group` tag are visible to super-admins only; the
+seed tags everything `loom:group=loomster` (`LOOM_SEED_GROUP`).
 
-## Adoption (bring your own infrastructure)
+## Adoption
 
-Every referenceable piece exposes `provision | reference-existing | omit`, set from
-`LOOM_*` env vars, with no forking of a composite:
-
-- Network — `LOOM_VPC_ID`, `LOOM_PUBLIC_SUBNET_IDS`, `LOOM_PRIVATE_SUBNET_IDS`
-- DNS — `LOOM_HOSTED_ZONE_ID`, `LOOM_CERTIFICATE_ARN` (`LOOM_ROUTE53`/`LOOM_ACM=omit` to drop)
-- KMS / ECR / agent role — `LOOM_KMS_KEY_ARN`, `LOOM_{FRONTEND,BACKEND}_REPOSITORY_URI`/`_ARN`, `LOOM_AGENT_ROLE_ARN`
-- IAM — `LOOM_BACKEND_EXECUTION_ROLE_ARN`, `LOOM_BACKEND_TASK_ROLE_ARN`, `LOOM_FRONTEND_EXECUTION_ROLE_ARN`
-
-`src/examples/byo/` wires every seam to `reference-existing` at once. Full matrix:
-`docs-site/.../adoption/overview.md`.
+Every replaceable piece takes `provision`, `reference-existing` or `omit` through
+`LOOM_*` variables, without forking a composite: network (`LOOM_VPC_ID`,
+`LOOM_PUBLIC_SUBNET_IDS`, `LOOM_PRIVATE_SUBNET_IDS`), DNS
+(`LOOM_HOSTED_ZONE_ID`, `LOOM_CERTIFICATE_ARN`), KMS, ECR, the agent role, the
+backend and frontend roles, the database (`LOOM_DB_MODE`) and Cognito
+(`LOOM_COGNITO_MODE`). The matrix is
+https://intentius.io/loomster/reference/adoption-seams/ and every variable is in
+https://intentius.io/loomster/reference/parameters/.
 
 ## Guardrails
 
-- **Seed through Loom's API, never direct DB writes.** `ops/lib/seed.ts` uses
-  Loom's endpoints. A direct write drifts from what the app believes.
-- **Never seed an Identity Provider.** Creating an active IdP switches off Loom's
-  dev-auth bypass and locks every request (and the API) behind real OIDC. Recovery
-  means deleting the `identity_providers` row and restarting the backend. Leave the
-  IdP screen empty; it renders fine unseeded.
-- **Invoking an agent locally returns a canned stub, not real reasoning.** The Floci
-  image emulates the AgentCore control plane, so agents reach `CREATE_COMPLETE` and
-  are manageable, but real execution needs AgentCore on a live account.
-- **`production` / `production-ha` haven't been applied to a live account.** Trust
-  the Floci E2E and the fidelity audit for those tiers; don't claim a live prod apply.
-- **Run `just check` before any deploy**, and `npm run validate` after — a deploy
-  that serves but has empty screens is not done.
+- Never run `chant approve` or `just grant`; a person approves gates and grants
+  claim runs.
+- Never deploy to or delete from a real AWS account unless the person asked for
+  that in this session. Confirm the account with `aws sts get-caller-identity`
+  first.
+- Seed through Loom's API, never with direct database writes.
+- Never register an identity provider. An active one takes over Loom's login
+  page, and with no real IdP behind it nobody can sign in through the page. The
+  API still accepts Cognito tokens, so recovery is deleting the provider with a
+  token from `just cognito-token`
+  (https://intentius.io/loomster/guides/recover-from-an-idp-lockout/).
+- Never push or edit the `chant/lifecycle` branch.
+- Invoking an agent on Floci returns a canned reply; real reasoning needs AWS.
+- Run `just check` before a change and `npm run validate` after a deploy. A
+  deploy that serves but has empty screens isn't done.
