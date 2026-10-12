@@ -24,7 +24,7 @@ lists them with the guardrails.
 | `loom-restore-drill` | Restore the latest backup to a throwaway instance, assert it comes up healthy, delete it. Proves the backup works. | No — local executor |
 | `loom-cognito-export` | Export the Cognito pool's users, groups, and memberships. Read-only. | No — local executor |
 | `loom-restore` | Restore the DB (snapshot or PITR) to a new instance, then cut the backend over to it. | Yes — cutover is destructive |
-| `loom-teardown` | Gated, owned-only, marker-scoped stack deletes. No foreign deletes. | Yes |
+| `loom-teardown` | Gated, owned-only, marker-scoped stack deletes, one per component, in reverse `chant graph --components` order (`loom-agents` first, `shared-foundation` last). No foreign deletes. | Yes |
 | `loom-audit` | Security-audit the generated CI YAML. | No |
 | `loom-dns-setup` | Create + delegate the Route53 zone for a custom domain, then wait for the delegation to resolve. Human-in-the-loop, local. | No |
 

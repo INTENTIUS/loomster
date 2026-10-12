@@ -167,7 +167,7 @@ rollback, or on the local executor where they don't.
 | `loom-restore-drill` | Restore the latest backup to a throwaway instance, assert it comes up healthy, delete it. Proves the backup restores. | No — local executor |
 | `loom-cognito-export` | Export the Cognito pool's users, groups, and memberships (to stdout, or S3 with `LOOM_BACKUP_BUCKET`). Read-only. | No — local executor |
 | `loom-restore` | Restore the DB (snapshot or PITR) to a new instance, then cut the backend over to it (repoint secret + redeploy). | Yes — cutover is destructive |
-| `loom-teardown` | Gated, owned-only, marker-scoped stack deletes. No foreign deletes. | Yes |
+| `loom-teardown` | Gated, owned-only, marker-scoped stack deletes, in reverse `chant graph --components` order. No foreign deletes. | Yes |
 | `loom-dns-setup` | Create + delegate a custom-domain Route53 zone, wait for the delegation to resolve. Human-in-the-loop, local. | No |
 
 ```

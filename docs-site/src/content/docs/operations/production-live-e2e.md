@@ -149,9 +149,12 @@ Teardown snags on the prod tiers, in order:
   (and thus `shared-foundation`) fails to delete with "has a dependent object." You
   can't detach or delete an `ela-attach` ENI ("You are not allowed to manage
   'ela-attach' attachments") — only AWS releases them, on its own schedule (tens of
-  minutes, sometimes longer). Poll `aws ec2 describe-network-interfaces
-  --filters Name=group-id,Values=<ecs-sg>` and re-run the `shared-foundation` delete
-  once it returns none. This is the slowest part of a prod teardown; nothing billable
+  minutes, sometimes longer). `loom-teardown` deletes `loom-agents` before
+  `shared-foundation` and, when a delete fails with "has a dependent object" (or the
+  RDS "still using it" race above), re-issues it up to 4 times, 4 minutes apart. If the
+  ENIs outlast that, the step fails; poll `aws ec2 describe-network-interfaces
+  --filters Name=group-id,Values=<ecs-sg>` and re-run `loom-teardown` (or the
+  `shared-foundation` delete) once it returns none. This is the slowest part of a prod teardown; nothing billable
   remains while you wait (the ALB/ECS/RDS are already gone — only the SG, its ENIs, and
   the empty VPC linger, all free).
 
