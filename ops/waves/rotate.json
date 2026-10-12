@@ -1,0 +1,11 @@
+{
+  "name": "loom-rotate",
+  "op": "loom-rotate-production",
+  "neverOverMcp": true,
+  "plan": ["bash", "scripts/ops/wave.sh", "plan", "{op}", "{target}", "{plan}"],
+  "apply": ["bash", "scripts/ops/wave.sh", "apply", "{op}", "{target}"],
+  "waves": [
+    { "name": "production", "gate": "never", "runs": [{ "target": "staging.a", "op": "loom-rotate-production" }] },
+    { "name": "production-ha", "gate": "never", "runs": [{ "target": "prod.a", "op": "loom-rotate-production-ha" }] }
+  ]
+}

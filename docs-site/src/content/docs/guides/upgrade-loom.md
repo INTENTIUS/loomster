@@ -64,8 +64,22 @@ the read-only user and the baseline a deployment records once.
 
 | [Tier](/loomster/concepts/tiers-and-instances/) | Phases | On failure |
 |---|---|---|
-| `light` | Snapshot, Schema, Backend, Apply | the component's own rollback to the previous task definition |
-| `production`, `production-ha` | Snapshot, Approve, Schema, Backend, Apply, Scripts | Rollback restores the pre-upgrade snapshot to a new instance |
+| `light` | Preflight, Snapshot, Schema, Backend, Apply | the component's own rollback to the previous task definition |
+| `production`, `production-ha` | Preflight, Policy, Snapshot, Approve, Schema, Backend, Apply, Scripts | Rollback restores the pre-upgrade snapshot to a new instance |
+
+Preflight stops the run before anything changes when the AWS credentials don't
+resolve (or resolve to another account than `AWS_ACCOUNT_ID`), when one of the
+five stacks is mid-change or failed, or when the schema step couldn't run: on
+AWS it needs the Session Manager plugin and the tunnel host, and on every
+target a recorded baseline with no checksum mismatch (`just db status`). It
+also prints `chant lifecycle whoami`, which reports static keys only, so a
+profile or SSO session shows as unresolved there and is still accepted.
+
+Policy, on the production tiers, builds the backend and frontend templates and
+checks them against loomster's CloudFormation Guard rules
+(`policies/production.guard`). It needs `cfn-guard` on your `PATH`, or
+`CFN_GUARD` naming it. `just policy` checks the rules against every
+production-tier template, and that each rule still catches what it should.
 
 Schema applies the pending migrations (`just db apply`) behind yodel's own gate,
 which is bound to the plan digest, while the old backend still serves. Backend
@@ -104,6 +118,22 @@ pre-upgrade data back, cut over with `loom-restore`
 (`LOOM_RESTORE_SNAPSHOT_ID=<the -upgrade- snapshot>`,
 [Back up and restore](/loomster/guides/back-up-and-restore/)). The backend's own
 rollback puts the previous task definition back but doesn't undo the schema.
+
+With several deployments, roll the upgrade tier by tier with [chant](/loomster/concepts/glossary/#chant)'s Op waves:
+`ops/waves/upgrade.json` runs the light deployment, then production, then
+production-ha, each wave only after the one before it applied. Each run's
+target is `<env>.<instance>`; edit the file to list your deployments.
+
+```
+npx chant run wave --spec ops/waves/upgrade.json --wave 1   # light: dev.a
+npx chant run wave --spec ops/waves/upgrade.json --wave 2   # production: staging.a
+npx chant run wave --spec ops/waves/upgrade.json --wave 3   # production-ha: prod.a
+```
+
+The waves don't add a gate of their own. Each production run stops at its
+upgrade Op's gate (exit 3) as a direct `chant run` does; approve it with
+`chant approve`, then run the wave again. `ops/waves/rotate.json` does the same
+for credential rotation across the two production tiers.
 
 ### 4. Run one-time scripts
 

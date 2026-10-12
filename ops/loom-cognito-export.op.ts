@@ -24,6 +24,8 @@ export default Op({
   name: "loom-cognito-export",
   overview: `Export the Cognito user pool's users, groups, and memberships for the Loom deployment (env=${naming.env}, instance=${naming.instance}) — to stdout, and to S3 when LOOM_BACKUP_BUCKET is set. Read-only, ungated, local executor.`,
   labels: { Env: naming.env, Backup: "true" },
+  // A person starts and approves this Op; an agent never does over MCP (#25).
+  neverOverMcp: true,
   phases: [
     phase("Export", [shell(cognitoUserExportScript({ cognitoUserPoolName: refs.cognitoUserPoolName }), { profile: "longInfra" })]),
   ],

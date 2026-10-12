@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 import type { OpConfig } from "@intentius/chant/op";
-import { buildLoomUpgradeOp } from "./upgrade-op";
+import { buildLoomUpgradeOp, POLICY_RULES, POLICY_TEMPLATES, UPGRADE_STACKS } from "./upgrade-op";
 import type { LoomNamingParams } from "../../src/lib/naming";
 
 const naming: LoomNamingParams = {
@@ -38,12 +38,15 @@ describe("buildLoomUpgradeOp — the dial (chant#905: prod/prod-ha gate+rollback
 
   test("phase order: the schema migrates (SQL Yodeler) before the backend rolls, the gate sits before both, one-time scripts run last (gated only)", () => {
     expect(configOf(buildLoomUpgradeOp({ naming: { ...naming, tier: "light" }, gated: false })).phases.map((p) => p.name)).toEqual([
+      "Preflight",
       "Snapshot",
       "Schema",
       "Backend",
       "Apply",
     ]);
     expect(configOf(buildLoomUpgradeOp({ naming, gated: true })).phases.map((p) => p.name)).toEqual([
+      "Preflight",
+      "Policy",
       "Snapshot",
       "Approve",
       "Schema",
@@ -73,5 +76,31 @@ describe("buildLoomUpgradeOp — the dial (chant#905: prod/prod-ha gate+rollback
     const config = configOf(op);
     const approve = config.phases.find((p) => p.name === "Approve")!;
     expect(approve.steps[0]).toMatchObject({ kind: "gate", gate: "approve-loom-upgrade-production" });
+  });
+});
+
+describe("buildLoomUpgradeOp — preflight and policy (#27)", () => {
+  test("Preflight checks identity, every upgraded stack, and the schema history, on every tier", () => {
+    for (const gated of [false, true]) {
+      const preflight = configOf(buildLoomUpgradeOp({ naming, gated })).phases[0]!;
+      expect(preflight.name).toBe("Preflight");
+      const text = JSON.stringify(preflight.steps);
+      expect(text).toContain("aws sts get-caller-identity");
+      for (const c of UPGRADE_STACKS) expect(text).toContain(`loom-prod-a-${c}`);
+      expect(text).toContain("scripts/db/yodel.sh status --json");
+    }
+  });
+
+  test("production tiers check both deployed templates with CloudFormation Guard before the snapshot; light doesn't", () => {
+    const policy = configOf(buildLoomUpgradeOp({ naming, gated: true })).phases.find((p) => p.name === "Policy")!;
+    const guards = policy.steps.filter((s) => s.kind === "activity" && (s as { fn?: string }).fn === "guardValidate");
+    expect(guards.map((s) => (s as unknown as { args: Record<string, unknown> }).args)).toEqual(
+      POLICY_TEMPLATES.map((template) => expect.objectContaining({ rules: POLICY_RULES, template })),
+    );
+    expect(configOf(buildLoomUpgradeOp({ naming: { ...naming, tier: "light" }, gated: false })).phases.some((p) => p.name === "Policy")).toBe(false);
+  });
+
+  test("never run over MCP (#25)", () => {
+    for (const gated of [false, true]) expect(configOf(buildLoomUpgradeOp({ naming, gated })).neverOverMcp).toBe(true);
   });
 });

@@ -4,7 +4,7 @@
  * the phase shape is defined once and the tier dial (chant#890) is just a
  * config flag, not three hand-copied Op bodies.
  *
- * Phases: **Snapshot -> [Approve] -> Schema -> Backend -> Apply -> [Scripts]**,
+ * Phases: **Preflight -> Snapshot -> [Approve] -> Schema -> Backend -> Apply -> [Scripts]**,
  * with `onFailure: [Rollback]` only when gated. `gated` maps to chant#905's
  * acceptance line ("prod/prod-ha carry gate + rollback; light is
  * additive/local with no gate"). The snapshot runs on every tier; only the
@@ -37,11 +37,32 @@
  * roll.
  */
 
-import { Op, OpResource, phase, gate, shell } from "@intentius/chant/op";
+import { Op, OpResource, phase, gate, shell, guardValidate } from "@intentius/chant/op";
 import type { LoomNamingParams } from "../../src/lib/naming";
 import { stackRefs } from "./stack-refs";
 import { snapshotBeforeScript, restorePreviousScript } from "./rds-safety";
 import { runBackendScriptsScript } from "./backend-scripts";
+import { preflightPhase, stackPrefixOf } from "./preflight";
+
+/** The stacks an upgrade reads or rolls; each must be settled before it starts. */
+export const UPGRADE_STACKS = ["shared-foundation", "loom-cognito", "loom-db", "loom-backend", "loom-frontend"];
+
+/** loomster's CloudFormation Guard rules for the production tiers (`just policy` checks them both ways). */
+export const POLICY_RULES = "policies/production.guard";
+
+/** The templates the upgrade deploys, which the Policy phase checks against {@link POLICY_RULES}. */
+export const POLICY_TEMPLATES = ["dist/loom-backend.template.json", "dist/loom-frontend.template.json"];
+
+/** `cfn-guard` on PATH, or `CFN_GUARD` when it lives elsewhere. */
+const GUARD_BINARY = process.env.CFN_GUARD ?? "cfn-guard";
+
+/** Builds the templates the Policy phase checks, from this checkout, with the run's own parameters. */
+export const POLICY_SYNTH_SCRIPT = [
+  "set -euo pipefail",
+  `command -v "\${CFN_GUARD:-cfn-guard}" >/dev/null 2>&1 || { echo "policy: the production upgrade checks its templates with CloudFormation Guard; install cfn-guard (https://github.com/aws-cloudformation/cloudformation-guard) or set CFN_GUARD" >&2; exit 1; }`,
+  "npm run -s synth:loom-backend",
+  "npm run -s synth:loom-frontend",
+].join("\n");
 
 export interface LoomUpgradeOpConfig {
   naming: LoomNamingParams;
@@ -67,9 +88,23 @@ export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<ty
   const refs = stackRefs(naming);
   const opName = `loom-upgrade-${tier}`;
 
+  const prefix = stackPrefixOf(naming);
+  // Hoisted to a const (chant's EVL004: a spread source is a const identifier).
+  const policyChecks = POLICY_TEMPLATES.map((template) => guardValidate(POLICY_RULES, { template, binary: GUARD_BINARY }));
   const phases = [
-    phase("Snapshot", [shell(snapshotBeforeScript({ dbInstanceIdentifier: refs.dbInstanceIdentifier }), { profile: "longInfra" })]),
+    // Refuses before the snapshot (#27): wrong identity, a stack mid-change, or
+    // a schema history the Schema phase couldn't apply to.
+    preflightPhase({ env: naming.env, stacks: UPGRADE_STACKS.map((c) => `${prefix}-${c}`), schemaStackPrefix: prefix }),
   ];
+
+  if (gated) {
+    // CloudFormation Guard on the templates this upgrade deploys (#27), also
+    // before the snapshot, so a template that breaks policy stops the run
+    // before anything changes and the approver only sees runs that passed.
+    phases.push(phase("Policy", [shell(POLICY_SYNTH_SCRIPT, { profile: "fastIdempotent" }), ...policyChecks]));
+  }
+
+  phases.push(phase("Snapshot", [shell(snapshotBeforeScript({ dbInstanceIdentifier: refs.dbInstanceIdentifier }), { profile: "longInfra" })]));
 
   if (gated) {
     phases.push(
@@ -115,6 +150,8 @@ export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<ty
     name: opName,
     overview: `Upgrade the Loom "${tier}" deployment (env=${naming.env}): snapshot ->${gated ? " approve ->" : ""} migrate the schema (SQL Yodeler, plan-bound gate) -> roll the backend -> roll the frontend${gated ? " -> one-time scripts (LOOM_UPGRADE_SCRIPTS)" : ""}`,
     labels: { Tier: tier, Env: naming.env },
+    // A person starts and approves this Op; an agent never does over MCP (#25).
+    neverOverMcp: true,
     phases,
     ...onFailureConfig,
   });

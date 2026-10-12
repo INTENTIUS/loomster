@@ -14,11 +14,15 @@
  */
 
 import { Op, phase, shell } from "@intentius/chant/op";
+import { preflightPhase } from "./lib/preflight";
 import { bootstrapScript } from "./lib/bootstrap";
 
 export default Op({
   name: "loom-bootstrap",
   overview:
     "Create the account-level service-linked roles Loom needs (ecs.amazonaws.com, runtime-identity.bedrock-agentcore.amazonaws.com) when missing, as Loom's make ecs.init/agentcore.init do. Once per account, idempotent, ungated, local executor.",
-  phases: [phase("Service-linked roles", [shell(bootstrapScript(), { profile: "fastIdempotent" })])],
+  phases: [
+    preflightPhase({ env: process.env.LOOM_ENV ?? "dev" }),
+    phase("Service-linked roles", [shell(bootstrapScript(), { profile: "fastIdempotent" })]),
+  ],
 });

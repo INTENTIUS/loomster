@@ -1,0 +1,12 @@
+{
+  "name": "loom-upgrade",
+  "op": "loom-upgrade-light",
+  "neverOverMcp": true,
+  "plan": ["bash", "scripts/ops/wave.sh", "plan", "{op}", "{target}", "{plan}"],
+  "apply": ["bash", "scripts/ops/wave.sh", "apply", "{op}", "{target}"],
+  "waves": [
+    { "name": "light", "gate": "never", "runs": [{ "target": "dev.a", "op": "loom-upgrade-light" }] },
+    { "name": "production", "gate": "never", "runs": [{ "target": "staging.a", "op": "loom-upgrade-production" }] },
+    { "name": "production-ha", "gate": "never", "runs": [{ "target": "prod.a", "op": "loom-upgrade-production-ha" }] }
+  ]
+}

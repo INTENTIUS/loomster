@@ -17,6 +17,7 @@
  */
 
 import { Op, phase, shell } from "@intentius/chant/op";
+import { preflightPhase, stackPrefixOf } from "./lib/preflight";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { deployTunnelHostScript, TUNNEL_HOST_STACK } from "./lib/tunnel-host";
 
@@ -27,5 +28,10 @@ export default Op({
   name: "loom-tunnel-host",
   overview: `Deploy the optional SSM tunnel host (Loom's ec2.yaml) as ${refs.stackPrefix}-${TUNNEL_HOST_STACK} (env=${naming.env}) into shared-foundation's private subnets, with ingress to loom-db's security group. Idempotent, ungated, local executor; open the tunnel with \`just tunnel\`.`,
   labels: { Env: naming.env },
-  phases: [phase("Deploy", [shell(deployTunnelHostScript(refs), { profile: "longInfra" })])],
+  // A person starts and approves this Op; an agent never does over MCP (#25).
+  neverOverMcp: true,
+  phases: [
+    preflightPhase({ env: naming.env, stacks: ["shared-foundation", "loom-db"].map((c) => `${stackPrefixOf(naming)}-${c}`) }),
+    phase("Deploy", [shell(deployTunnelHostScript(refs), { profile: "longInfra" })]),
+  ],
 });

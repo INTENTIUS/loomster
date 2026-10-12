@@ -1,0 +1,64 @@
+# loomster's CloudFormation Guard rules for the production tiers (loomster#27).
+#
+# The upgrade Op runs these against the templates it is about to deploy, before
+# anything changes (`chant`'s guardValidate step, `cfn-guard validate`). CI
+# runs them against every production-tier template. Each rule holds for what
+# loomster synthesizes today; one that starts failing means a change weakened
+# a production template.
+
+# The database is encrypted, protected from deletion and never public.
+let rds_instances = Resources.*[ Type == "AWS::RDS::DBInstance" ]
+rule rds_encrypted_protected_private when %rds_instances !empty {
+  %rds_instances.Properties.StorageEncrypted == true
+  %rds_instances.Properties.DeletionProtection == true
+  %rds_instances.Properties.PubliclyAccessible != true
+}
+
+# Buckets are encrypted and block every kind of public access.
+let buckets = Resources.*[ Type == "AWS::S3::Bucket" ]
+rule s3_private_encrypted when %buckets !empty {
+  %buckets.Properties.BucketEncryption exists
+  %buckets.Properties.PublicAccessBlockConfiguration.BlockPublicAcls == true
+  %buckets.Properties.PublicAccessBlockConfiguration.BlockPublicPolicy == true
+  %buckets.Properties.PublicAccessBlockConfiguration.IgnorePublicAcls == true
+  %buckets.Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets == true
+}
+
+# No container runs privileged.
+let task_definitions = Resources.*[ Type == "AWS::ECS::TaskDefinition" ]
+rule ecs_no_privileged_containers when %task_definitions !empty {
+  %task_definitions.Properties.ContainerDefinitions[*] {
+    Privileged not exists or Privileged == false
+  }
+}
+
+# Log groups are encrypted with a customer key and expire.
+let log_groups = Resources.*[ Type == "AWS::Logs::LogGroup" ]
+rule log_groups_encrypted_with_retention when %log_groups !empty {
+  %log_groups.Properties.KmsKeyId exists
+  %log_groups.Properties.RetentionInDays exists
+}
+
+# The only ingress open to the internet is HTTPS on the load balancer.
+let security_groups = Resources.*[ Type == "AWS::EC2::SecurityGroup" ]
+rule no_open_ingress_but_https when %security_groups !empty {
+  %security_groups.Properties.SecurityGroupIngress[ CidrIp == "0.0.0.0/0" ] {
+    FromPort == 443
+    ToPort == 443
+  }
+  %security_groups.Properties.SecurityGroupIngress[ CidrIpv6 == "::/0" ] {
+    FromPort == 443
+    ToPort == 443
+  }
+}
+
+# No IAM role grants every action on every resource.
+let roles_with_policies = Resources.*[
+  Type == "AWS::IAM::Role"
+  Properties.Policies exists
+]
+rule iam_no_full_admin when %roles_with_policies !empty {
+  %roles_with_policies.Properties.Policies[*].PolicyDocument.Statement[*] {
+    Effect != "Allow" OR Action != "*"
+  }
+}

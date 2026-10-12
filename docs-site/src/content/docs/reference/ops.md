@@ -65,7 +65,7 @@ chant run list                               # every Op and its last run
 
 Several have `npm run` aliases: `watch`, `reconcile`, `audit`, `backup`,
 `cognito-export`, `restore`, `restore-drill`, `dns-setup` and `seed`. `just`
-has `watch`, `reconcile`, `audit`, `agent-role <agent> <group>`, `bootstrap`,
+has `watch`, `reconcile`, `audit`, `policy`, `agent-role <agent> <group>`, `bootstrap`,
 `tunnel-host`, `tunnel [port]`, `import-sqlite <file>`, `fix-sequences`,
 `reset-db`, `credentials`, `credentials-delete`, `memory [query] [id] [who]`,
 `set-passwords [users]`, `cognito-client-id`, `cognito-token`, `db <command>`,
@@ -73,9 +73,19 @@ has `watch`, `reconcile`, `audit`, `agent-role <agent> <group>`, `bootstrap`,
 [Loom make targets](/loomster/reference/make-targets/) maps each to the `make`
 target it replaces.
 
-`loom-import-sqlite`, `loom-reset-db`, `loom-credentials-delete` and
-`loom-cognito-set-passwords` are never run over [chant](/loomster/concepts/glossary/#chant)'s MCP server: a coding
-agent connected to it can't run them or approve their gates.
+Every gated Op, and the ungated ones that change a deployment
+(`loom-upgrade-light`, `loom-restore-drill`, `loom-tunnel-host`,
+`loom-cognito-export`, `loom-cognito-set-passwords`), is never run over
+[chant](/loomster/concepts/glossary/#chant)'s MCP server: a coding agent connected to it can't run them or
+approve their gates. The repository's `.mcp.json` registers that server.
+
+The mutating Ops start with a Preflight phase: the AWS credentials must
+resolve (and match `AWS_ACCOUNT_ID` when it's set), and the stacks the Op
+touches must be settled, not mid-change or failed. The upgrade Op also checks
+the schema step can run, and on the production tiers checks its templates
+against `policies/production.guard` with CloudFormation Guard (`just policy`).
+[Upgrade Loom](/loomster/guides/upgrade-loom/) has the details, and the Op
+waves in `ops/waves/` that roll an upgrade or a rotation tier by tier.
 
 ## Guides per Op
 

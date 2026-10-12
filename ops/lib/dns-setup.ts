@@ -31,14 +31,18 @@ export function ensureZoneScript(domain: string): string {
     `DOMAIN="${domain}"`,
     `ZID=$(aws route53 list-hosted-zones-by-name --dns-name "$DOMAIN" --query "HostedZones[?Name=='$DOMAIN.'].Id | [0]" --output text)`,
     `if [ -z "$ZID" ] || [ "$ZID" = "None" ]; then`,
-    `  echo "dns-setup: creating hosted zone $DOMAIN"`,
+    `  echo "dns-setup: creating hosted zone $DOMAIN" >&2`,
     `  ZID=$(aws route53 create-hosted-zone --name "$DOMAIN" --caller-reference "loom-dns-$(date -u +%Y%m%d%H%M%S)" --hosted-zone-config Comment="loomster custom-domain (dns-setup Op)" --query HostedZone.Id --output text)`,
     `else`,
-    `  echo "dns-setup: adopting existing hosted zone $ZID for $DOMAIN"`,
+    `  echo "dns-setup: adopting existing hosted zone $ZID for $DOMAIN" >&2`,
     `fi`,
-    `echo "LOOM_HOSTED_ZONE_ID=$(basename "$ZID")"`,
-    `echo "dns-setup: add these NS records for $DOMAIN at your DNS provider (delegate from the parent):"`,
-    `aws route53 get-hosted-zone --id "$ZID" --query "DelegationSet.NameServers" --output text | tr '\\t' '\\n' | sed 's/^/    /'`,
+    `NS="$(aws route53 get-hosted-zone --id "$ZID" --query "DelegationSet.NameServers" --output text | tr '\\t' ' ')"`,
+    `echo "LOOM_HOSTED_ZONE_ID=$(basename "$ZID")" >&2`,
+    `echo "dns-setup: add these NS records for $DOMAIN at your DNS provider (delegate from the parent):" >&2`,
+    `for n in $NS; do echo "    $n" >&2; done`,
+    // stdout is the step's output (#26): only the zone's name servers, which
+    // AwaitDelegation waits for. Everything for the person goes to stderr.
+    `echo "$NS"`,
   ].join("\n");
 }
 
@@ -52,13 +56,19 @@ export function awaitDelegationScript(domain: string, attempts = 60, intervalSec
   return [
     "set -euo pipefail",
     `DOMAIN="${domain}"`,
+    // The zone's own name servers, from EnsureZone's output (LOOM_ZONE_NAME_SERVERS,
+    // #26). With them, a delegation still pointing at another zone (an old one,
+    // or another account's) keeps waiting instead of passing; without them, any
+    // public NS answer counts, as before.
+    `norm() { tr ' ' '\\n' | sed 's/\\.$//' | tr 'A-Z' 'a-z' | { grep -v '^$' || true; } | sort -u | tr '\\n' ' '; }`,
+    `WANT="$(printf '%s' "\${LOOM_ZONE_NAME_SERVERS:-}" | norm)"`,
     `for i in $(seq 1 ${attempts}); do`,
-    `  LIVE=$(dig +short NS "$DOMAIN" @8.8.8.8 | head -1 | sed 's/\\.$//')`,
-    `  if [ -n "$LIVE" ]; then echo "dns-setup: delegation live for $DOMAIN ($LIVE) — ACM validation will resolve"; exit 0; fi`,
-    `  echo "dns-setup: waiting for NS delegation of $DOMAIN ... ($i/${attempts})"`,
+    `  LIVE="$(dig +short NS "$DOMAIN" @8.8.8.8 | norm)"`,
+    `  if [ -n "$LIVE" ] && { [ -z "$WANT" ] || [ "$LIVE" = "$WANT" ]; }; then echo "dns-setup: delegation live for $DOMAIN ($LIVE) — ACM validation will resolve"; exit 0; fi`,
+    `  if [ -n "$LIVE" ]; then echo "dns-setup: $DOMAIN delegates to $LIVE, not this zone's $WANT ... ($i/${attempts})"; else echo "dns-setup: waiting for NS delegation of $DOMAIN ... ($i/${attempts})"; fi`,
     `  sleep ${intervalSecs}`,
     `done`,
-    `echo "dns-setup: timeout — $DOMAIN still has no public NS delegation. Add the NS records shown above at your DNS provider, then re-run." >&2`,
+    `echo "dns-setup: timeout — $DOMAIN isn't delegated to this zone's name servers yet. Add the NS records shown above at your DNS provider, then re-run." >&2`,
     `exit 1`,
   ].join("\n");
 }
