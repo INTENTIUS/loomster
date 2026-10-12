@@ -206,7 +206,11 @@ chant run loom-teardown --temporal        # gated, deletes only what this deploy
 ```
 
 Teardown is deliberately conservative: it deletes only stacks this deployment
-created and pauses for approval first. It leaves three things on purpose, an
+created and pauses for approval first. It deletes one stack per component in
+`src/components/`, in the reverse of the `chant graph --components` deploy order:
+`loom-agents`, `loom-backend`, `downstream-stub`, `loom-db`, `loom-frontend`,
+`loom-cognito`, `shared-foundation`. The order is computed when the Op is built,
+so a new component is included without editing the Op. It leaves three things on purpose, an
 RDS **snapshot** (the DB's `DeletionPolicy`), the **S3 artifact bucket**, and the
 **ECR repositories**, so a teardown never destroys data or images you might
 want back. Empty and delete those by hand when you're sure. For a throwaway light

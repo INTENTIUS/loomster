@@ -4,14 +4,16 @@
  * per-stack CloudFormation delete already satisfies all three by
  * construction). One Op, not one per tier — decommissioning is a single
  * destructive action regardless of which tier is actually live, so it always
- * gates, and it deletes whichever of the five stacks it finds:
+ * gates, and it deletes every component stack `src/components/` declares:
  *
  *   chant run loom-teardown --temporal
  *   chant run signal loom-teardown approve-loom-teardown
  *
- * Deletes run **sequentially**, in `TEARDOWN_ORDER` (reverse dependency
- * order) — not `parallel: true` — since that order is the whole point of
- * tearing down consumers before what they depend on.
+ * Deletes run **sequentially**, in the order `discoverTeardownOrder()`
+ * derives from the component graph (the deploy waves reversed, so
+ * `loom-agents` first and `shared-foundation`/`loom-cognito` last), not
+ * `parallel: true`, since that order is the whole point of tearing down
+ * consumers before what they depend on.
  *
  * No `onFailure` rollback: an already-gated delete is not something to
  * saga-compensate — if one stack's delete fails, the workflow simply stops
@@ -23,14 +25,14 @@
 
 import { Op, phase, gate, shell } from "@intentius/chant-lexicon-temporal";
 import { namingParamsFromEnv } from "./lib/naming-env";
-import { TEARDOWN_ORDER, deleteStackScript } from "./lib/teardown-plan";
+import { discoverTeardownOrder, deleteStackScript } from "./lib/teardown-plan";
 
 const naming = namingParamsFromEnv();
 
 // CFN stack names are namespaced by project+env+instance (loomster#140), so this
 // tears down exactly THIS deployment's stacks, never another instance's.
 const stackName = (component: string): string => `${naming.project}-${naming.env}-${naming.instance}-${component}`;
-const stacks = TEARDOWN_ORDER.map(stackName);
+const stacks = (await discoverTeardownOrder()).map(stackName);
 
 export default Op({
   name: "loom-teardown",
