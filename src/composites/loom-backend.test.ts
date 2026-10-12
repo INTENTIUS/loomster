@@ -226,3 +226,35 @@ describe("LoomBackend — reference-existing IAM roles (loomster#66)", () => {
     expect(names).toContain("taskRole");
   });
 });
+
+describe("LoomBackend — task role covers AgentCore Evaluations (loomster#10)", () => {
+  // Statements in the synthesized template, with each Resource as its JSON text.
+  function taskRoleStatements(): Array<{ actions: string[]; resource: string }> {
+    const expanded = expandComposite("loomBackend", LoomBackend(baseProps()));
+    resolveAttrRefs(expanded);
+    const template = JSON.parse(awsSerializer.serialize(expanded) as string);
+    const role = template.Resources.loomBackendTaskRole.Properties;
+    return role.Policies.flatMap((p: any) => p.PolicyDocument.Statement).map((s: any) => ({
+      actions: [].concat(s.Action),
+      resource: JSON.stringify(s.Resource),
+    }));
+  }
+  const grantedOn = (action: string) => taskRoleStatements().filter((s) => s.actions.includes(action)).map((s) => s.resource);
+
+  test("the list calls and GetBatchEvaluation, which have no IAM resource type, are granted on *", () => {
+    for (const a of ["ListEvaluators", "ListOnlineEvaluationConfigs", "ListBatchEvaluations", "GetBatchEvaluation"]) {
+      expect(grantedOn(`bedrock-agentcore:${a}`)).toContain('"*"');
+    }
+  });
+
+  test("Evaluate reaches AWS's built-in evaluators, which the aws account owns", () => {
+    expect(grantedOn("bedrock-agentcore:Evaluate").join()).toContain(":aws:evaluator/*");
+  });
+
+  test("span lookups: Logs Insights over the runtime log groups and aws/spans", () => {
+    const startQuery = grantedOn("logs:StartQuery").join();
+    expect(startQuery).toContain("log-group:/aws/bedrock-agentcore/*");
+    expect(startQuery).toContain("log-group:aws/spans");
+    expect(grantedOn("logs:GetQueryResults")).toContain('"*"');
+  });
+});

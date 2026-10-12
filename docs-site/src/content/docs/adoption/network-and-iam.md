@@ -116,6 +116,10 @@ grant, with `<acct>` your account and `<project>` your `LOOM_PROJECT` (default `
 | AgentCore data + control plane | `bedrock-agentcore:*` | `arn:aws:bedrock-agentcore:*:<acct>:*` |
 | Runtime versions/endpoints | `bedrock-agentcore:ListAgentRuntimeVersions`, `ListAgentRuntimeEndpoints` | `*` (no resource type in IAM) |
 | Agent runtime lifecycle | `bedrock-agentcore-control:{Create,Get,Update,Delete}AgentRuntime[Endpoint]`, `ListAgentRuntimeVersions`, `ListAgentRuntimeEndpoints` | `arn:aws:bedrock-agentcore:*:<acct>:runtime/*` |
+| Evaluations | `bedrock-agentcore:ListEvaluators`, `ListOnlineEvaluationConfigs`, `ListBatchEvaluations`, `GetBatchEvaluation` | `*` (no resource type in IAM) |
+| | `bedrock-agentcore:Evaluate` on AWS's built-in evaluators | `arn:aws:bedrock-agentcore:*:aws:evaluator/*` (custom evaluators are covered by the account row above) |
+| | `logs:StartQuery` | `log-group:/aws/bedrock-agentcore/*`, `log-group:aws/spans` |
+| | `logs:GetQueryResults` | `*` |
 | Agent Registry | `agent-registry:GetRegistry`, `{Create,Get,Update,Delete}RegistryRecord`, `ListRegistryRecords`, `SubmitRegistryRecordForApproval`, `UpdateRegistryRecordStatus`, `SearchDiscoverableRegistryRecords` | `arn:aws:agent-registry:*:<acct>:registry/*` |
 | VPC-mode agents | `iam:CreateServiceLinkedRole` with `iam:AWSServiceName = network.bedrock-agentcore.amazonaws.com` | `arn:aws:iam::<acct>:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreNetwork` |
 | Agent roles (deploy, import) | `iam:PassRole`, `GetRole`, `ListRolePolicies`, `GetRolePolicy`, `ListRoleTags`, `ListAttachedRolePolicies` | `arn:aws:iam::<acct>:role/<project>-*` |
@@ -134,6 +138,6 @@ don't follow `LOOM_PROJECT`. Any agent execution role you want Loom to deploy wi
 grant above has to cover its name.
 
 `test/claims/backend/task-role.sh` checks the provisioned role against this list
-with `aws iam simulate-custom-policy`. To check a BYO role, run
+with `aws iam simulate-custom-policy` (the Evaluations rows are not in it yet). To check a BYO role, run
 `aws iam simulate-principal-policy --policy-source-arn <your role arn>` with the
 same actions and resources listed in that script.

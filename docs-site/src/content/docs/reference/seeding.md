@@ -94,3 +94,10 @@ seeds none of it. The A2A agent needs a reachable endpoint that serves an agent
 card: `just local-up` serves one from its proxy and sets `LOOM_DEMO_A2A_URL`
 automatically; elsewhere, set `LOOM_DEMO_A2A_URL` to a real A2A agent or the A2A
 section is left for you to fill from the UI (Loom's `ONBOARDING.md`, Step 4).
+
+`demo` also saves an evaluation test case on the demo agent and runs it once
+(one more invocation, plus AgentCore Evaluations scoring it with a model, which
+is billable on a live account). When an Agent Registry is configured
+(`LOOM_REGISTRY_ID`), it creates, approves and attaches one skill; with none,
+that step is skipped with the reason. See
+[Screens](/loomster/reference/screens/#agent--evaluations).

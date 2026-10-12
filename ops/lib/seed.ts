@@ -243,9 +243,102 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `  if [ "$OK" -gt 0 ]; then verdict demo-invocations ok "$OK of 3 invocations answered (runtime dashboards populated)"`,
     `  else verdict demo-invocations failed "none of 3 invocations answered"; fi`,
     `fi`,
+    ...demoEvaluationSteps(),
+    ...demoSkillSteps(),
     `finish "demo seed complete"`,
   ]
     .join("\n")
     // Every request authenticates when a token is present (see AUTHCFG above).
     .replace(/curl -fsS/g, `curl -fsS -K "$AUTHCFG"`);
+}
+
+/**
+ * Evaluations tab (loomster#10): one saved test case on the demo agent, and one
+ * run of it. A run invokes the agent and scores the session in the background
+ * (Loom's `_execute_run`), so the seed only starts it; the tab shows its
+ * outcome. The evaluator is AWS's built-in Helpfulness, which needs no
+ * expected answer. Runs after demo-agent-ready, so `$AID`/`$ASTATUS` are set.
+ */
+function demoEvaluationSteps(): string[] {
+  return [
+    `TC_NAME="Loomster demo test case"`,
+    `TC=""`,
+    `if [ -z "$AID" ]; then`,
+    `  verdict demo-eval-test-case failed "no demo agent to attach a test case to"`,
+    `elif TC=$(curl -fsS "$BASE/api/agents/$AID/evaluations/test-cases" | jq -c --arg n "$TC_NAME" '[.[] | select(.name == $n)][0] // empty') && [ -n "$TC" ]; then`,
+    `  verdict demo-eval-test-case present`,
+    `elif TC=$(curl -fsS -X POST "$BASE/api/agents/$AID/evaluations/test-cases" -H 'Content-Type: application/json' \\`,
+    `    -d "$(jq -cn --arg n "$TC_NAME" '{name: $n, prompt: "What can you help me with?", evaluator_ids: ["Builtin.Helpfulness"], pass_threshold: 0.5}')"); then`,
+    `  verdict demo-eval-test-case ok "scored by Builtin.Helpfulness"`,
+    `else`,
+    `  TC=""; verdict demo-eval-test-case failed "POST /api/agents/$AID/evaluations/test-cases failed"`,
+    `fi`,
+    `TC_ID=""; if [ -n "$TC" ]; then TC_ID=$(jq -r '.id // empty' <<<"$TC"); fi`,
+    `if [ -z "$TC_ID" ]; then`,
+    `  verdict demo-eval-run failed "no demo test case to run"`,
+    `elif [ -n "$(jq -r '.last_run_at // empty' <<<"$TC")" ]; then`,
+    `  verdict demo-eval-run present`,
+    `elif [ "$ASTATUS" != "READY" ]; then`,
+    `  verdict demo-eval-run failed "the demo agent is not READY to run a test case"`,
+    `elif curl -fsS -X POST "$BASE/api/agents/$AID/evaluations/test-cases/$TC_ID/run" >/dev/null; then`,
+    `  verdict demo-eval-run ok "started (Loom invokes and scores it in the background)"`,
+    `else`,
+    `  verdict demo-eval-run failed "POST .../test-cases/$TC_ID/run failed"`,
+    `fi`,
+  ];
+}
+
+/**
+ * Skills (loomster#11): one SKILL record in the Agent Registry, approved and
+ * attached to the demo agent, so the Skills page and the agent's attached
+ * skills are non-empty. Loom folds an attached, APPROVED skill into the
+ * agent's system prompt on its next redeploy. The registry is optional and
+ * reference-existing (CloudFormation has no Agent Registry resource), so with
+ * none configured this step is skipped with the reason.
+ */
+function demoSkillSteps(): string[] {
+  return [
+    `SKILL_NAME="loomster-demo-skill"`,
+    `SKILL_MD=$'---\\nname: loomster-demo-skill\\ndescription: Answer questions about what this Loomster demo deployment is.\\n---\\n\\n# Loomster demo skill\\n\\nWhen someone asks what this deployment is, say it is Loom deployed with chant by loomster, and point them at the Catalog for the seeded demo agents, memory and MCP server.\\n'`,
+    `if ! REGISTRY_ON=$(curl -fsS "$BASE/api/settings/registry" | jq -r '.enabled // false'); then`,
+    `  verdict demo-skill failed "GET /api/settings/registry failed"`,
+    `elif [ "$REGISTRY_ON" != true ]; then`,
+    `  verdict demo-skill skipped "no Agent Registry configured (LOOM_REGISTRY_ID or Settings > Registry)"`,
+    `else`,
+    `  RID=$(curl -fsS "$BASE/api/registry/records?descriptor_type=SKILL" | jq -r --arg n "$SKILL_NAME" '[.[] | select(.name == $n)][0].record_id // empty' || true)`,
+    `  if [ -n "$RID" ]; then`,
+    `    verdict demo-skill present "$RID"`,
+    `  elif RID=$(curl -fsS -X POST "$BASE/api/registry/records" -H 'Content-Type: application/json' \\`,
+    `      -d "$(jq -cn --arg n "$SKILL_NAME" --arg md "$SKILL_MD" '{resource_type: "skill", skill_name: $n, skill_description: "Answer questions about what this Loomster demo deployment is.", skill_license: "MIT", skill_version: "1.0.0", skill_md: $md}')" \\`,
+    `      | jq -r '.record_id // empty') && [ -n "$RID" ]; then`,
+    `    verdict demo-skill ok "created $RID"`,
+    `  else`,
+    `    RID=""; verdict demo-skill failed "POST /api/registry/records (skill) failed"`,
+    `  fi`,
+    // Only an APPROVED skill reaches the agent's prompt.
+    `  SSTATUS=""`,
+    `  if [ -n "$RID" ]; then SSTATUS=$(curl -fsS "$BASE/api/registry/records/$RID" | jq -r '.status // empty' || true); fi`,
+    `  if [ -z "$RID" ]; then :`,
+    `  elif [ "$SSTATUS" = APPROVED ]; then verdict demo-skill-approved present`,
+    `  else`,
+    `    if [ "$SSTATUS" = DRAFT ]; then curl -fsS -X POST "$BASE/api/registry/records/$RID/submit" >/dev/null || true; fi`,
+    `    if curl -fsS -X POST "$BASE/api/registry/records/$RID/approve" -H 'Content-Type: application/json' -d '{"reason":"Loomster demo content (seeded by loom-seed)"}' >/dev/null; then`,
+    `      verdict demo-skill-approved ok`,
+    `    else`,
+    `      verdict demo-skill-approved failed "could not approve $RID (status \${SSTATUS:-unknown})"`,
+    `    fi`,
+    `  fi`,
+    `  if [ -z "$RID" ]; then :`,
+    `  elif [ -z "$AID" ]; then`,
+    `    verdict demo-skill-attached failed "no demo agent to attach $SKILL_NAME to"`,
+    `  elif curl -fsS "$BASE/api/agents/$AID/integrations" | jq -e --arg r "$RID" 'any(.[]; .integration_type == "skill" and .integration_config.record_id == $r)' >/dev/null; then`,
+    `    verdict demo-skill-attached present`,
+    `  elif curl -fsS -X POST "$BASE/api/agents/$AID/integrations" -H 'Content-Type: application/json' \\`,
+    `      -d "$(jq -cn --arg r "$RID" '{integration_type: "skill", integration_config: {record_id: $r}}')" >/dev/null; then`,
+    `    verdict demo-skill-attached ok "folds into the demo agent's prompt on its next redeploy"`,
+    `  else`,
+    `    verdict demo-skill-attached failed "POST /api/agents/$AID/integrations (skill) failed"`,
+    `  fi`,
+    `fi`,
+  ];
 }
