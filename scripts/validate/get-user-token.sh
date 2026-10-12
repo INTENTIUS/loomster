@@ -5,11 +5,13 @@ set -euo pipefail
 # a live deployment (loomster#147). Loom derives a user's scopes from their
 # `cognito:groups` claim (backend/app/dependencies/auth.py: `derive_scopes(groups)`),
 # and an admin needs `t-admin` + a single `g-admins-*` group. loomster seeds no
-# users or groups, so this creates a throwaway admin end-to-end.
+# users, so this creates a throwaway admin end-to-end (loom-cognito provisions
+# the groups on every tier since loomster#75; the script still creates them for
+# a shared pool that lacks them).
 #
-# The full (production) tier enforces MFA on the pool (hardening rule WAW052,
-# `MfaConfiguration: ON`, software-token TOTP), so a plain ADMIN_USER_PASSWORD_AUTH
-# returns an `MFA_SETUP` challenge rather than tokens. This script completes that
+# A pool that requires MFA (`LOOM_COGNITO_MFA=ON`, software-token TOTP; the
+# production tiers default to OPTIONAL) answers a plain ADMIN_USER_PASSWORD_AUTH
+# with an `MFA_SETUP` challenge rather than tokens. This script completes that
 # dance: associate a software token, compute its TOTP code, verify it, and respond
 # to the challenge — so it works on both the MFA-off (light) and MFA-on (full) pools.
 #

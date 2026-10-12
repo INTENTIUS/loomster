@@ -6,10 +6,9 @@
  * OAuth resource server carrying the 21-scope API surface (`invoke` + 10
  * domains x read/write — catalog/agent/memory/security/tagging/costs/mcp/
  * a2a/registry/admin; Loom v1.7.3 retired `settings:read/write`), the
- * machine-to-machine client (client_credentials, `invoke` only) and —
- * production/production-ha only —
- * the user-facing client (authorization code, full scope catalog), Cognito
- * groups, and Managed Login branding.
+ * machine-to-machine client (client_credentials, `invoke` only), the
+ * user-facing client the web app signs in with (loomster#75), Cognito groups,
+ * and, on production/production-ha, Managed Login branding.
  *
  * **Access model is RBAC + ABAC, not scopes alone** (chant#888 comment
  * thread): OAuth scopes gate *which API* a token can call; Cognito groups
@@ -23,7 +22,10 @@
  * structure — chant#888's access-model comment is explicit that these (and
  * the scope catalog) are "policy-driven parameters a team sets to its real
  * org structure — empty/minimal by default," so `groups.resourceGroups`
- * defaults to `[]`. Loom's own demo `g-admins-demo`/`g-users-demo`/
+ * defaults to the one group a first admin needs, `g-admins-super`. Loom's
+ * backend derives every scope a signed-in user holds from `cognito:groups`
+ * (`derive_scopes`), so without a `g-*` group nobody who signs in can do
+ * anything (loomster#75). Loom's own demo `g-admins-demo`/`g-users-demo`/
  * `g-users-test`/`g-users-strategics` groups are NOT defaulted in — bring
  * your own.
  *
@@ -68,14 +70,21 @@
  * Tiers (chant#890), all param-selected off `naming.tier` with no divergent
  * source: `light` = UserPool + hosted-UI domain + resource server (scope
  * catalog trimmed to just `invoke`, matching Loom's own `pScopes` parameter
- * default) + the M2M client only — no groups, no user-facing client, no
- * branding, no seed. `production`/`production-ha` = the full 21-scope
- * catalog, both clients, Cognito groups, and Managed Login branding.
- * `AdvancedSecurityMode` is `AUDIT` on light and `ENFORCED` on full tier;
- * `MfaConfiguration` is `OFF` on light and `ON` (software-token TOTP) on full
- * tier — chant's Cognito hardening post-synth checks (WAW050 advanced
- * security, WAW051 no implicit grant, WAW052 MFA on the full tier) are
- * satisfied at every tier: neither client ever requests the implicit grant.
+ * default), both clients and the groups, no branding, no seed.
+ * `production`/`production-ha` = the full 21-scope catalog, both clients,
+ * Cognito groups, and Managed Login branding. Every tier has the user-facing
+ * client, because the web app signs in with it (loomster#75); the scope
+ * catalog doesn't limit what a user can do, since Loom's backend takes scopes
+ * from the user's groups, not the token's OAuth scopes.
+ * `AdvancedSecurityMode` is `AUDIT` on light and `ENFORCED` on full tier.
+ * `MfaConfiguration` (`identity.mfa`) defaults to `OFF` on light and
+ * `OPTIONAL` (software-token TOTP) on full tier. Loom's web app signs in with
+ * `USER_PASSWORD_AUTH` and answers only the `NEW_PASSWORD_REQUIRED`
+ * challenge, so a pool that requires MFA (`ON`) can't sign anyone in through
+ * it; Loom's own pool leaves MFA off. Set `ON` when every user signs in some
+ * other way (API tokens, a sign-in page that answers TOTP). chant's WAW052
+ * (MFA on the full tier) is guidance and flags `OPTIONAL`; WAW050 (advanced
+ * security) and WAW051 (no implicit grant) are satisfied at every tier.
  *
  * Style note: each seam/tier's resource creation lives in its own
  * module-level `buildXxx()` helper below, invoked with a ternary in the
@@ -172,14 +181,16 @@ export interface CognitoProvisionData {
   resourceServerIdentifier?: string;
   /** OAuth scope catalog. Default: Loom's own 21 (chant#888: `invoke` + 10 domains x read/write; `settings:*` retired in Loom v1.7.3) on production/production-ha; `invoke` only on light (matches Loom's own `pScopes` default). Override to set your own org's API surface. */
   scopes?: CognitoScopeDef[];
-  /** RBAC groups (chant#888) — present on production/production-ha only (chant#890: light has no groups at all). */
+  /** RBAC groups (chant#888), on every tier. Default: Loom's `t-admin`/`t-user` UI-tier pair and the `g-admins-super` resource group. */
   groups?: CognitoGroupsSeam;
-  /** Demo/seed users + group attachments — opt-in only, `undefined` by default (see file header). Ignored on light tier (no groups exist there to attach to). */
+  /** Demo/seed users + group attachments — opt-in only, `undefined` by default (see file header). Ignored on light tier. */
   demoSeed?: { users: CognitoDemoUser[] };
   /** ABAC tag values. Defaults: `application` -> `naming.project`, `group` -> `naming.instance`, `owner` -> `naming.owner`. */
   abacTags?: CognitoAbacTags;
-  /** Managed Login branding on the user-facing client — production/production-ha only (no user client exists on light to brand). Default: `true`. */
+  /** Managed Login branding on the user-facing client — production/production-ha only. Default: `true`. */
   managedLoginBranding?: boolean;
+  /** `MfaConfiguration`. Default: `OFF` on light, `OPTIONAL` on production/production-ha. `ON` requires MFA, which Loom's web app sign-in can't answer (see file header). */
+  mfa?: "OFF" | "OPTIONAL" | "ON";
 }
 
 /**
@@ -258,7 +269,10 @@ export const LOOM_UI_TIER_GROUPS: CognitoGroupDef[] = [
   { name: "t-user", description: "User UI view (restricted to Catalog, Agents, Memory, Costs)" },
 ];
 
-const EMPTY_GROUP_DEFS: CognitoGroupDef[] = [];
+/** The default resource group: Loom's super-admin group, which grants every scope. A first admin needs it plus `t-admin` (loomster#75). */
+export const LOOM_DEFAULT_RESOURCE_GROUPS: CognitoGroupDef[] = [
+  { name: "g-admins-super", description: "Super admins: every scope" },
+];
 const EMPTY_STRING_LIST: string[] = [];
 const DEFAULT_CALLBACK_URLS: string[] = ["https://localhost"];
 const LOOM_ENABLED_MFAS: string[] = ["SOFTWARE_TOKEN_MFA"];
@@ -316,8 +330,8 @@ function buildCore(naming: LoomNaming, namingParams: LoomNamingParams, tier: Tie
   });
 
   const advancedSecurityMode = tier === "light" ? "AUDIT" : "ENFORCED";
-  const mfaConfiguration = tier === "light" ? "OFF" : "ON";
-  const enabledMfas = tier === "light" ? undefined : LOOM_ENABLED_MFAS;
+  const mfaConfiguration = provision.mfa ?? (tier === "light" ? "OFF" : "OPTIONAL");
+  const enabledMfas = mfaConfiguration === "OFF" ? undefined : LOOM_ENABLED_MFAS;
   const deletionProtection = tier === "production-ha" ? "ACTIVE" : "INACTIVE";
 
   const passwordPolicy = new UserPool_PasswordPolicy({
@@ -384,7 +398,7 @@ function buildCore(naming: LoomNaming, namingParams: LoomNamingParams, tier: Tie
   );
 
   const uiTierGroupDefs = provision.groups?.uiTiers ?? LOOM_UI_TIER_GROUPS;
-  const resourceGroupDefs = provision.groups?.resourceGroups ?? EMPTY_GROUP_DEFS;
+  const resourceGroupDefs = provision.groups?.resourceGroups ?? LOOM_DEFAULT_RESOURCE_GROUPS;
   const managedLoginBrandingEnabled = provision.managedLoginBranding !== false;
 
   return {
@@ -407,7 +421,7 @@ interface UserClientResult {
   userClient: InstanceType<typeof UserPoolClient>;
 }
 
-/** User-facing client (authorization code flow, full scope catalog) — production/production-ha only (chant#890). */
+/** User-facing client (authorization code flow, the tier's scope catalog) — every tier; the web app signs in with it (loomster#75). */
 function buildUserClient(
   naming: LoomNaming,
   userPoolIdRef: string,
@@ -462,7 +476,7 @@ interface GroupsResult {
   groupMap: Map<string, InstanceType<typeof UserPoolGroup>>;
 }
 
-/** Cognito groups (RBAC, chant#888) — UI-tier + resource-owning, production/production-ha only (chant#890). */
+/** Cognito groups (RBAC, chant#888) — UI-tier + resource-owning, every tier (loomster#75). */
 function buildGroups(userPoolIdRef: string, uiTierGroupDefs: CognitoGroupDef[], resourceGroupDefs: CognitoGroupDef[]): GroupsResult {
   const membersMap = new Map<string, InstanceType<typeof UserPoolGroup>>();
   const groupMap = new Map<string, InstanceType<typeof UserPoolGroup>>();
@@ -551,8 +565,8 @@ function buildDemoSeed(
 
 /**
  * Every member `LoomCognito` can return. The 6 named ones cover the
- * always-present-in-provision-mode core plus the full-tier-only client/
- * branding; groups/demo-users/attachments are dynamic-count (a team's own
+ * always-present-in-provision-mode core plus the user-facing client and the
+ * full-tier-only branding; groups/demo-users/attachments are dynamic-count (a team's own
  * org structure) and come back under generated keys (`uiTierGroup0`,
  * `resourceGroup0`, `demoUser0`, `demoUserTierAttachment0`,
  * `demoUserResourceAttachment0_0`, ...) — hence the index signature.
@@ -576,19 +590,19 @@ export const LoomCognito = Composite<LoomCognitoProps, LoomCognitoResult>((props
     ? buildCore(naming, props.naming, tier, identity)
     : undefined;
 
-  const userClientResult = core && tier !== "light"
+  const userClientResult = core
     ? buildUserClient(naming, core.userPoolIdRef, core.resourceServerIdentifier, core.scopeDefs, core.callbackUrls, core.resourceServer)
     : undefined;
 
-  const brandingResult = core && userClientResult && core.managedLoginBrandingEnabled
+  const brandingResult = core && userClientResult && tier !== "light" && core.managedLoginBrandingEnabled
     ? buildManagedLoginBranding(core.userPoolIdRef, userClientResult.userClient)
     : undefined;
 
-  const groupsResult = core && tier !== "light"
+  const groupsResult = core
     ? buildGroups(core.userPoolIdRef, core.uiTierGroupDefs, core.resourceGroupDefs)
     : undefined;
 
-  const demoSeedResult = core && groupsResult && core.demoSeedUsers && core.demoSeedUsers.length > 0
+  const demoSeedResult = core && groupsResult && tier !== "light" && core.demoSeedUsers && core.demoSeedUsers.length > 0
     ? buildDemoSeed(core.userPoolIdRef, groupsResult.groupMap, core.demoSeedUsers)
     : undefined;
 

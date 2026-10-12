@@ -104,11 +104,11 @@ issuer="$(curl -s "$ENDPOINT/$POOL/.well-known/openid-configuration" | jq -r '.i
   echo "Floci's Cognito issuer is '$issuer', expected $COGNITO_BASE/$POOL."
   echo "This Floci was started without FLOCI_HOSTNAME=floci: run 'just local-down', then 'just local-up'."; exit 1; }
 
-# The light tier provisions the pool and the M2M client but no user client and
-# no groups (production tiers do). Local login needs both, so they're added here,
-# on Floci only: a public user client allowing the password flows the SPA
+# Every tier provisions the user client and Loom's admin groups (loomster#75).
+# The fallbacks below cover a pool from before that (an older loom-cognito stack
+# still on Floci): a public user client allowing the password flows the SPA
 # (USER_PASSWORD_AUTH) and get-user-token.sh (ADMIN_USER_PASSWORD_AUTH) use, and
-# Loom's admin groups.
+# the admin groups, created only when missing.
 CLIENT="$(stack_out loom-cognito oUserClientId)"
 if [ -z "$CLIENT" ] || [ "$CLIENT" = "None" ]; then
   CLIENT="$(aws cognito-idp list-user-pool-clients --user-pool-id "$POOL" --max-results 60 \

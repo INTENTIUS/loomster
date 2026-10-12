@@ -33,7 +33,12 @@ export type IdentityMode = "provision" | "reference-existing" | "omit";
 export const identityMode: IdentityMode = (params.cognitoMode as IdentityMode | undefined) ?? "provision";
 
 // ── provision-mode inputs ───────────────────────────────────────────────
-export const callbackUrls = splitCsv(params.cognitoCallbackUrls as string | undefined);
+// Unset: `https://<LOOM_DOMAIN_NAME>` when the deployment has a domain, else
+// the composite's `https://localhost` (Loom's own `pCallbackUrls` default).
+// Loom's web app signs in with USER_PASSWORD_AUTH, so the callback only
+// matters to a hosted-UI (code flow) sign-in.
+const domainName = params.domainName as string | undefined;
+export const callbackUrls = splitCsv(params.cognitoCallbackUrls as string | undefined) ?? (domainName ? [`https://${domainName}`] : undefined);
 export const resourceServerIdentifier = params.cognitoResourceServerId as string | undefined;
 export const scopes = parseJson<CognitoScopeDef[]>(params.cognitoScopesJson as string | undefined, "cognitoScopesJson");
 export const uiTierGroups = parseJson<CognitoGroupDef[]>(params.cognitoUiTierGroupsJson as string | undefined, "cognitoUiTierGroupsJson");
@@ -44,6 +49,8 @@ export const abacGroup = params.cognitoAbacGroup as string | undefined;
 export const abacOwner = params.cognitoAbacOwner as string | undefined;
 /** Unset/`true` -> default (on); `false` -> off. */
 export const managedLoginBranding = params.cognitoManagedLoginBranding === false ? false : undefined;
+/** `MfaConfiguration`; unset -> `OFF` on light, `OPTIONAL` on production/production-ha (loomster#75). */
+export const mfa = params.cognitoMfa as "OFF" | "OPTIONAL" | "ON" | undefined;
 
 // ── reference-existing-mode inputs (chant#898) ──────────────────────────
 export const referenceUserPoolId = params.cognitoUserPoolId as string | undefined;

@@ -21,7 +21,6 @@ import * as params from "./params";
 import { loomNaming } from "../lib/naming";
 
 const mode = params.identityMode;
-const fullTier = params.namingParams.tier !== "light";
 const naming = loomNaming(params.namingParams, "loom-cognito");
 
 // Recomputed independently of the composite (same convention as
@@ -52,7 +51,9 @@ export const oM2MClientId = mode === "provision"
     ? output(literalOutputValue(params.referenceM2MClientId as string), "oM2MClientId")
     : undefined;
 
-export const oUserClientId = mode === "provision" && fullTier
+// Every provisioned tier has the user client the web app signs in with
+// (loomster#75); loom-frontend bakes this id into its image.
+export const oUserClientId = mode === "provision"
   ? output(cognito.userClient!.ClientId, "oUserClientId")
   : mode === "reference-existing" && params.referenceUserClientId
     ? output(literalOutputValue(params.referenceUserClientId), "oUserClientId")

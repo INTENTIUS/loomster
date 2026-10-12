@@ -113,6 +113,7 @@ export default {
     cognitoAbacGroup: { type: "string", required: false, env: "LOOM_COGNITO_ABAC_GROUP" },
     cognitoAbacOwner: { type: "string", required: false, env: "LOOM_COGNITO_ABAC_OWNER" },
     cognitoManagedLoginBranding: { type: "boolean", required: false, env: "LOOM_COGNITO_MANAGED_LOGIN_BRANDING" },
+    cognitoMfa: { type: "string", required: false, enum: ["OFF", "OPTIONAL", "ON"], env: "LOOM_COGNITO_MFA" },
     cognitoUserPoolId: { type: "string", required: false, env: "LOOM_COGNITO_USER_POOL_ID" },
     cognitoUserPoolArn: { type: "string", required: false, env: "LOOM_COGNITO_USER_POOL_ARN" },
     cognitoDomain: { type: "string", required: false, env: "LOOM_COGNITO_DOMAIN" },

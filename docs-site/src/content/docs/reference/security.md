@@ -96,8 +96,11 @@ visible to the groups its `loom:group` tag names. Since Loom v1.9.0 a resource
 with no `loom:group` tag is visible to `g-admins-super` only. Approval policies
 carry no group and are visible to anyone with `security:read`.
 
-The production tiers enforce MFA (software token) on the pool and turn on
-deletion protection for the pool and the database.
+The production tiers offer MFA (software token) on the pool and turn on
+deletion protection for the pool and the database. MFA defaults to `OPTIONAL`,
+not `ON`: Loom's web app signs in with a username and password and can't answer
+an MFA challenge, so a pool that requires MFA locks every user out of the page.
+`LOOM_COGNITO_MFA=ON` requires it when users reach Loom another way.
 
 ## CI and Op reach
 

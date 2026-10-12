@@ -36,8 +36,12 @@ groups (`t-admin`, `t-user`, `g-admins-<x>`, `g-users-<x>`).
    export LOOM_COGNITO_DOMAIN=<hosted-UI domain prefix>
    export LOOM_COGNITO_RESOURCE_SERVER_ID=<resource server identifier>
    export LOOM_COGNITO_M2M_CLIENT_ID=<machine-to-machine client id>
-   export LOOM_COGNITO_USER_CLIENT_ID=<end-user client id>          # optional
+   export LOOM_COGNITO_USER_CLIENT_ID=<end-user client id>          # for the web app's sign-in
    ```
+
+   The frontend image is built with `LOOM_COGNITO_USER_CLIENT_ID`; without it
+   the served web app can't sign anyone in. The client needs
+   `ALLOW_USER_PASSWORD_AUTH` and no secret.
 
    The ARN, issuer, discovery URL and token URL are derived when unset;
    `LOOM_COGNITO_USER_POOL_ARN`, `LOOM_COGNITO_ISSUER`,

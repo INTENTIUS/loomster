@@ -77,9 +77,9 @@ environment with AWS credentials ([Add CI to your forge](/loomster/guides/add-ci
 ### 4. Seed and validate
 
 The production tiers' default seed profile is `foundation`, so seeding creates
-nothing billable. The Cognito pool enforces MFA here, and
-`scripts/validate/get-user-token.sh` completes the software-token setup for its
-throwaway admin:
+nothing billable. `scripts/validate/get-user-token.sh` mints a token for a
+throwaway admin, and completes the software-token setup if the pool requires
+MFA (`LOOM_COGNITO_MFA=ON`):
 
 ```
 export LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh)

@@ -9,8 +9,9 @@ import { namingParams } from "../loom-frontend/params";
  * (`cfn-deploy`), with a `rollback-previous` compensation phase. The
  * template is what `chant build src/loom-frontend --lexicon aws`
  * synthesizes from `../composites/loom-frontend.ts`. Depends on
- * `shared-foundation` only — no `loom-db`/`loom-cognito` wiring, unlike
- * `loom-backend` (`./loom-backend.component.ts`). Build → Publish → Apply →
+ * `shared-foundation` and `loom-cognito`: the image build takes the Cognito
+ * user client id the web app signs in with (loomster#75, below). Build →
+ * Publish → Apply →
  * Verify → Rollback; the only omission vs the reference preset is a
  * standalone `ecs-update-service` step, redundant because `cfn-deploy`
  * rolls the image via a new `TaskDefinition` revision.
@@ -27,12 +28,17 @@ import { namingParams } from "../loom-frontend/params";
  * (`podman build ... ../frontend`, no `-f`, so Dockerfile resolves to
  * `frontend/Dockerfile` by the default). Verified by building this
  * Dockerfile/context pair with real `docker build` while wiring this up
- * (#20) — the image builds clean and serves `/` over nginx. The Dockerfile's
- * two build args (`VITE_API_BASE_URL`, `VITE_COGNITO_USER_CLIENT_ID`) both
- * default to `""`, matching Loom's own `podman.build.frontend` target, which
- * only ever overrides the Cognito one — not wired through `buildArgs` here
- * either, so both stay their Loom-default empty string until a real
- * adopter deploy decides otherwise.
+ * (#20) — the image builds clean and serves `/` over nginx.
+ *
+ * **Sign-in (loomster#75).** Loom's web app signs in with the Cognito user
+ * client id baked in at build time (`VITE_COGNITO_USER_CLIENT_ID`); it reads
+ * the pool id and region from the backend's `/api/auth/config`. Built without
+ * it, the sign-in form can't sign anyone in. So the build passes loom-cognito's
+ * `oUserClientId`, the same override Loom's own `podman.build.frontend` target
+ * makes. `VITE_API_BASE_URL` stays `""` (same origin, behind the ALB), and
+ * `VITE_COGNITO_ENDPOINT_URL` stays unset on AWS (local-up sets it for Floci).
+ * With no user client (`LOOM_COGNITO_MODE=omit`, or reference-existing
+ * without `LOOM_COGNITO_USER_CLIENT_ID`) the build passes no args, as before.
  *
  * **`dockerfile` is context-relative** (chant#936, fixed in 0.18.17).
  * `realDocker.build` now joins `dockerfile` onto `context`, so `dockerfile`
@@ -47,6 +53,12 @@ import { namingParams } from "../loom-frontend/params";
  */
 
 const naming = loomNaming(namingParams, "loom-frontend");
+const cognitoMode = process.env.LOOM_COGNITO_MODE ?? "provision";
+const hasUserClient =
+  cognitoMode === "provision" || (cognitoMode === "reference-existing" && !!process.env.LOOM_COGNITO_USER_CLIENT_ID);
+const signInBuildArgs = hasUserClient
+  ? { buildArgs: { VITE_COGNITO_USER_CLIENT_ID: stackOutput("loom-cognito", "oUserClientId") } }
+  : {};
 const serviceName = naming.name("frontend-svc");
 const clusterArn = stackOutput("shared-foundation", "oEcsClusterArn");
 // Verify runs the runtime health checks: the service reaches steady state
@@ -81,8 +93,8 @@ const verifyPhases = onRealAws
 export const loomFrontend: Component = {
   name: "loom-frontend",
   archetype: "service",
-  dependsOn: ["shared-foundation"],
-  build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
+  dependsOn: ["shared-foundation", "loom-cognito"],
+  build: { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive", ...signInBuildArgs },
   deploy: [
     // Synthesize this stack's template on the deploy path. cfn-deploy reads
     // `dist/loom-frontend.template.json` from disk and `chant run --components`
@@ -107,7 +119,7 @@ export const loomFrontend: Component = {
     // found live: `docker load -i 'archive'` failed with no such file,
     // since nothing had ever produced it).
     phase("Build", [
-      { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive" },
+      { kind: "docker-build", context: "vendor/loom/frontend", dockerfile: "Dockerfile", into: "archive", ...signInBuildArgs },
     ]),
     phase("Publish", [
       { kind: "publish-image", from: "archive", to: stackOutput("shared-foundation", "oFrontendRepositoryUri") },

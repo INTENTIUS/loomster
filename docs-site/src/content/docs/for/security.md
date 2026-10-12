@@ -10,8 +10,9 @@ description: "For a security reviewer: the IAM roles and what each can reach, th
 - Loom never creates IAM; agents run only with roles an admin registered and
   tagged into a group. Per-agent roles scope credential providers to one agent.
 - The production [tiers](/loomster/concepts/tiers-and-instances/) run tasks in
-  private subnets with no public IP, enforce Cognito MFA, and turn on deletion
-  protection for the pool and the database.
+  private subnets with no public IP, offer Cognito MFA (optional by default,
+  since Loom's web app can't answer an MFA challenge; `LOOM_COGNITO_MFA=ON`
+  requires it), and turn on deletion protection for the pool and the database.
 - Secrets are encrypted on every tier, with no opt-out.
 - Destructive changes (upgrade, rotation, restore, teardown) stop at an approval
   recorded in git ([Gated Ops](/loomster/concepts/gated-ops/)).

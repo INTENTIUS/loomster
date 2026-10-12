@@ -21,8 +21,8 @@ description: "For a platform team deciding whether to run Loom: what loomster de
   hard boundary is a separate instance.
 - loomster deploys one account per instance. Several accounts means several
   instances.
-- On AWS the served app's sign-in form isn't wired; you use Loom through its API
-  with a token ([Validation](/loomster/reference/validation/#not-shown-on-any-target)).
+- A deployed tier starts with no users. Sign in to the web app once you
+  [add the first admin](/loomster/guides/add-the-first-admin/).
 - Agent runtime, model and Evaluations costs are usage-based and come on top of
   the infrastructure.
 

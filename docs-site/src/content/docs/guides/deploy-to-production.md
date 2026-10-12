@@ -68,11 +68,11 @@ npx chant run --components all --env prod
 
 ### 4. Seed and validate
 
-Loom checks a Cognito token on every call, and loomster seeds no users. The
-production pool enforces MFA, and `scripts/validate/get-user-token.sh` handles
-it: it creates the `t-admin` and `g-admins-super` groups, a throwaway user in
-both, signs in with `ADMIN_USER_PASSWORD_AUTH`, registers a software token,
-computes the TOTP code and answers the challenge, then prints the access token.
+Loom checks a Cognito token on every call, and loomster seeds no users.
+`scripts/validate/get-user-token.sh` creates a throwaway user in `t-admin` and
+`g-admins-super`, signs in with `ADMIN_USER_PASSWORD_AUTH` and prints the access
+token. If the pool requires MFA (`LOOM_COGNITO_MFA=ON`), it also registers a
+software token, computes the TOTP code and answers the challenge.
 
 ```
 export LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh)

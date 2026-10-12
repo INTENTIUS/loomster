@@ -41,9 +41,9 @@ every claim with its target and statement.
 
 ## Not shown on any target
 
-- Signing in to the served web app on a real AWS tier. loomster's frontend build
-  on AWS passes no Cognito end-user client id, so the deployed app is used
-  through its API with a token; the local stack does sign in through the form.
+- Signing in to the served web app on a real AWS tier. The frontend build
+  passes the end-user client id on every tier, and the local stack signs in
+  through the form, but no AWS run has signed in through the deployed page yet.
 - Real agent reasoning on Floci: invoking an agent there returns a canned reply.
 - The Evaluations and Skills seed steps against a live Loom, and the
   `bedrock-mantle:CreateInference` grant against a mantle-only model.
