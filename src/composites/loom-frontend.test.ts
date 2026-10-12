@@ -64,9 +64,6 @@ describe("LoomFrontend — production-ha tier", () => {
   });
 });
 
-describe("LoomFrontend — overrides", () => {
-});
-
 describe("LoomFrontend — naming and tags", () => {
   // chant#896 — component/tier/env/owner/instance, always all five, sourced
   // from the one `naming.tags()` call. Checked on every member this composite
