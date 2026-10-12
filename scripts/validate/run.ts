@@ -13,6 +13,8 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { NO_TARGET, SCREEN_CHECKS, type FetchResult, type Profile } from "./checks";
 
 const BASE = (process.env.LOOM_API_BASE_URL ?? "http://localhost:8080").replace(/\/+$/, "");
@@ -32,12 +34,10 @@ function localToken(): string | undefined {
     return undefined;
   }
 }
-const TOKEN = process.env.LOOM_API_TOKEN || localToken();
-const AUTH_HEADERS: Record<string, string> = TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
 
-async function fetchScreen(path: string): Promise<FetchResult> {
+async function fetchScreen(path: string, authHeaders: Record<string, string>): Promise<FetchResult> {
   try {
-    const res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json", ...AUTH_HEADERS } });
+    const res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json", ...authHeaders } });
     let body: unknown;
     try {
       body = await res.json();
@@ -51,6 +51,10 @@ async function fetchScreen(path: string): Promise<FetchResult> {
 }
 
 async function main(): Promise<void> {
+  // Minted here, not at import: the token step creates a Cognito user and sets
+  // its password, and `chant lint .` imports every .ts file (loomster#73).
+  const token = process.env.LOOM_API_TOKEN || localToken();
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   console.log(`Validating Loom screens at ${BASE} (seed profile: ${PROFILE})\n`);
   const rows: Array<{ screen: string; ok: boolean; detail: string }> = [];
   const fetched = new Map<string, FetchResult>();
@@ -59,7 +63,7 @@ async function main(): Promise<void> {
     const path = typeof c.path === "string" ? c.path : c.path(seen);
     let res: FetchResult = { status: NO_TARGET, body: undefined };
     if (path !== undefined) {
-      res = await fetchScreen(path);
+      res = await fetchScreen(path, authHeaders);
       fetched.set(path, res);
     }
     const r = c.check(PROFILE, res, seen);
@@ -79,4 +83,10 @@ async function main(): Promise<void> {
   }
 }
 
-void main();
+// Run only as a script (`tsx scripts/validate/run.ts`), never on import.
+function isMain(): boolean {
+  const entry = process.argv[1];
+  return !!entry && resolve(entry) === fileURLToPath(import.meta.url);
+}
+
+if (isMain()) void main();
