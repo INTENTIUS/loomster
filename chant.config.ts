@@ -129,6 +129,7 @@ export default {
     cognitoRegion: { type: "string", required: false, env: "LOOM_COGNITO_REGION" },
     allowedOrigins: { type: "string", required: false, env: "LOOM_ALLOWED_ORIGINS" },
     registryId: { type: "string", required: false, env: "LOOM_REGISTRY_ID" },
+    useSystemTrustStore: { type: "boolean", required: false, env: "LOOM_USE_SYSTEM_TRUST_STORE" },
     litellmProxyBaseUrl: { type: "string", required: false, env: "LOOM_LITELLM_PROXY_BASE_URL" },
     litellmDiscoveryBaseUrl: { type: "string", required: false, env: "LOOM_LITELLM_DISCOVERY_BASE_URL" },
     litellmProxyApiKeySecretArn: { type: "string", required: false, env: "LOOM_LITELLM_PROXY_API_KEY_SECRET_ARN" },

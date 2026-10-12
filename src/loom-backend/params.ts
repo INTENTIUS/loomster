@@ -84,6 +84,8 @@ export const logRetentionDays = params.backendLogRetentionDays as LogRetentionDa
 export const cognitoRegion = params.cognitoRegion as string | undefined;
 export const allowedOrigins = params.allowedOrigins as string | undefined;
 export const registryId = params.registryId as string | undefined;
+/** Loom v1.6.1+: verify TLS against the OS trust store, for a TLS-inspecting corporate proxy. Default off. */
+export const useSystemTrustStore = params.useSystemTrustStore as boolean | undefined;
 export const litellmProxyBaseUrl = params.litellmProxyBaseUrl as string | undefined;
 export const litellmDiscoveryBaseUrl = params.litellmDiscoveryBaseUrl as string | undefined;
 export const litellmProxyApiKeySecretArn = params.litellmProxyApiKeySecretArn as string | undefined;

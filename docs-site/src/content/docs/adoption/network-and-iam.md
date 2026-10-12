@@ -31,6 +31,22 @@ Every downstream network consumer (`loom-db`, `loom-backend`, `loom-frontend`,
 `loom-agents`) reads the VPC/subnet ids back out of `shared-foundation`'s own
 outputs, so you set them once.
 
+### Behind a TLS-inspecting proxy
+
+If egress goes through a proxy that re-signs TLS with a corporate CA, set
+`LOOM_USE_SYSTEM_TRUST_STORE=true` before deploying `loom-backend`. The backend
+then verifies TLS against the OS trust store (Loom v1.6.1+, `truststore`) rather
+than certifi's bundle, so the corporate CA has to be in the image's OS store.
+Off by default, as in Loom's own template.
+
+### Model endpoints
+
+Loom v1.8.0+ calls two Bedrock endpoints: `bedrock-runtime` and
+`https://bedrock-mantle.<region>.api.aws`, which some models (Gemma 4, the
+OpenAI-compatible Responses API) only serve. On a private network, the backend
+needs egress to both (a NAT, or an interface endpoint for each). Agents built on
+Strands reach models through `bedrock-runtime` only.
+
 ## IAM
 
 IAM is first-class reference-existing across the board:
@@ -64,6 +80,7 @@ grant, with `<acct>` your account and `<project>` your `LOOM_PROJECT` (default `
 | --- | --- | --- |
 | Model invoke | `bedrock:InvokeModel`, `InvokeModelWithResponseStream`, `CountTokens` | `arn:aws:bedrock:*:*:inference-profile/*`, `arn:aws:bedrock:*::foundation-model/*` |
 | Model catalog | `bedrock:ListFoundationModels`, `ListInferenceProfiles` | `*` |
+| Mantle-only models (invoke test) | `bedrock-mantle:CreateInference` | `*` |
 | AgentCore data + control plane | `bedrock-agentcore:*` | `arn:aws:bedrock-agentcore:*:<acct>:*` |
 | Runtime versions/endpoints | `bedrock-agentcore:ListAgentRuntimeVersions`, `ListAgentRuntimeEndpoints` | `*` (no resource type in IAM) |
 | Agent runtime lifecycle | `bedrock-agentcore-control:{Create,Get,Update,Delete}AgentRuntime[Endpoint]`, `ListAgentRuntimeVersions`, `ListAgentRuntimeEndpoints` | `arn:aws:bedrock-agentcore:*:<acct>:runtime/*` |

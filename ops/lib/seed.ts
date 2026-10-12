@@ -42,6 +42,28 @@ export interface SeedRefs {
   defaultProfile: SeedProfile;
 }
 
+/**
+ * Models the demo agent prefers, cheapest first, without the geo prefix. Loom
+ * v1.8.0's catalog lists ~20 Bedrock models in an order that shifts with each
+ * refresh, so the seed names its choice rather than taking the first entry.
+ * `LOOM_SEED_MODEL_ID` overrides the whole choice.
+ */
+export const SEED_MODEL_PREFERENCE = ["amazon.nova-lite-v1:0", "amazon.nova-micro-v1:0", "amazon.nova-pro-v1:0"];
+
+/**
+ * jq over `GET /api/agents/models` (with `--arg geo us|eu|apac` and `--arg pref`,
+ * the preference joined by spaces): the first preferred model, as the region's
+ * cross-region inference profile (`<geo>.<id>`) or the bare id, that Bedrock
+ * has not reported unavailable; otherwise the first listed model invocable from
+ * the region (its own geo profile, a `global.` one, or no geo prefix). Loom's
+ * catalog lists `us.` profiles in every region, and those fail outside the US.
+ */
+export const SEED_MODEL_JQ =
+  `[.[] | select(.available != false) | .model_id] as $ids` +
+  ` | ([$pref | split(" ")[] | ("\\($geo).\\(.)", .)] | map(select(. as $w | $ids | index($w))) | .[0])` +
+  ` // ([$ids[] | select(startswith("\\($geo).") or startswith("global.") or (test("^(us|eu|apac|jp|au|ca)\\\\.") | not))] | .[0])` +
+  ` // empty`;
+
 export function seedDefaultsScript(refs: SeedRefs): string {
   const { agentRoleName, cognitoUserPoolName, cognitoStackName, defaultProfile } = refs;
   return [
@@ -137,14 +159,16 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `else`,
     `  verdict demo-memory failed "POST /api/memories failed"`,
     `fi`,
-    // Agent (deploy) — the imported role runs it; model id is discovered from the
-    // catalog. Loom requires an identifier-style name (no hyphens).
+    // Agent (deploy) — the imported role runs it; the model is the first of
+    // SEED_MODEL_PREFERENCE the catalog lists for this region (or
+    // LOOM_SEED_MODEL_ID). Loom requires an identifier-style name (no hyphens).
     `AGENT_NAME="loomster_demo_agent"`,
+    `case "\${AWS_REGION:-us-east-1}" in eu-*) GEO=eu ;; ap-*) GEO=apac ;; *) GEO=us ;; esac`,
     `if curl -fsS "$BASE/api/agents" | jq -e --arg n "$AGENT_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
     `  verdict demo-agent present`,
     `else`,
-    `  MODEL=$(curl -fsS "$BASE/api/agents/models" 2>/dev/null | jq -r '[.. | .model_id? // empty] | .[0] // empty' || true)`,
-    `  if [ -z "$MODEL" ]; then verdict demo-agent failed "GET /api/agents/models listed no model"`,
+    `  MODEL="\${LOOM_SEED_MODEL_ID:-$(curl -fsS "$BASE/api/agents/models" 2>/dev/null | jq -r --arg geo "$GEO" --arg pref "${SEED_MODEL_PREFERENCE.join(" ")}" '${SEED_MODEL_JQ}' || true)}"`,
+    `  if [ -z "$MODEL" ]; then verdict demo-agent failed "GET /api/agents/models listed no model invocable from \${AWS_REGION:-us-east-1}"`,
     `  elif curl -fsS -X POST "$BASE/api/agents" -H 'Content-Type: application/json' \\`,
     `      -d "{\\"source\\":\\"deploy\\",\\"name\\":\\"$AGENT_NAME\\",\\"description\\":\\"Loomster demo assistant (seeded demo content)\\",\\"model_id\\":\\"$MODEL\\",\\"role_arn\\":\\"$ROLE_ARN\\",\\"protocol\\":\\"HTTP\\",\\"network_mode\\":\\"PUBLIC\\",\\"tags\\":$BRAND_TAGS}" >/dev/null; then`,
     `    verdict demo-agent ok "deploy requested (async; demo-agent-ready waits for it)"`,

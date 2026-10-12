@@ -72,8 +72,10 @@ one so the Catalog isn't a wall of empty sections:
 
 - **Agents** — deploys one agent (`loomster_demo_agent`) via Loom's own deploy
   path (build artifact → S3 → AgentCore runtime). Names must be identifier-style
-  (`[A-Za-z][A-Za-z0-9_]*`), and the model is discovered from the catalog rather
-  than hardcoded. The harness requires at least one agent that's `READY` or
+  (`[A-Za-z][A-Za-z0-9_]*`). The model is the first of Nova Lite, Nova Micro and
+  Nova Pro that the catalog lists for the deploy region (its `us.`/`eu.`/`apac.`
+  profile), falling back to the first listed model invocable there;
+  `LOOM_SEED_MODEL_ID` picks one outright. The harness requires at least one agent that's `READY` or
   `CREATING` — an all-`FAILED` list means the deploy path is broken and fails
   validation.
 - **Memory** — creates one memory resource with a **summary strategy**, so it
@@ -103,6 +105,17 @@ defaults, not gaps. Nothing here needs seeding.
   an allow-list to *restrict* the catalog, so empty means "all models allowed."
   The agent picker uses the full catalog regardless. Seeding a curated list would
   override Loom's own default, not fix anything.
+- **Models > Refresh** (`POST /api/settings/models/refresh`, Loom v1.8.0+) does not
+  work on a deployed loomster, and does not on Loom's own ECS deploy either. It
+  rewrites `etc/models.json` inside the container, which the image leaves
+  root-owned and read-only to the `appuser` the backend runs as, and the image
+  doesn't carry the `etc/bedrock_model_catalog.json` it reads; it answers 500.
+  Even a writable copy would be task-local: lost on the next deploy or restart,
+  and different on each of production-ha's two tasks. The model list comes from
+  the `models.json` Loom ships with each release (refreshed by Loom's
+  `make refresh-models` at release time), so a newer list arrives with a Loom
+  bump (`npm run vendor` after moving the pinned tag). Grandfathered models stay
+  on agents that already use them.
 - **Networking** — VPC configurations start empty, and that's correct on `light`:
   its agents run in `PUBLIC` network mode, and a light deploy only has public
   subnets, so there's nothing a VPC config would point at. These are named
