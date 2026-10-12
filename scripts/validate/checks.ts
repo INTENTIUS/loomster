@@ -13,7 +13,7 @@
  * invoke test, the models.json refresh) are checked as mounted routes and never
  * triggered. Per-agent and per-skill tabs build their path from an earlier
  * check's data, so checks run in order. Not covered yet: the agent kill switch,
- * until awslabs/loom#82 merges (loomster#16).
+ * until it lands in a Loom release (loomster#16).
  */
 
 export type Profile = "demo" | "foundation" | "none";
