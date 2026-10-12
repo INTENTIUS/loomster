@@ -48,7 +48,7 @@ not to touch.
   `CREATE_COMPLETE`**, including RDS Proxy, PrivateLink, an ACM cert on a custom
   domain, backend autoscaling, and the agents wave: the Strands assistant's
   code-config Runtime reaches `READY` on Bedrock AgentCore, and the app is served
-  over HTTPS. All 15 screens are validated behind real (MFA-enforced) Cognito: the
+  over HTTPS. Every screen is validated behind real (MFA-enforced) Cognito: the
   harness mints a throwaway admin against the deployed pool, seeds the foundation floor
   through that token, and reads every screen — so the live proof covers the stacks, the
   tier resources, the served app, the agent runtime, and the authenticated UI.

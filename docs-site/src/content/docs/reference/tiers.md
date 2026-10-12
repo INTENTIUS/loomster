@@ -55,7 +55,7 @@ pieces. The result is a browsable, authenticated Loom with no AWS account. See
 | Tier | Floci | Real AWS |
 |---|---|---|
 | `light` | Full stack, 7/7 stacks `CREATE_COMPLETE`, including the code-config agents wave against the AgentCore-enabled image | Deployed end to end — the real ALB served the Loom SPA, backed by real RDS and Cognito, backend passed the ECS health-gate. (The agents wave itself is validated live on the production tiers below, where the assistant runtime reaches `READY` on Bedrock AgentCore.) |
-| `production` | Full stack against a BYO VPC — RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend autoscaling, and the assistant code-config Runtime | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, all tier resources present, app served over HTTPS on a custom domain, and the Strands assistant runtime `READY` on Bedrock AgentCore. 15/15 screens validated behind real (MFA-enforced) Cognito** via a minted throwaway-admin token — the foundation floor (agent role + authorizer) is seeded through that same token first |
+| `production` | Full stack against a BYO VPC — RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend autoscaling, and the assistant code-config Runtime | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, all tier resources present, app served over HTTPS on a custom domain, and the Strands assistant runtime `READY` on Bedrock AgentCore. Every screen validated behind real (MFA-enforced) Cognito** via a minted throwaway-admin token — the foundation floor (agent role + authorizer) is seeded through that same token first |
 | `production-ha` | Full stack, 7/7 `CREATE_COMPLETE` — as production, plus Multi-AZ RDS, secret rotation, and a 2-task backend floor | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, Multi-AZ RDS + the HostedRotationLambda rotation schedule live, app served over HTTPS, assistant runtime `READY`.** Also proved multi-deployment: deployed as a second instance alongside `production` |
 
 Both production tiers deploy end to end on Floci against a bring-your-own VPC
@@ -72,6 +72,6 @@ runtime `READY` on Bedrock AgentCore. What's still emulator-only is real agent
 reasoning needs a live account. Screen-level checks behind real Cognito are proven
 live: the harness mints a throwaway admin against the deployed pool — completing the
 software-token MFA the production pool enforces — seeds the foundation floor through
-that token, then validates all 15 screens (see
+that token, then validates every screen (see
 [Authenticated screen validation](/loomster/operations/production-live-e2e/#authenticated-screen-validation)).
 See [Local caveats](/loomster/reference/local-caveats/).

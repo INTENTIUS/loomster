@@ -27,7 +27,6 @@ agent deploy needs — the default on the production tiers) and **`demo`**
 | Security → IAM Roles | `managed_roles` | imported agent role | same | — |
 | Security → Authorizers | `authorizer_configs` | Cognito authorizer | same | — |
 | Security → Approval Policies | `approval_policies` | — | a default policy | on foundation |
-| Security → Permission Requests | `permission_requests` | — | one pending request | on foundation |
 | Security → Identity Providers | `identity_providers` | — | — | **always** (see below) |
 | Agents | `agents` | — | a deployed agent | on foundation |
 | Memory | `memories` | — | a memory | on foundation |
@@ -48,7 +47,7 @@ distinguishable from Loom's demo data and anything entered by hand.
 
 ## Security
 
-Five tabs. Two are the floor an agent deploy needs; two are demo content; one is
+Four tabs. Two are the floor an agent deploy needs; one is demo content; one is
 deliberately never seeded.
 
 - **IAM Roles** — `foundation` imports the shared-foundation agent execution
@@ -60,8 +59,6 @@ deliberately never seeded.
   pool loomster provisions, so agents can use OAuth2/Cognito auth.
 - **Approval Policies** — `demo` seeds one default *notify-only* policy, so the
   tab isn't empty and the approval flow is visible.
-- **Permission Requests** — `demo` seeds one pending request against the seeded
-  role, so the review workflow is visible.
 - **Identity Providers** — **never seeded.** Registering an identity provider
   flips Loom out of its dev-auth bypass into real-OIDC mode: with no real IdP to
   authenticate against, every request then fails with *"Missing authorization

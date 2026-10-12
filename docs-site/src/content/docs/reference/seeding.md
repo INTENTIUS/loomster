@@ -72,8 +72,8 @@ authorizer); run `npm run seed`, then validate again and every screen passes.
 ## The Security screen
 
 `foundation` seeds the two tabs an agent deploy needs — an imported IAM role and
-a Cognito authorizer. `demo` additionally seeds an approval policy and a pending
-permission request, so those tabs aren't empty either.
+a Cognito authorizer. `demo` additionally seeds an approval policy, so that tab
+isn't empty either.
 
 One tab is deliberately left empty: **Identity Providers**. Registering one flips
 Loom out of its dev-auth bypass into real-OIDC mode, which locks a local or demo

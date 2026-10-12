@@ -100,15 +100,6 @@ export const SCREEN_CHECKS: ScreenCheck[] = [
     }),
   },
   {
-    screen: "Security — permission requests",
-    path: "/api/security/permission-requests",
-    check: (p, res) => on200(res, () => {
-      if (!isArray(res.body)) return fail("not an array");
-      if (p === "demo") return res.body.length >= 1 ? pass(`${res.body.length} permission requests`) : fail("demo profile: no permission request seeded");
-      return pass(`${res.body.length} permission requests`);
-    }),
-  },
-  {
     screen: "MCP Servers",
     path: "/api/mcp/servers",
     check: (p, res) => on200(res, () => {
