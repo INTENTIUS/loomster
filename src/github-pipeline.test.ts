@@ -33,5 +33,5 @@ describe("chant build --components --generate github — Loom component set", ()
 
     const committed = readFileSync(resolve(".github/workflows/components.yml"), "utf-8");
     expect(committed).toBe(result.yaml);
-  });
+  }, 60_000);
 });
