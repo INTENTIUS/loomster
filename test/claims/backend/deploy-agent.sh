@@ -252,11 +252,16 @@ log "agent $AGENT_NAME (id $AGENT_ID, model $MODEL) deploying"
 
 timeout_s="${LOOM_CLAIM_AGENT_TIMEOUT:-900}"
 started="$(date +%s)" status="" agent=""
+# GET /api/agents/<id>/status is what Loom's UI polls: it asks AgentCore for the
+# runtime's state, stores it, and creates the DEFAULT endpoint once the runtime
+# is READY. GET /api/agents/<id> only returns the stored row, which never moves.
 while :; do
-  agent="$(api "$BASE/api/agents/$AGENT_ID" 2>/dev/null || true)"
+  agent="$(api "$BASE/api/agents/$AGENT_ID/status" 2>/dev/null || true)"
   status="$(jq -r '.status // empty' <<<"$agent" 2>/dev/null || true)"
-  log "status=$status deployment_status=$(jq -r '.deployment_status // empty' <<<"$agent" 2>/dev/null || true)"
-  case "$status" in READY|FAILED) break ;; esac
+  endpoint="$(jq -r '.endpoint_status // empty' <<<"$agent" 2>/dev/null || true)"
+  log "status=$status endpoint_status=$endpoint deployment_status=$(jq -r '.deployment_status // empty' <<<"$agent" 2>/dev/null || true)"
+  [ "$status" = FAILED ] && break
+  [ "$status" = READY ] && { [ -z "$endpoint" ] || [ "$endpoint" = READY ]; } && break
   [ $(( $(date +%s) - started )) -lt "$timeout_s" ] || break
   sleep 15
 done
