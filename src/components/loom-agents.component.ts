@@ -51,6 +51,19 @@ export const loomAgents: Component = {
   archetype: "infra",
   dependsOn: ["shared-foundation", "loom-cognito", "loom-backend"],
   deploy: [
+    // Synthesize this stack's template on the deploy path. cfn-deploy reads
+    // `dist/loom-agents.template.json` from disk and `chant run --components`
+    // never builds it, so without this phase a deploy applies whatever stale
+    // template is lying in dist/ (or fails in a fresh checkout). The build
+    // reads the LOOM_* env vars the run was started with
+    // (test/claims/params/reach-deploy.sh).
+    phase("Synth", [
+      {
+        kind: "shell",
+        cmd: "npm run -s synth:loom-agents",
+        reason: "synthesize dist/loom-agents.template.json from the run's build params before cfn-deploy reads it; no verb builds a lexicon stack inside a component run",
+      },
+    ]),
     // Build + upload the Strands assistant zip to the artifact bucket first, so
     // the code-config Runtime's `code.s3` target exists before the stack applies
     // (loomster#128). shared-foundation is already up (dependsOn), so its bucket

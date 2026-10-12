@@ -2,8 +2,7 @@ name: audit
 
 # Scheduled CI-cron trigger for the supply-chain audit concern (chant#906).
 # A thin trigger only: this job's one real step is `npm run audit` (`chant
-# run loom-audit` -> WorkflowAuditOp, reusing the pattern documented at
-# lexicons/temporal/src/composites/workflow-audit-op.ts). Resolves every
+# run loom-audit` -> WorkflowAuditOp from @intentius/chant/op). Resolves every
 # pinned `uses:` ref under .github/workflows/ (including this repo's own
 # generated workflows) against live upstream truth — report mode only, see
 # ops/loom-audit.op.ts for why.

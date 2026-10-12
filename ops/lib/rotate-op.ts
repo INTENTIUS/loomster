@@ -22,8 +22,7 @@
  *     breaks TLS for every client).
  */
 
-import { Op, phase, gate, shell } from "@intentius/chant-lexicon-temporal";
-import { OpResource } from "@intentius/chant/op";
+import { Op, OpResource, phase, gate, shell } from "@intentius/chant/op";
 import type { LoomNamingParams } from "../../src/lib/naming";
 import { stackRefs } from "./stack-refs";
 import {
@@ -109,8 +108,7 @@ export function buildLoomRotateOp(config: LoomRotateOpConfig): InstanceType<type
   return Op({
     name: opName,
     overview: `Rotate Cognito/RDS credentials${domainName ? " + ACM certificate" : ""} for the Loom "${tier}" deployment (env=${naming.env})`,
-    taskQueue: "loom-lifecycle",
-    searchAttributes: { Tier: tier, Env: naming.env },
+    labels: { Tier: tier, Env: naming.env },
     phases,
   });
 }

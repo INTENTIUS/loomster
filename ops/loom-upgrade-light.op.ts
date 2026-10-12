@@ -1,7 +1,6 @@
 /**
  * `light`-tier upgrade (chant#905). No approval gate, no rollback — chant#905's
- * dial: "light is additive/local with no gate". Runs on the local Op executor,
- * no Temporal server required:
+ * dial: "light is additive/local with no gate":
  *
  *   chant run loom-upgrade-light
  *

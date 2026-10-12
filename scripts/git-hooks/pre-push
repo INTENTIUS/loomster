@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# loomster ledger guard (installed by scripts/install-git-hooks.sh).
+#
+# chant records gates, run records and releases on the `chant/lifecycle`
+# branch and pushes it to `origin` after every write; chant has no setting
+# that turns the push off. A local run against Floci or a scratch account
+# should not publish its ledger to the shared repo, so this hook refuses a
+# push of chant/lifecycle unless it is meant:
+#
+#   CI set (GitHub/GitLab/Forgejo jobs)   pushed
+#   LOOM_LEDGER_PUSH=1                    pushed (a deployment whose gates
+#                                         other people approve)
+#   otherwise                             refused; chant keeps the fact on the
+#                                         local branch, warns, and the run
+#                                         carries on
+#
+# Every other ref pushes as usual.
+set -euo pipefail
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  [ "$remote_ref" = refs/heads/chant/lifecycle ] || continue
+  if [ -n "${CI:-}" ] || [ "${LOOM_LEDGER_PUSH:-}" = 1 ]; then continue; fi
+  echo "loomster pre-push: not pushing chant/lifecycle to ${1:-the remote}; set LOOM_LEDGER_PUSH=1 to share this checkout's ledger" >&2
+  exit 1
+done
+exit 0

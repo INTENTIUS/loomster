@@ -12,7 +12,7 @@
  * tier-agnostic like `../loom-backup.op.ts`.
  */
 
-import { Op, phase, shell } from "@intentius/chant-lexicon-temporal";
+import { Op, phase, shell } from "@intentius/chant/op";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { stackRefs } from "./lib/stack-refs";
 import { cognitoUserExportScript } from "./lib/cognito-backup";
@@ -23,8 +23,7 @@ const refs = stackRefs(naming);
 export default Op({
   name: "loom-cognito-export",
   overview: `Export the Cognito user pool's users, groups, and memberships for the Loom deployment (env=${naming.env}, instance=${naming.instance}) — to stdout, and to S3 when LOOM_BACKUP_BUCKET is set. Read-only, ungated, local executor.`,
-  taskQueue: "loom-lifecycle",
-  searchAttributes: { Env: naming.env, Backup: "true" },
+  labels: { Env: naming.env, Backup: "true" },
   phases: [
     phase("Export", [shell(cognitoUserExportScript({ cognitoUserPoolName: refs.cognitoUserPoolName }), { profile: "longInfra" })]),
   ],

@@ -6,12 +6,12 @@
  * runs a *Component's* `deploy` composition — a hand-authored `*.op.ts` Op has
  * no such dispatch (an `ActivityStep`'s `fn` only resolves against the named
  * activities a lexicon's `op/activities` module exports, and neither the aws
- * lexicon nor the temporal lexicon exports one for these verbs today).
+ * lexicon nor `@intentius/chant/op` exports one for these verbs today).
  * `shell()` is the documented escape hatch for exactly this gap (see
  * docs/guide/ops.mdx's "Try it locally" — swap `shell()` for a typed builder
  * once/if one exists); these functions build the AWS CLI scripts each
  * `shell()` step runs, kept here as pure, unit-testable string builders
- * (mirroring `lexicons/temporal/src/op/activities/apply.ts`'s `applyCommand`).
+ * (mirroring chant's `applyCommand` activity).
  *
  * **Why a bash script string, not one command per step.** An `ActivityStep`'s
  * `args` are static JSON baked in at `chant build` time (no `@Phase.field`

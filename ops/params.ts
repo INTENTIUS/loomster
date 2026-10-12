@@ -13,7 +13,7 @@
  *
  * `reconcilesOnSchedule` is the per-env dial from chant#890: light observes
  * only; production/production-ha additionally reconcile on a schedule. See
- * ./loom-reconcile.op.ts for how the flag gates the `TemporalSchedule`.
+ * ./loom-reconcile.op.ts for how the flag sets the Op's `schedule`.
  */
 
 import type { Tier } from "../src/lib/naming";

@@ -6,8 +6,9 @@
  * destructive action regardless of which tier is actually live, so it always
  * gates, and it deletes every component stack `src/components/` declares:
  *
- *   chant run loom-teardown --temporal
- *   chant run signal loom-teardown approve-loom-teardown
+ *   chant run loom-teardown                 # stops at the gate, exit 3
+ *   chant approve loom-teardown approve-loom-teardown
+ *   chant run loom-teardown                 # continues past the approved gate
  *
  * Deletes run **sequentially**, in the order `discoverTeardownOrder()`
  * derives from the component graph (the deploy waves reversed, so
@@ -23,7 +24,7 @@
  * a no-op in CloudFormation).
  */
 
-import { Op, phase, gate, shell } from "@intentius/chant-lexicon-temporal";
+import { Op, phase, gate, shell } from "@intentius/chant/op";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { discoverTeardownOrder, deleteStackScript } from "./lib/teardown-plan";
 
@@ -37,8 +38,7 @@ const stacks = (await discoverTeardownOrder()).map(stackName);
 export default Op({
   name: "loom-teardown",
   overview: `Decommission the Loom deployment (env=${naming.env}, instance=${naming.instance}): gated, owned-only, marker-scoped stack deletes, no foreign deletes`,
-  taskQueue: "loom-lifecycle",
-  searchAttributes: { Env: naming.env, Teardown: "true" },
+  labels: { Env: naming.env, Teardown: "true" },
   phases: [
     phase("Approve", [
       gate("approve-loom-teardown", {

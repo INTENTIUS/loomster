@@ -15,8 +15,7 @@
     "synth:loom-backend": "chant build src/loom-backend --lexicon aws -o dist/loom-backend.template.json",
     "synth:loom-frontend": "chant build src/loom-frontend --lexicon aws -o dist/loom-frontend.template.json",
     "synth:loom-agents": "chant build src/loom-agents --lexicon aws -o dist/loom-agents.template.json",
-    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub && npm run synth:loom-db && npm run synth:loom-cognito && npm run synth:loom-backend && npm run synth:loom-frontend && npm run synth:loom-agents && npm run synth:ops",
-    "synth:ops": "chant build ops -o dist/temporal-manifest.txt",
+    "synth": "npm run synth:shared-foundation && npm run synth:downstream-stub && npm run synth:loom-db && npm run synth:loom-cognito && npm run synth:loom-backend && npm run synth:loom-frontend && npm run synth:loom-agents && npm run ops:build",
     "watch": "chant run loom-watch",
     "reconcile": "chant run loom-reconcile",
     "audit": "chant run loom-audit",
@@ -36,13 +35,12 @@
     "vendor": "bash scripts/vendor-loom.sh"
   },
   "dependencies": {
-    "@intentius/chant": "^0.24.0",
-    "@intentius/chant-lexicon-aws": "^0.24.0",
-    "@intentius/chant-lexicon-docker": "^0.24.0",
-    "@intentius/chant-lexicon-forgejo": "^0.24.0",
-    "@intentius/chant-lexicon-github": "^0.24.0",
-    "@intentius/chant-lexicon-gitlab": "^0.24.0",
-    "@intentius/chant-lexicon-temporal": "^0.24.0"
+    "@intentius/chant": "^0.124.15",
+    "@intentius/chant-lexicon-aws": "^0.124.15",
+    "@intentius/chant-lexicon-docker": "^0.124.15",
+    "@intentius/chant-lexicon-forgejo": "^0.124.15",
+    "@intentius/chant-lexicon-github": "^0.124.15",
+    "@intentius/chant-lexicon-gitlab": "^0.124.15"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",

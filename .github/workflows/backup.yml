@@ -6,8 +6,7 @@ name: backup
 # backup is additive and non-destructive, so it runs on the local executor with
 # no gate — see ops/loom-backup.op.ts.
 #
-# CI-cron is one trigger host among several — a team may run this instead of, or
-# alongside, a Temporal schedule. Every tier backs up.
+# Every tier backs up.
 #
 # Inert until a team opts in: set the repo variable SCHEDULED_BACKUP to 'true'
 # and provide the `production` environment's AWS credentials (same one deploy.yml

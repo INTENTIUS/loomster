@@ -1,12 +1,17 @@
+name: chant-components-production
+
 on:
   workflow_dispatch: {}
+
+env:
+  CHANT_ENV: production
 
 jobs:
   loom-cognito:
     runs-on: ubuntu-latest
-    container: node:22-slim
+    container: node:22
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: chant run --components loom-cognito --env production --dump-outputs loom-cognito.outputs.json
       - name: Upload loom-cognito outputs
         uses: actions/upload-artifact@v4
@@ -15,9 +20,9 @@ jobs:
           path: loom-cognito.outputs.json
   shared-foundation:
     runs-on: ubuntu-latest
-    container: node:22-slim
+    container: node:22
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: chant run --components shared-foundation --env production --dump-outputs shared-foundation.outputs.json
       - name: Upload shared-foundation outputs
         uses: actions/upload-artifact@v4
@@ -28,9 +33,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - shared-foundation
-    container: node:22-slim
+    container: node:22
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download shared-foundation outputs
         uses: actions/download-artifact@v4
         with:
@@ -41,9 +46,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - shared-foundation
-    container: node:22-slim
+    container: node:22
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download shared-foundation outputs
         uses: actions/download-artifact@v4
         with:
@@ -59,9 +64,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - shared-foundation
-    container: node:22-slim
+    container: node:22
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download shared-foundation outputs
         uses: actions/download-artifact@v4
         with:
@@ -74,9 +79,9 @@ jobs:
       - loom-cognito
       - loom-db
       - shared-foundation
-    container: node:22-slim
+    container: node:22
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download shared-foundation outputs
         uses: actions/download-artifact@v4
         with:
@@ -104,9 +109,9 @@ jobs:
       - loom-backend
       - loom-cognito
       - shared-foundation
-    container: node:22-slim
+    container: node:22
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download shared-foundation outputs
         uses: actions/download-artifact@v4
         with:

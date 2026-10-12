@@ -45,7 +45,8 @@ while `production-ha` ran as instance `b` in the same account, each 7/7 and full
 independent.
 
 Tear one down without touching the other — `loom-teardown` is instance-scoped, so
-`LOOM_INSTANCE=b chant run loom-teardown --temporal` deletes only the `loom-prod-b-*`
+`LOOM_INSTANCE=b chant run loom-teardown` (then `chant approve loom-teardown
+approve-loom-teardown` and the same run again) deletes only the `loom-prod-b-*`
 stacks.
 
 ## Shared vs. separate identity

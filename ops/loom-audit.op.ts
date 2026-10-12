@@ -11,23 +11,18 @@
  *
  * `onFinding: "report"` only. `WorkflowAuditOp` accepts `"issue"`/
  * `"pull-request"` too, but as of this writing the underlying
- * `workflowSupplyChainAudit` activity (`@intentius/chant-lexicon-temporal`)
+ * `workflowSupplyChainAudit` activity (`@intentius/chant/op`)
  * only returns the findings + a markdown summary — it does not yet open the
  * issue/PR itself (unlike `reconcilePr`, which does). Pick a write mode here
  * once that activity closes the gap; until then it would silently do
  * nothing beyond `report`.
  *
- * One-shot on the local executor only — no `schedule` is passed, so `chant
- * build ops` emits no `TemporalSchedule` for this Op. Unlike `loom-watch`/
- * `loom-reconcile` (scheduled on both Temporal and CI-cron), this concern is
- * CI-cron only: see `.github/workflows/audit.yml` and the per-operation-
- * backend doctrine settled on chant#906 (CI-cron is one trigger host among
- * several — nothing requires also wiring every stateless concern through
- * Temporal).
+ * One-shot, no `schedule`: the cadence lives in `.github/workflows/audit.yml`
+ * (CI cron).
  *
  *   chant run loom-audit
  */
-import { WorkflowAuditOp } from "@intentius/chant-lexicon-temporal";
+import { WorkflowAuditOp } from "@intentius/chant/op";
 
 const { op } = WorkflowAuditOp({
   name: "loom-audit",
