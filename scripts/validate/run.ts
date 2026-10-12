@@ -11,16 +11,28 @@
  *   LOOM_API_BASE_URL=https://loom.example.com npm run validate
  */
 
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { SCREEN_CHECKS, type FetchResult, type Profile } from "./checks";
 
 const BASE = (process.env.LOOM_API_BASE_URL ?? "http://localhost:8080").replace(/\/+$/, "");
 const PROFILE = (process.env.LOOM_SEED_PROFILE ?? "demo") as Profile;
 
-// A real-Cognito deployment enforces auth on every data endpoint; a local-up app
-// runs Loom's dev-auth bypass and needs none. Pass LOOM_API_TOKEN (a bearer JWT —
-// an M2M client-credentials token or a real user token) to validate a live,
-// authenticated deployment; unset, the harness targets the dev-auth local app.
-const TOKEN = process.env.LOOM_API_TOKEN;
+// Every Loom enforces auth on its data endpoints, the local-up app included
+// (real Cognito login against Floci, loomster#58). Pass LOOM_API_TOKEN (a bearer
+// JWT: an M2M client-credentials token or a real user token, e.g. from
+// scripts/validate/get-user-token.sh). Against the local-up proxy with no token
+// set, the runner mints one itself with scripts/local/local-token.sh.
+const LOCAL_BASE = "http://localhost:8080";
+function localToken(): string | undefined {
+  if (BASE !== LOCAL_BASE || !existsSync("dist/local/.env")) return undefined;
+  try {
+    return execFileSync("bash", ["scripts/local/local-token.sh"], { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] }).trim();
+  } catch {
+    return undefined;
+  }
+}
+const TOKEN = process.env.LOOM_API_TOKEN || localToken();
 const AUTH_HEADERS: Record<string, string> = TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
 
 async function fetchScreen(path: string): Promise<FetchResult> {

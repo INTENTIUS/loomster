@@ -60,9 +60,8 @@ deliberately never seeded.
 - **Approval Policies** — `demo` seeds one default *notify-only* policy, so the
   tab isn't empty and the approval flow is visible.
 - **Identity Providers** — **never seeded.** Registering an identity provider
-  flips Loom out of its dev-auth bypass into real-OIDC mode: with no real IdP to
-  authenticate against, every request then fails with *"Missing authorization
-  token"* and the app locks itself out. You add a real provider here on a real
+  switches Loom's login page to that provider: with no real IdP behind it,
+  nobody can sign in and the app locks itself out. You add a real provider here on a real
   deploy; a seeded one would only break a local or demo run. The harness checks
   this tab renders, and asserts nothing is in it.
 

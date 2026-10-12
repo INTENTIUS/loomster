@@ -84,8 +84,8 @@ export const SCREEN_CHECKS: ScreenCheck[] = [
   },
   {
     // The Security screen also has Identity Providers — deliberately left empty:
-    // seeding one flips Loom out of its dev-auth bypass into real-OIDC mode and
-    // locks a local/demo deploy. So this only checks the tab renders.
+    // seeding one switches Loom's login to that provider and locks a local/demo
+    // deploy with no real IdP behind it. So this only checks the tab renders.
     screen: "Security — identity providers",
     path: "/api/settings/identity-providers",
     check: (_p, res) => on200(res, () => (isArray(res.body) ? pass(`${res.body.length} identity providers`) : fail("not an array"))),

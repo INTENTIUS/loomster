@@ -100,7 +100,9 @@ chant-generated `docker-compose`. When it settles:
 open http://localhost:8080
 ```
 
-You land in the Loom UI as an admin `local-dev` user, no login step. The web
+Log in as `loom-admin` with the password local-up printed last (also in
+`dist/local/admin-login.txt`). That's a real Cognito login against the pool on
+Floci, as an admin with every scope. The web
 app runs for real: a genuine Postgres behind the backend API, the real schema
 migrations, the real routers (catalog, settings, costs, memories, credentials,
 and the rest). Browse all of it.

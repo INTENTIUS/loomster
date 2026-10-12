@@ -106,12 +106,25 @@ fi
 git -C "$VENDOR_DIR" sparse-checkout init --cone
 git -C "$VENDOR_DIR" sparse-checkout set backend frontend agents
 git -C "$VENDOR_DIR" checkout --quiet "$fetched_sha"
-# Loom's images run as a non-root user (USER appuser) and COPY these files
-# as-is, so a strict umask (e.g. 077) would leave them unreadable in the image.
-chmod -R a+rX "$VENDOR_DIR"
 
 for required in backend/Dockerfile backend/scripts frontend/Dockerfile agents/strands_agent/src agents/strands_agent/requirements.txt; do
   [ -e "$VENDOR_DIR/$required" ] || fail "expected $VENDOR_DIR/$required after checkout but it's missing — Loom's layout may have changed at $LOOM_TAG."
+done
+
+# Apply loomster's reviewed patches to the vendored source (scripts/loom-patches/,
+# in name order). Each one is opt-in and a no-op unless its env var/build arg is
+# set; the patch file's header says what it does and why. They are checked
+# before anything is applied, so a Loom bump that moves the patched code fails
+# here, loudly, instead of vendoring a half-patched tree.
+PATCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/loom-patches"
+for patch in "$PATCH_DIR"/*.patch; do
+  [ -e "$patch" ] || continue
+  git -C "$VENDOR_DIR" apply --check "$patch" 2>/dev/null \
+    || fail "$(basename "$patch") no longer applies to Loom $LOOM_TAG ($(git -C "$VENDOR_DIR" apply --check "$patch" 2>&1 | head -n 1)).
+  Loom changed the code this patch edits. Re-make the patch against $LOOM_TAG (see its header for what
+  it must do), or drop it if upstream now covers it, before vendoring."
+  git -C "$VENDOR_DIR" apply "$patch"
+  notice "applied $(basename "$patch")"
 done
 
 # Add backend/scripts/ to the backend image (loomster#5). Upstream's Dockerfile
@@ -129,6 +142,11 @@ if ! grep -qxF "$copy_scripts" "$backend_dockerfile"; then
   mv "$backend_dockerfile.tmp" "$backend_dockerfile"
 fi
 notice "added '$copy_scripts' to backend/Dockerfile (one-time upgrade scripts, run by loom-upgrade-*)"
+
+# Loom's images run as a non-root user (USER appuser) and COPY these files
+# as-is, so a strict umask (e.g. 077) would leave them unreadable in the image.
+# Last, after the patches and the Dockerfile edit rewrote files under that umask.
+chmod -R a+rX "$VENDOR_DIR"
 
 notice "done — $VENDOR_DIR is Loom $LOOM_TAG ($LOOM_EXPECTED_SHA), sparse-checked-out to backend/, frontend/, agents/."
 notice "loom-backend's docker-build context is the vendor/loom root (its Dockerfile COPYs agents/strands_agent/ too — see loom-backend.component.ts); loom-frontend's is vendor/loom/frontend."

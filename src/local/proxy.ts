@@ -13,17 +13,12 @@
  * The frontend calls the backend same-origin (loomster builds it with an empty
  * `VITE_API_BASE_URL`), so this single-origin path proxy needs no rebuild.
  *
- * Loopback mode (loomster#3). Loom v1.8.1+ honours its local-dev auth bypass
- * only for a request whose client address is loopback and that carries no
- * `X-Forwarded-*`/`X-Real-IP`/`Forwarded` header. A proxy in its own container
- * reaches the backend from a Docker-network address, so every API call would
- * get a 401. With `backendOverLoopback`, the proxy joins the backend
- * container's network namespace (`network_mode: service:<backend>`) and
- * proxies to `127.0.0.1`, so the backend sees a loopback peer. The proxy then
- * has no network or ports of its own: the caller publishes the listen port on
- * the backend service (see `loopbackPublishedPort`), bound to the host's
- * loopback only, so the bypassed app is reachable from this machine and not
- * from the LAN.
+ * The proxy runs in its own container on the shared network and reaches the
+ * backend by service name. (Until loomster#58 it ran in the backend's network
+ * namespace so Loom's local-dev auth bypass saw a loopback client; local now
+ * logs in through Floci's Cognito, so nothing needs a loopback peer.) The
+ * published port binds the host's 127.0.0.1 only: the local run is for this
+ * machine, with a throwaway admin password, not for the LAN.
  *
  * Exposed as factory functions, not top-level declarables, so `chant lint .`
  * doesn't try to build an incomplete compose graph before #49 wires the app
@@ -32,10 +27,8 @@
 
 import { Service } from "@intentius/chant-lexicon-docker";
 
-type ServiceProps = NonNullable<ConstructorParameters<typeof Service>[0]>;
-
 export interface LoomLocalProxyOptions {
-  /** Host port the browsable origin is published on. Default: 8080. */
+  /** Host port the browsable origin is published on (host 127.0.0.1 only). Default: 8080. */
   listenPort?: number;
   /** Backend compose service name. Default: "loom-backend". */
   backendService?: string;
@@ -49,24 +42,10 @@ export interface LoomLocalProxyOptions {
   configPath?: string;
   /** Extra nginx `location` blocks injected into the server (e.g. the local demo's static A2A agent card). Kept separate from the ALB-mirror routing above. */
   extraLocations?: string[];
-  /**
-   * Run the proxy inside the backend container's network namespace and reach
-   * the backend over 127.0.0.1 (see the file header). The caller must publish
-   * `loopbackPublishedPort(listenPort)` on the backend service. Default: false.
-   */
-  backendOverLoopback?: boolean;
 }
 
 /** nginx listens on this port inside the container; the host port (`listenPort`) publishes to it. */
 const CONTAINER_LISTEN_PORT = 8080;
-
-/**
- * Request headers that mark a request as proxied. Loom's local-dev bypass
- * refuses any request carrying one (v1.8.1+, `auth.py` `_FORWARDING_HEADERS`).
- * nginx doesn't add them by default, but it does pass a client's own copies
- * through, so the proxy clears them (setting a header to "" drops it).
- */
-const FORWARDING_HEADERS = ["X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Proto", "X-Real-IP", "Forwarded"];
 
 /**
  * Apply defaults per field with `??` (not a `{ ...DEFAULTS, ...opts }` spread —
@@ -80,7 +59,6 @@ function resolved(opts: LoomLocalProxyOptions): Required<Omit<LoomLocalProxyOpti
     servicePort: opts.servicePort ?? 8000,
     network: opts.network ?? "loom-local",
     configPath: opts.configPath ?? "./nginx.local.conf",
-    backendOverLoopback: opts.backendOverLoopback ?? false,
   };
 }
 
@@ -91,20 +69,17 @@ function resolved(opts: LoomLocalProxyOptions): Required<Omit<LoomLocalProxyOpti
  */
 export function buildProxyRoutingConfig(opts: LoomLocalProxyOptions = {}): string {
   const o = resolved(opts);
-  const backendHost = o.backendOverLoopback ? "127.0.0.1" : o.backendService;
-  const backend = `http://${backendHost}:${o.servicePort}`;
+  const backend = `http://${o.backendService}:${o.servicePort}`;
   const frontend = `http://${o.frontendService}:${o.servicePort}`;
   const extra = (opts.extraLocations ?? []).map((l) => `    ${l}`);
-  const clearForwarding = FORWARDING_HEADERS.map((h) => `proxy_set_header ${h} "";`).join(" ");
   return [
     "events {}",
     "http {",
     "  server {",
     `    listen ${CONTAINER_LISTEN_PORT};`,
     "    # Mirrors Loom's ALB listener rule: /api/* and /health -> backend, default -> frontend SPA.",
-    "    # Forwarding headers are cleared: Loom's local-dev auth bypass rejects any request carrying one.",
-    `    location /api/ { proxy_pass ${backend}; proxy_set_header Host $host; ${clearForwarding} }`,
-    `    location = /health { proxy_pass ${backend}; ${clearForwarding} }`,
+    `    location /api/ { proxy_pass ${backend}; proxy_set_header Host $host; }`,
+    `    location = /health { proxy_pass ${backend}; }`,
     ...extra,
     `    location / { proxy_pass ${frontend}; proxy_set_header Host $host; }`,
     "  }",
@@ -113,13 +88,8 @@ export function buildProxyRoutingConfig(opts: LoomLocalProxyOptions = {}): strin
   ].join("\n");
 }
 
-/**
- * The host port mapping for loopback mode, to put on the backend service: the
- * proxy listens inside the backend's network namespace, so the backend service
- * owns the published port. Bound to the host's 127.0.0.1 so the auth-bypassed
- * app isn't reachable from other machines.
- */
-export function loopbackPublishedPort(listenPort = 8080): string {
+/** The proxy's host port mapping: bound to the host's 127.0.0.1 so the local app isn't reachable from other machines. */
+export function localPublishedPort(listenPort = 8080): string {
   return `127.0.0.1:${listenPort}:${CONTAINER_LISTEN_PORT}`;
 }
 
@@ -130,25 +100,11 @@ export function loopbackPublishedPort(listenPort = 8080): string {
  */
 export function loomLocalProxy(opts: LoomLocalProxyOptions = {}): InstanceType<typeof Service> {
   const o = resolved(opts);
-  const volumes = [`${o.configPath}:/etc/nginx/nginx.conf:ro`];
-  const depends_on = [o.backendService, o.frontendService];
-  if (o.backendOverLoopback) {
-    // `network_mode` isn't in the docker lexicon's generated ServiceProps; the
-    // serializer emits every prop it's given, so widen the type here.
-    const props: ServiceProps & { network_mode: string } = {
-      image: "nginx:1.27-alpine",
-      network_mode: `service:${o.backendService}`,
-      volumes,
-      depends_on,
-      restart: "unless-stopped",
-    };
-    return new Service(props);
-  }
   return new Service({
     image: "nginx:1.27-alpine",
-    ports: [`${o.listenPort}:${CONTAINER_LISTEN_PORT}`],
-    volumes,
-    depends_on,
+    ports: [localPublishedPort(o.listenPort)],
+    volumes: [`${o.configPath}:/etc/nginx/nginx.conf:ro`],
+    depends_on: [o.backendService, o.frontendService],
     networks: [o.network],
     restart: "unless-stopped",
   });

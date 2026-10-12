@@ -47,7 +47,7 @@ out of the box: `light` defaults to a `demo` seed profile, the production tiers 
 A third path, `just local-up`, is a laptop harness rather than a tier or target:
 it runs the app tier (frontend, backend, a reverse proxy standing in for the ALB)
 from a chant-generated `docker-compose.yml`, wired to Floci for the managed
-pieces. The result is a browsable Loom with no AWS account, running Loom's dev-auth bypass instead of a login. See
+pieces. The result is a browsable Loom with no AWS account, with a real Cognito login against Floci's pool. See
 [Run Loom on your laptop](/loomster/guides/local/).
 
 ## What has been validated
