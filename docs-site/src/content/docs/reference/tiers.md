@@ -36,7 +36,7 @@ independent of the tier ([Adoption seams](/loomster/reference/adoption-seams/)).
 
 | Target | Chosen by | What runs | Verify phase |
 |---|---|---|---|
-| [Floci](/loomster/concepts/glossary/#floci) | `AWS_ENDPOINT_URL` set, such as `http://localhost:4566` | The stacks, including the agents wave on Floci 2.2.0 | Skipped: Floci doesn't serve the ALB to ECS path |
+| [Floci](/loomster/concepts/glossary/#floci) | `AWS_ENDPOINT_URL` set, such as `http://localhost:4566` | The stacks, including the agents wave on Floci | Skipped: Floci doesn't serve the ALB to ECS path |
 | Real AWS | `AWS_ENDPOINT_URL` unset | Everything | Steady state and the health check |
 
 `just local-up` is a third path: it deploys the light tier on Floci and runs the

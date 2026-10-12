@@ -50,8 +50,8 @@ cleanup() {
 trap cleanup EXIT
 
 echo "=== Starting Floci ==="
-# Upstream Floci 2.2.0 emulates Bedrock AgentCore's control plane (it replaced
-# the loomster#98 fork), so the agents wave is exercisable locally. Multiarch
+# Floci emulates Bedrock AgentCore's control plane. loomster runs its own
+# build, ghcr.io/lex00/floci (on upstream 2.2.0), so the agents wave is exercisable locally. Multiarch
 # image (amd64 + arm64): runs natively on CI runners and Apple Silicon alike.
 # Floci 2.x reaches its ECR registry by container name, which only resolves on a
 # user-defined network, so Floci and the containers it spawns share one.
@@ -60,7 +60,7 @@ echo "=== Starting Floci ==="
 docker network create "$FLOCI_NAME-net" >/dev/null
 docker run -d --rm -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock \
   --network "$FLOCI_NAME-net" -e FLOCI_SERVICES_DOCKER_NETWORK="$FLOCI_NAME-net" -e FLOCI_SERVICES_ECR_DOCKER_NETWORK="$FLOCI_NAME-net" -e FLOCI_DOCKER_RESOURCE_NAMESPACE="$FLOCI_NAME" \
-  --name "$FLOCI_NAME" "${FLOCI_IMAGE:-floci/floci:2.2.0}" >/dev/null
+  --name "$FLOCI_NAME" "${FLOCI_IMAGE:-ghcr.io/lex00/floci:318204f}" >/dev/null
 
 for _ in $(seq 1 30); do
   curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break

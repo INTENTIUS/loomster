@@ -10,7 +10,7 @@ human_gate "the production E2E against Floci: a local emulator on :4566 and Dock
 # The {github,gitlab,forgejo}-runtime-e2e scripts prove the *light* tier deploys
 # through the generated CI pipeline. This proves the *production* tiers deploy at
 # all: it stands the full stack up end to end against the Floci
-# emulator (2.2.0+, which emulates AgentCore), against a bring-your-own VPC (production requires a referenced
+# emulator (ghcr.io/lex00/floci, which emulates AgentCore), against a bring-your-own VPC (production requires a referenced
 # network), and asserts every tier-distinguishing resource actually creates —
 # RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend
 # autoscaling, and both agent runtimes (assistant + harness). For production-ha
@@ -32,7 +32,7 @@ case "$TIER" in
 esac
 
 REGION="${AWS_REGION:-us-east-1}"
-FLOCI_IMAGE="${FLOCI_IMAGE:-floci/floci:2.2.0}"
+FLOCI_IMAGE="${FLOCI_IMAGE:-ghcr.io/lex00/floci:318204f}"
 FLOCI_NAME="floci-prod-e2e"
 export AWS_ENDPOINT_URL="http://localhost:4566" AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_REGION="$REGION"
 export LOOM_TIER="$TIER" LOOM_ENV=floci LOOM_INSTANCE=a AWS_ACCOUNT_ID=000000000000

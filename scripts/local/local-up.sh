@@ -4,7 +4,7 @@
 # Floci provides the AWS-managed pieces (RDS/Cognito/S3/ECR) via chant; the app
 # tier (frontend/backend/proxy) runs from the chant-generated docker-compose
 # (`src/local/compose.ts` -> `chant build --lexicon docker`), wired to Floci by
-# a generated `.env`. Agents deploy locally too — Floci (2.2.0+) emulates Bedrock
+# a generated `.env`. Agents deploy locally too — Floci (ghcr.io/lex00/floci) emulates Bedrock
 # AgentCore's control plane — though invoke is a canned stub.
 #
 # Auth is real (loomster#58): you log in through the frontend against the
@@ -23,7 +23,7 @@ OUT=dist/local
 # IAM enforcement on Floci, opt-in (loomster#53): LOOM_LOCAL_IAM_ENFORCEMENT=true
 # runs the backend as loom-backend's task role and Floci evaluates its policies,
 # so an action the role doesn't grant at all fails here as on AWS. Off by
-# default because Floci 2.2.0 checks Cognito, CloudWatch Logs and most IAM
+# default because Floci checks Cognito and CloudWatch Logs
 # actions against Resource "*", so the task role's ARN-scoped grants for those
 # are denied locally although AWS allows them (seed's authorizer step then
 # fails on DescribeUserPool). Off, the backend uses Floci's `test` key, which
@@ -47,8 +47,8 @@ docker network create "$NET" >/dev/null 2>&1 || true
 
 echo "==> [1/8] Floci up"
 if ! docker ps --filter name=^floci$ --format '{{.Names}}' | grep -q floci; then
-  # Upstream Floci 2.2.0 emulates Bedrock AgentCore's control plane (it replaced
-  # the loomster#98 fork), so the agents wave runs locally. Multiarch image
+  # Floci emulates Bedrock AgentCore's control plane. loomster runs its own
+  # build, ghcr.io/lex00/floci (on upstream 2.2.0), so the agents wave runs locally. Multiarch image
   # (amd64 + arm64): runs natively on CI runners and Apple Silicon alike.
   # FLOCI_DOCKER_RESOURCE_NAMESPACE names every container and volume Floci
   # creates `floci-aws-loom-local-*`, so local-down can remove exactly those
@@ -66,7 +66,7 @@ if ! docker ps --filter name=^floci$ --format '{{.Names}}' | grep -q floci; then
     --network "$NET" -e FLOCI_SERVICES_DOCKER_NETWORK="$NET" -e FLOCI_SERVICES_ECR_DOCKER_NETWORK="$NET" \
     -e FLOCI_DOCKER_RESOURCE_NAMESPACE=loom-local -e FLOCI_HOSTNAME=floci \
     -e FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED="$IAM_ENFORCEMENT" \
-    --name floci "${FLOCI_IMAGE:-floci/floci:2.2.0}" >/dev/null
+    --name floci "${FLOCI_IMAGE:-ghcr.io/lex00/floci:318204f}" >/dev/null
   sleep 8
 elif ! docker inspect floci --format '{{range .Config.Env}}{{println .}}{{end}}' \
   | grep -qx "FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED=$IAM_ENFORCEMENT"; then
