@@ -11,7 +11,7 @@
 #     each inert until its own variable is set and run only on schedules,
 #     mirroring the GitHub crons.
 #
-# See https://intentius.io/loomster/guides/ci/ for how each provider compares.
+# See https://intentius.io/loomster/operations/ci/ for how each provider compares.
 
 include:
   - local: .gitlab/components.yml

@@ -374,7 +374,7 @@ as job artifacts:
 
 ```
 npm run generate:gitlab   # writes .gitlab-ci.yml
-just gitlab-validate      # regenerate and diff against the committed copy
+npm test                  # fails if the committed copy drifts from a fresh generate
 ```
 
 No hand-written pipeline to keep in sync with `dependsOn`. `just

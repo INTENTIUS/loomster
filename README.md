@@ -196,13 +196,12 @@ on schedule pipelines, so a scheduled run never triggers a deploy).
 
 ```
 npm run generate:gitlab   # writes .gitlab/components.yml
-just gitlab-validate      # regenerate + diff against the committed copy (fails on drift)
 ```
 
 GitHub and Forgejo get the same treatment: `npm run generate:github` /
 `generate:forgejo` (committed `.github/workflows/components.yml` and
-`.forgejo/workflows/components.yml`), `just github-validate` / `forgejo-validate`,
-and `just github-runtime-e2e` / `forgejo-runtime-e2e` via `act`. All three also
+`.forgejo/workflows/components.yml`; `npm test` fails if any committed copy drifts
+from a fresh generate), and `just github-runtime-e2e` / `forgejo-runtime-e2e` via `act`. All three also
 carry a gated deploy and scheduled lifecycle workflows. See
 [CI providers](https://intentius.io/loomster/operations/ci/) for how GitHub, GitLab,
 and Forgejo compare.

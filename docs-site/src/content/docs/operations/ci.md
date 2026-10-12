@@ -24,7 +24,7 @@ own dialects.
 | Capability | GitHub | GitLab | Forgejo |
 |---|---|---|---|
 | Generated component pipeline | shipped (`generate:github`) | shipped (`generate:gitlab`) | shipped (`generate:forgejo`) |
-| Committed + drift-validated + unit test | shipped (`github-validate`, `github-pipeline.test.ts`) | shipped (`gitlab-validate`, `gitlab-pipeline.test.ts`) | shipped (`forgejo-validate`, `forgejo-pipeline.test.ts`) |
+| Committed + drift-tested | shipped (`github-pipeline.test.ts`) | shipped (`gitlab-pipeline.test.ts`) | shipped (`forgejo-pipeline.test.ts`) |
 | Runtime E2E against Floci | shipped (`github-runtime-e2e`, via `act`) | shipped (`gitlab-runtime-e2e`) | shipped (`forgejo-runtime-e2e`, via `act`) |
 | Gated deploy pipeline | shipped (`deploy.yml`) | shipped (`.gitlab-ci.yml` deploy job) | shipped (`.forgejo/workflows/deploy.yml`) |
 | Scheduled lifecycle (watch/reconcile/cost/audit) | shipped (4 workflows) | shipped (schedule-gated jobs) | shipped (4 workflows) |
@@ -44,9 +44,8 @@ GitHub is the project's own host and carries the operational workflows.
 - **Generated component pipeline.** `npm run generate:github` produces the
   committed `.github/workflows/components.yml` with one job per component and
   `needs:` edges, plus artifact upload/download for cross-stack outputs.
-- **Drift-validated and tested.** `just github-validate` regenerates and diffs,
-  and `src/github-pipeline.test.ts` asserts the committed file matches the live
-  component graph (the same drift gate GitLab has).
+- **Drift-tested.** `src/github-pipeline.test.ts` (part of `npm test`) fails if
+  the committed file differs from a fresh generate.
 - **Runtime E2E.** `just github-runtime-e2e` runs the generated workflow in Docker
   via `act` against Floci, deploying the light tier's infrastructure components
   end to end including the cross-stack artifact handoff between jobs. On-demand,
@@ -60,9 +59,8 @@ operational jobs share one file.
 - **Generated + committed.** `npm run generate:gitlab` writes
   `.gitlab/components.yml`. The root `.gitlab-ci.yml` `include`s it (on push/MR,
   and skips it on schedule pipelines).
-- **Drift-validated.** `just gitlab-validate` regenerates and diffs, failing on
-  drift. `src/gitlab-pipeline.test.ts` asserts the committed copy, the live
-  component graph, and the generated stage/job/`needs:` structure all agree.
+- **Drift-tested.** `src/gitlab-pipeline.test.ts` (part of `npm test`) fails if
+  the committed copy differs from a fresh generate.
 - **Runtime E2E.** `just gitlab-runtime-e2e` runs the generated pipeline in Docker
   via `gitlab-ci-local` against Floci, deploying the light tier's infrastructure
   components end to end, including the cross-stack output handoff between waves.
@@ -84,9 +82,8 @@ from `code.forgejo.org`).
 
 - **Generated + committed.** `npm run generate:forgejo` writes the committed
   `.forgejo/workflows/components.yml`.
-- **Drift-validated and tested.** `just forgejo-validate` regenerates and diffs,
-  and `src/forgejo-pipeline.test.ts` asserts the committed file matches the live
-  component graph.
+- **Drift-tested.** `src/forgejo-pipeline.test.ts` (part of `npm test`) fails if
+  the committed file differs from a fresh generate.
 - **Runtime E2E.** `just forgejo-runtime-e2e` runs the generated workflow in Docker
   via `act` against Floci (a real `act_runner` runs the same file), deploying the
   light tier's infrastructure components end to end with the cross-stack artifact

@@ -19,3 +19,6 @@ test/github-runtime-e2e/ci.yml
 
 # forgejo-runtime-e2e generated workflow (on-demand, never committed)
 test/forgejo-runtime-e2e/ci.yml
+
+# chant update's synced type and schema copies (regenerated, never committed)
+.chant/types/
