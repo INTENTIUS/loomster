@@ -146,6 +146,15 @@ export default {
     agentRoleMemoryArn: { type: "string", required: false, env: "LOOM_AGENT_ROLE_MEMORY_ARN" },
     agentRoleCodeInterpreter: { type: "boolean", required: false, env: "LOOM_AGENT_ROLE_CODE_INTERPRETER" },
     agentRoleBedrockModelArns: { type: "string", required: false, env: "LOOM_AGENT_ROLE_BEDROCK_MODEL_ARNS" },
+
+    // ── loom-tunnel-host (optional SSM tunnel host, `chant run loom-tunnel-host`) ──
+    // The Op resolves VPC, subnets and the DB security group from stack outputs unless set.
+    tunnelVpcId: { type: "string", required: false, env: "LOOM_TUNNEL_VPC_ID" },
+    tunnelSubnetIds: { type: "string", required: false, env: "LOOM_TUNNEL_SUBNET_IDS" },
+    tunnelDbSecurityGroupId: { type: "string", required: false, env: "LOOM_TUNNEL_DB_SG_ID" },
+    tunnelDbPort: { type: "number", required: false, env: "LOOM_TUNNEL_DB_PORT" },
+    tunnelInstanceType: { type: "string", required: false, env: "LOOM_TUNNEL_INSTANCE_TYPE" },
+    tunnelSsmEndpoints: { type: "boolean", required: false, env: "LOOM_TUNNEL_SSM_ENDPOINTS" },
   },
   lint: {
     overrides: [

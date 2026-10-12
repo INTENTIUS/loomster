@@ -51,6 +51,21 @@ export async function discoverTeardownOrder(dir: string = COMPONENTS_DIR): Promi
 }
 
 /**
+ * Optional stacks an Op deploys outside the component graph that sit on a
+ * component's network or database, so they go before every component:
+ * the SSM tunnel host (`../loom-tunnel-host.op.ts`, loomster#37) holds an
+ * ENI in shared-foundation's subnets and an ingress rule on loom-db's
+ * security group. Deleting one that was never deployed is a no-op. (Per-agent
+ * role stacks, `../loom-agent-role.op.ts`, block nothing and are left.)
+ */
+export const OPTIONAL_STACKS_FIRST: readonly string[] = ["tunnel-host"];
+
+/** The full delete order: the optional stacks, then every component, consumers first. */
+export async function teardownStackOrder(dir: string = COMPONENTS_DIR): Promise<string[]> {
+  return [...OPTIONAL_STACKS_FIRST, ...(await discoverTeardownOrder(dir))];
+}
+
+/**
  * DELETE_FAILED reasons that clear on their own, so the delete is worth
  * re-issuing after a pause rather than failing the step:
  *  - "dependent object": Bedrock AgentCore's managed `ela-attach` ENIs outlive

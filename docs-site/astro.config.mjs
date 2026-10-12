@@ -42,6 +42,7 @@ export default defineConfig({
 					label: 'Guides',
 					items: [
 						{ label: 'Run Loom on your laptop', slug: 'guides/local' },
+						{ label: 'Open a tunnel to the database', slug: 'guides/tunnel' },
 					],
 				},
 				{

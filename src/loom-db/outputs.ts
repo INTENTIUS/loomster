@@ -47,6 +47,12 @@ export const oConnectEndpoint = mode === "provision"
     ? output(literalOutputValue(params.referenceEndpoint as string), "oConnectEndpoint")
     : undefined;
 
+// The security group RDS and the proxy share: the optional SSM tunnel host
+// (loomster#37, ../loom-tunnel-host) adds its ingress rule here.
+export const oRdsSecurityGroupId = mode === "provision"
+  ? output(db.rdsSecurityGroup!.GroupId, "oRdsSecurityGroupId")
+  : undefined;
+
 export const oSecretsKmsKeyArn = mode === "provision"
   ? output(db.secretsKmsKey!.Arn, "oSecretsKmsKeyArn")
   : undefined;
