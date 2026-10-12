@@ -17,8 +17,8 @@ lists them with the guardrails.
 |---|---|---|
 | `loom-watch` | Drift detection — `chant lifecycle diff --live` across every stack, on a 15-min cron. Every tier. | No |
 | `loom-reconcile` | On drift, opens a cloud-to-code PR (owned-only, never mutates the cloud). `production` / `production-ha`. | No |
-| `loom-upgrade-light` | Snapshot RDS, migrate, promote-by-digest. | No — local executor |
-| `loom-upgrade-production[-ha]` | Same, plus an approval gate and an RDS-restore rollback. | Yes |
+| `loom-upgrade-light` | Snapshot RDS, roll the backend (Loom migrates on startup), roll the frontend. | No — local executor |
+| `loom-upgrade-production[-ha]` | Same, plus an approval gate, one-time Loom scripts (`LOOM_UPGRADE_SCRIPTS`), and an RDS-restore rollback. | Yes |
 | `loom-rotate-production[-ha]` | Rotate the Cognito M2M client, the RDS credential, and (custom-domain tiers) the ALB's ACM cert. | Yes |
 | `loom-backup` | Labelled RDS snapshot, plus a cross-region DR copy when `LOOM_DR_REGION` is set. Additive. | No — local executor |
 | `loom-restore-drill` | Restore the latest backup to a throwaway instance, assert it comes up healthy, delete it. Proves the backup works. | No — local executor |
@@ -66,6 +66,9 @@ a blind approval.
 - **[Production on real AWS](/loomster/operations/production-live-e2e/)** — the
   real-account runbook: custom-domain delegation, bring-your-own network, the live
   deploy, authenticated validation, teardown.
+- **[Upgrade](/loomster/operations/upgrade/)**: bumping the Loom pin, running
+  the upgrade Op per tier, how Loom migrates its schema on backend startup, and
+  the one-time scripts and manual steps for v1.6 to v1.9.
 - **[Backup & restore](/loomster/operations/backup-restore/)** — what holds state,
   what protects it, the restore runbook, the restore drill, and recovery targets per
   tier.

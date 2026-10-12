@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { snapshotBeforeScript, restorePreviousScript, runMigrationScript } from "./rds-safety";
+import { snapshotBeforeScript, restorePreviousScript } from "./rds-safety";
 
 const dbInstanceIdentifier = "loom-prod-a-loom-db-instance";
 
@@ -38,48 +38,5 @@ describe("restorePreviousScript (chant#905 — the documented restore path)", ()
   test("fails loudly rather than silently no-op'ing when no snapshot exists", () => {
     const script = restorePreviousScript({ dbInstanceIdentifier });
     expect(script).toContain("exit 1");
-  });
-});
-
-describe("runMigrationScript (chant#905 — run-migration ordered before app cutover)", () => {
-  const target = {
-    cluster: "loom-prod-a-shared-foundation-cluster",
-    taskFamily: "loom-prod-a-loom-backend-backend-task",
-    command: ["python", "-m", "alembic", "upgrade", "head"],
-    subnetIds: ["subnet-111", "subnet-222"],
-    securityGroupId: "sg-123",
-  };
-
-  test("runs the backend's own task-definition family as a one-off ECS task (no rebuild — same image, overridden command)", () => {
-    const script = runMigrationScript(target);
-    expect(script).toContain(`--cluster "${target.cluster}"`);
-    expect(script).toContain(`--task-definition "${target.taskFamily}"`);
-    expect(script).toContain("--launch-type FARGATE");
-    expect(script).toContain("subnet-111");
-    expect(script).toContain("subnet-222");
-    expect(script).toContain("sg-123");
-  });
-
-  test("overrides the container command to the migration entrypoint", () => {
-    const script = runMigrationScript(target);
-    expect(script).toContain(JSON.stringify(target.command));
-    expect(script).toContain("containerOverrides");
-  });
-
-  test("waits for the task to stop and fails the step on a non-zero exit code", () => {
-    const script = runMigrationScript(target);
-    expect(script).toContain("aws ecs wait tasks-stopped");
-    expect(script).toContain('if [ "$EXIT_CODE" != "0" ]');
-    expect(script).toContain("exit 1");
-  });
-
-  test("defaults the overridden container name to the task family when not given", () => {
-    const script = runMigrationScript(target);
-    expect(script).toContain(`"name":"${target.taskFamily}"`);
-  });
-
-  test("honors an explicit container name override", () => {
-    const script = runMigrationScript({ ...target, container: "app" });
-    expect(script).toContain('"name":"app"');
   });
 });

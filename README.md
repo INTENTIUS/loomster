@@ -160,8 +160,8 @@ rollback, or on the local executor where they don't.
 |---|---|---|
 | `loom-watch` | Drift detection — `chant lifecycle diff --live` across every stack, on a 15-min cron. Every tier. | No |
 | `loom-reconcile` | On drift, opens a cloud-to-code PR (owned-only, never mutates the cloud). `production` / `production-ha`. | No |
-| `loom-upgrade-light` | Snapshot RDS, migrate, promote-by-digest. | No — local executor |
-| `loom-upgrade-production[-ha]` | Same, plus an approval gate and an RDS-restore rollback. | Yes |
+| `loom-upgrade-light` | Snapshot RDS, roll the backend (Loom migrates on startup), roll the frontend. | No — local executor |
+| `loom-upgrade-production[-ha]` | Same, plus an approval gate, one-time Loom scripts (`LOOM_UPGRADE_SCRIPTS`), and an RDS-restore rollback. | Yes |
 | `loom-rotate-production[-ha]` | Rotate the Cognito M2M client, the RDS credential, and (custom-domain tiers) the ALB's ACM cert. | Yes |
 | `loom-backup` | Labelled RDS snapshot, plus a cross-region DR copy when `LOOM_DR_REGION` is set. Additive. | No — local executor |
 | `loom-restore-drill` | Restore the latest backup to a throwaway instance, assert it comes up healthy, delete it. Proves the backup restores. | No — local executor |
@@ -179,10 +179,12 @@ npm run watch                                # one-shot loom-watch
 npm run reconcile                            # one-shot loom-reconcile
 ```
 
-Migrations run against the backend's own task-definition family with an
-overridden command. No rebuild. The migration entrypoint depends on Loom's own
-tooling (known once `vendor/loom` is checked out); override it via
-`LOOM_MIGRATION_COMMAND` (comma-separated argv).
+Loom has no migration tool: the backend migrates its schema when a new task
+starts. The upgrade Op's Migrate phase is therefore the backend roll itself
+(new task definition, steady state, `/health`). On production tiers a final
+Scripts phase runs any one-time Loom scripts named in `LOOM_UPGRADE_SCRIPTS`
+as one-off ECS tasks of the backend. See the
+[upgrade runbook](https://intentius.io/loomster/operations/upgrade/).
 
 ## Generated CI
 

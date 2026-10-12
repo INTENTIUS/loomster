@@ -107,9 +107,25 @@ git -C "$VENDOR_DIR" sparse-checkout init --cone
 git -C "$VENDOR_DIR" sparse-checkout set backend frontend agents
 git -C "$VENDOR_DIR" checkout --quiet "$fetched_sha"
 
-for required in backend/Dockerfile frontend/Dockerfile agents/strands_agent/src agents/strands_agent/requirements.txt; do
+for required in backend/Dockerfile backend/scripts frontend/Dockerfile agents/strands_agent/src agents/strands_agent/requirements.txt; do
   [ -e "$VENDOR_DIR/$required" ] || fail "expected $VENDOR_DIR/$required after checkout but it's missing — Loom's layout may have changed at $LOOM_TAG."
 done
+
+# Add backend/scripts/ to the backend image (loomster#5). Upstream's Dockerfile
+# copies only app/ and etc/, but releases ship one-time scripts
+# (migrate_oauth2_secrets.py, drop_permission_requests.py, ...) that the
+# upgrade Op runs as one-off ECS tasks of the backend (ops/lib/backend-scripts.ts).
+# One extra COPY next to app/; CMD and runtime behaviour are unchanged.
+backend_dockerfile="$VENDOR_DIR/backend/Dockerfile"
+copy_app='COPY backend/app/ ./app/'
+copy_scripts='COPY backend/scripts/ ./scripts/'
+grep -qxF "$copy_app" "$backend_dockerfile" \
+  || fail "$backend_dockerfile no longer has a '$copy_app' line to add '$copy_scripts' after — Loom's Dockerfile changed at $LOOM_TAG."
+if ! grep -qxF "$copy_scripts" "$backend_dockerfile"; then
+  awk -v app="$copy_app" -v scripts="$copy_scripts" '{ print } $0 == app { print scripts }' "$backend_dockerfile" > "$backend_dockerfile.tmp"
+  mv "$backend_dockerfile.tmp" "$backend_dockerfile"
+fi
+notice "added '$copy_scripts' to backend/Dockerfile (one-time upgrade scripts, run by loom-upgrade-*)"
 
 notice "done — $VENDOR_DIR is Loom $LOOM_TAG ($LOOM_EXPECTED_SHA), sparse-checked-out to backend/, frontend/, agents/."
 notice "loom-backend's docker-build context is the vendor/loom root (its Dockerfile COPYs agents/strands_agent/ too — see loom-backend.component.ts); loom-frontend's is vendor/loom/frontend."

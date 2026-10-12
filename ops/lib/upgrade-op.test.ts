@@ -36,13 +36,19 @@ describe("buildLoomUpgradeOp — the dial (chant#905: prod/prod-ha gate+rollback
     expect(config.onFailure?.map((p) => p.name)).toEqual(["Rollback"]);
   });
 
-  test("every tier: Snapshot runs before Migrate, which runs before Apply — data safety always ahead of the mutating apply, gate or not", () => {
-    for (const gated of [false, true]) {
-      const op = buildLoomUpgradeOp({ naming, gated });
-      const names = configOf(op).phases.map((p) => p.name);
-      expect(names.indexOf("Snapshot")).toBeLessThan(names.indexOf("Migrate"));
-      expect(names.indexOf("Migrate")).toBeLessThan(names.indexOf("Apply"));
-    }
+  test("phase order: Loom migrates when the backend rolls, so the gate sits before Migrate and one-time scripts run last (gated only)", () => {
+    expect(configOf(buildLoomUpgradeOp({ naming: { ...naming, tier: "light" }, gated: false })).phases.map((p) => p.name)).toEqual([
+      "Snapshot",
+      "Migrate",
+      "Apply",
+    ]);
+    expect(configOf(buildLoomUpgradeOp({ naming, gated: true })).phases.map((p) => p.name)).toEqual([
+      "Snapshot",
+      "Approve",
+      "Migrate",
+      "Apply",
+      "Scripts",
+    ]);
   });
 
   test("Op name and search attributes are tier/env-scoped", () => {

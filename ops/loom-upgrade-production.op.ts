@@ -6,8 +6,9 @@
  *   chant run loom-upgrade-production --temporal        # pauses at "Approve"
  *   chant run signal loom-upgrade-production approve-loom-upgrade-production
  *
- * See `./lib/upgrade-op.ts` for the shared phase shape (Snapshot -> Migrate ->
- * Approve -> Apply, `onFailure: [Rollback]`).
+ * See `./lib/upgrade-op.ts` for the shared phase shape (Snapshot -> Approve -> Migrate ->
+ * Apply -> Scripts, `onFailure: [Rollback]`). Set LOOM_UPGRADE_SCRIPTS to run
+ * one-time Loom scripts after the roll (docs: operations/upgrade).
  */
 
 import { buildLoomUpgradeOp } from "./lib/upgrade-op";
