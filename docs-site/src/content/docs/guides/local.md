@@ -8,10 +8,10 @@ You log in through the Loom frontend against a real Cognito user pool that
 [Floci](https://floci.io), a local AWS emulator, runs. Floci provides the
 managed pieces (RDS, Cognito, S3, ECR); the app tier (frontend, backend, and a
 reverse proxy standing in for the ALB) runs from a chant-generated
-`docker-compose.yml`, wired to Floci. You get the full web app. Real Postgres,
-real API, real login. Agents now **deploy** locally
-too — the Floci image emulates Bedrock AgentCore's control plane — though
-invoking one returns a canned stub, not real agent reasoning (see below).
+`docker-compose.yml`, wired to Floci. You get the full web app: real Postgres,
+real API, real login. Agents **deploy** locally too, since Floci emulates
+Bedrock AgentCore's control plane, but invoking one returns a canned stub, not
+real agent reasoning (see below).
 
 ## Prerequisites
 
@@ -58,6 +58,72 @@ npm run validate    # mints its own token against the local app when LOOM_API_TO
 just local-down    # tear down the app stack and Floci
 ```
 
+Run `just local-down` before another `just local-up`: provisioning again on a
+running Floci fails when chant pushes an image tag the ECR repository already
+holds (its tags are immutable).
+
+## Check the backend's IAM role locally
+
+By default the backend runs on Floci's `test` key, which Floci never checks,
+so IAM isn't enforced. To check loom-backend's task role against what Loom
+calls, opt in:
+
+```
+LOOM_LOCAL_IAM_ENFORCEMENT=true just local-up
+```
+
+local-up then starts Floci with `FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED=true`
+and runs the backend as **loom-backend's task role**, the role its ECS task has
+on AWS. The role trusts only `ecs-tasks.amazonaws.com`, so after provisioning
+local-up adds this account to its trust policy, on Floci only, assumes the
+role for 12 hours, and writes that session into the backend's `.env`. chant,
+local-up and seed keep the `test` key. Step 4 prints which identity the
+backend got. Switching modes needs a fresh Floci (`just local-down` first);
+local-up stops if the running one was started in the other mode.
+
+Read the denials in the backend log with care:
+
+```
+docker logs loom-local-loomBackend-1 2>&1 | grep -iE "AccessDenied|not authorized"
+```
+
+- **An action the role doesn't grant at all** is a real gap: it fails on AWS
+  too. This is how loomster#1 (AgentCore actions missing from the task role)
+  would have shown up.
+- **A denial for Cognito (`cognito-idp:*`), CloudWatch Logs (`logs:*`) or IAM
+  (`iam:*`)** is usually Floci, not the role. Floci 2.2.0 builds request ARNs
+  only for S3, Lambda, SQS, SNS, DynamoDB, Kinesis, Secrets Manager, SSM and
+  KMS, and checks every other service's actions against `Resource: "*"`, so a
+  grant scoped to ARNs (user pools in this account, agent log groups, project
+  roles) never matches there. AWS allows those calls. On a fresh enforced
+  local-up that includes `DescribeUserPool` (the seed's authorizer step fails
+  on it), `FilterLogEvents`, `StartQuery`, `CreateLogGroup`, `ListRoleTags` and
+  `ListRolePolicies`. Check the action against the task role in
+  `src/composites/loom-backend.ts` before changing anything.
+
+That noise is why enforcement is opt-in rather than the default.
+
+## Point chant at Floci
+
+`chant.config.ts` declares the endpoint of the two Floci environments, `local`
+(this guide) and `floci` (the production-tier Floci E2E), so a live read
+targets Floci without exporting `AWS_ENDPOINT_URL`:
+
+```
+LOOM_ENV=local AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
+  npx chant lifecycle diff local aws --live
+```
+
+chant prints that it applied the declared endpoint, then the stacks it
+observed on Floci. It injects only the endpoint. The shell still needs Floci's `test` keys:
+real AWS keys are unknown to Floci, and it rejects them when IAM enforcement is
+on.
+
+local-up starts Floci itself rather than through `chant emulator up` or the
+`flociUp` Op step. Those pin `floci/floci:1.5.34` under a fixed container
+name and can't pass the Docker network, the `FLOCI_*` settings or the
+loopback-only port binding local-up needs.
+
 ## What actually runs
 
 | Layer | Local status |
@@ -70,7 +136,10 @@ just local-down    # tear down the app stack and Floci
 | The "ALB" | Proxy stand-in — path routing only (`/api/*` and `/health` to the backend, everything else to the frontend, plus `/floci-cognito/` for the login); no TLS or WAF |
 | Agents (deploy) | Real — the Floci image emulates AgentCore's control plane (runtimes, endpoints, gateways, memory, workload identity) |
 | Agents (invoke) | Stub — `invoke-agent-runtime` returns a canned response, not real agent reasoning |
-| IAM enforcement, KMS crypto, CloudWatch/OTel | Not real — see [Local caveats](/loomster/reference/local-caveats/) |
+| IAM | Not enforced by default; opt-in check of loom-backend's task role (see above) |
+| KMS | Real AES-256-GCM encryption in Floci |
+| AgentCore Evaluations | Not emulated — the evaluator list and runs return `502` |
+| CloudWatch/OTel, security groups | Not exercised — see [Local caveats](/loomster/reference/local-caveats/) |
 
 ## Login runs against Floci's Cognito
 

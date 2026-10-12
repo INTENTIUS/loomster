@@ -49,8 +49,13 @@ export const loomBackend = new Service({
     LOOM_ARTIFACT_BUCKET: env("LOOM_ARTIFACT_BUCKET"),
     AWS_ENDPOINT_URL: env("AWS_ENDPOINT_URL"),
     AWS_REGION: env("AWS_REGION", { default: "us-east-1" }),
+    // loom-backend's task role session when local-up runs Floci with IAM
+    // enforcement (LOOM_LOCAL_IAM_ENFORCEMENT=true, loomster#53), so Floci
+    // checks Loom's calls against the role's policies; Floci's unchecked
+    // `test` key otherwise (the default).
     AWS_ACCESS_KEY_ID: env("AWS_ACCESS_KEY_ID", { default: "test" }),
     AWS_SECRET_ACCESS_KEY: env("AWS_SECRET_ACCESS_KEY", { default: "test" }),
+    AWS_SESSION_TOKEN: env("AWS_SESSION_TOKEN", { default: "" }),
     LOOM_ALLOWED_ORIGINS: env("LOOM_ALLOWED_ORIGINS", { default: "http://localhost:8080" }),
     LOG_LEVEL: "info",
   },
