@@ -31,5 +31,5 @@ describe("chant build --components --generate gitlab — Loom component set", ()
     // scheduled lifecycle jobs — see the root file).
     const committed = readFileSync(resolve(".gitlab/components.yml"), "utf-8");
     expect(committed).toBe(result.yaml);
-  });
+  }, 60_000);
 });

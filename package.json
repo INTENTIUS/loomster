@@ -36,13 +36,13 @@
     "vendor": "bash scripts/vendor-loom.sh"
   },
   "dependencies": {
-    "@intentius/chant": "^0.21.0",
-    "@intentius/chant-lexicon-aws": "^0.21.0",
-    "@intentius/chant-lexicon-docker": "^0.21.0",
-    "@intentius/chant-lexicon-forgejo": "^0.21.0",
-    "@intentius/chant-lexicon-github": "^0.21.0",
-    "@intentius/chant-lexicon-gitlab": "^0.21.0",
-    "@intentius/chant-lexicon-temporal": "^0.21.0"
+    "@intentius/chant": "^0.24.0",
+    "@intentius/chant-lexicon-aws": "^0.24.0",
+    "@intentius/chant-lexicon-docker": "^0.24.0",
+    "@intentius/chant-lexicon-forgejo": "^0.24.0",
+    "@intentius/chant-lexicon-github": "^0.24.0",
+    "@intentius/chant-lexicon-gitlab": "^0.24.0",
+    "@intentius/chant-lexicon-temporal": "^0.24.0"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
