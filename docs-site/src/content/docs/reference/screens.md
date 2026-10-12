@@ -29,13 +29,15 @@ agent deploy needs — the default on the production tiers) and **`demo`**
 | Security → Approval Policies | `approval_policies` | — | a default policy | on foundation |
 | Security → Identity Providers | `identity_providers` | — | — | **always** (see below) |
 | Agents | `agents` | — | a deployed agent | on foundation |
+| Agent → Evaluations | test cases + AgentCore Evaluations | — | a test case, run once | on foundation |
 | Memory | `memories` | — | a memory | on foundation |
 | MCP Servers | `mcp_servers` | — | a sample server | on foundation |
 | A2A Agents | `a2a_agents` | — | a registered agent | when no A2A endpoint |
 | Catalog | the five above | — | populated | on foundation |
 | Settings | app config | Loom defaults | Loom defaults | Networking / Infrastructure |
 | Costs, Admin, Chat, Invocations | runtime (invocation records) | — | a few demo invocations | on foundation / until real use |
-| Registry | preview | — | — | until you opt in |
+| Registry | AWS Agent Registry | — | — | until you configure a registry |
+| Skills | SKILL records in the registry | — | an approved skill, attached to the demo agent | until you configure a registry |
 
 ## Tagging
 
@@ -94,6 +96,38 @@ On `foundation`, none of the Catalog is seeded — deploying an agent or creatin
 memory costs money on a live account, so the production tiers stay lean and leave
 that to you.
 
+## Agent → Evaluations
+
+Loom v1.8 added an **Evaluations** tab to agent detail: saved test cases (a
+prompt, the evaluators that score it, a pass threshold), their runs, and any
+online evaluation configs or batch evaluations in the account that cover the
+agent. On `demo`, loom-seed saves one test case on the demo agent, scored by
+AWS's built-in `Builtin.Helpfulness` evaluator, and starts one run. A run
+invokes the agent, waits for the session's trace spans in CloudWatch, then
+scores them, all in the background, so the score lands a few minutes after the
+seed finishes. Scoring needs the spans: on a live account that means
+CloudWatch Transaction Search is on (it writes `aws/spans`); on the emulator a
+run can end in `ERROR` for want of spans, which is the emulator, not the
+deploy. The harness checks the tab's three endpoints render and, on `demo`,
+that the seeded test case exists and has run.
+
+## Registry and Skills
+
+The **AWS Agent Registry** is GA (Loom moved to its `agent-registry:*` IAM
+namespace in v1.6.1), and loomster's backend task role carries those grants.
+loomster doesn't create the registry itself: CloudFormation has no Agent
+Registry resource yet, so it stays reference-existing. Point Loom at one with
+`LOOM_REGISTRY_ID` at deploy time, or under Settings → Infrastructure on a
+running deploy. With none configured, Registry and **Skills** render empty.
+
+Skills (Loom v1.6.1 to v1.8) are SKILL records in that registry: a `SKILL.md`
+body that Loom folds into an agent's system prompt when the skill is attached
+to the agent and APPROVED. When a registry is configured, `demo` creates one
+skill (`loomster-demo-skill`), approves it and attaches it to the demo agent;
+the skill reaches the agent's prompt on its next redeploy. The harness then
+requires that skill to be APPROVED and to list the demo agent among its
+dependents.
+
 ## Settings
 
 Settings is **configuration, not content** — and its empty states are correct
@@ -123,9 +157,11 @@ defaults, not gaps. Nothing here needs seeding.
   chant-deployed agents already carry their VPC config in the template — a Loom
   VPC config is only needed if you also deploy VPC-mode agents from the UI, at
   which point you register one against the deployed private subnets.
-- **Infrastructure** — the AgentCore Agent Registry is a preview feature that
-  loomster doesn't provision, so it's off by default with no ARN. You opt in on a
-  real deploy once the feature is available; there's nothing to fabricate.
+- **Infrastructure** — the Agent Registry ARN. loomster doesn't provision a
+  registry (see [Registry and Skills](#registry-and-skills)), so it's empty unless
+  you set `LOOM_REGISTRY_ID` or enter one here.
+- **Models → Refresh** — rewrites Loom's `etc/models.json` inside the backend
+  container. The harness checks the route is there but never presses it.
 
 ## Runtime screens
 
@@ -137,8 +173,9 @@ Costs dashboard shows real (if tiny) usage and the audit/session screens have
 activity. On the emulator this is free; on `foundation` it's skipped, because
 invoking a real agent on a live account costs money. The harness asserts the
 Costs dashboard has at least one recorded invocation on demo — a zero there means
-the runtime path never ran. **Registry** is a preview surface that stays empty
-until you opt in.
+the runtime path never ran. The **approval log** (Security → Approval Policies)
+fills the same way, once an agent's tool call hits a policy, so it's checked to
+render only.
 
 ## How this is enforced
 

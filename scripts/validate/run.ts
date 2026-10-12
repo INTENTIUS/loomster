@@ -13,7 +13,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { SCREEN_CHECKS, type FetchResult, type Profile } from "./checks";
+import { NO_TARGET, SCREEN_CHECKS, type FetchResult, type Profile } from "./checks";
 
 const BASE = (process.env.LOOM_API_BASE_URL ?? "http://localhost:8080").replace(/\/+$/, "");
 const PROFILE = (process.env.LOOM_SEED_PROFILE ?? "demo") as Profile;
@@ -53,9 +53,16 @@ async function fetchScreen(path: string): Promise<FetchResult> {
 async function main(): Promise<void> {
   console.log(`Validating Loom screens at ${BASE} (seed profile: ${PROFILE})\n`);
   const rows: Array<{ screen: string; ok: boolean; detail: string }> = [];
+  const fetched = new Map<string, FetchResult>();
+  const seen = (path: string) => fetched.get(path);
   for (const c of SCREEN_CHECKS) {
-    const res = await fetchScreen(c.path);
-    const r = c.check(PROFILE, res);
+    const path = typeof c.path === "string" ? c.path : c.path(seen);
+    let res: FetchResult = { status: NO_TARGET, body: undefined };
+    if (path !== undefined) {
+      res = await fetchScreen(path);
+      fetched.set(path, res);
+    }
+    const r = c.check(PROFILE, res, seen);
     rows.push({ screen: c.screen, ok: r.ok, detail: r.detail });
   }
 

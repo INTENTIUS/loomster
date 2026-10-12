@@ -378,10 +378,15 @@ function buildRoles(
   const foundationModelArn = Sub`arn:${AWS.Partition}:bedrock:*::foundation-model/*`;
   const agentCoreAccountArn = Sub`arn:${AWS.Partition}:bedrock-agentcore:*:${AWS.AccountId}:*`;
   const agentRuntimeArn = Sub`arn:${AWS.Partition}:bedrock-agentcore:*:${AWS.AccountId}:runtime/*`;
+  // AWS's built-in evaluators (Builtin.*) are owned by the "aws" account, so
+  // the account-scoped wildcard above never matches them.
+  const builtinEvaluatorArn = Sub`arn:${AWS.Partition}:bedrock-agentcore:*:aws:evaluator/*`;
   const agentRegistryArn = Sub`arn:${AWS.Partition}:agent-registry:*:${AWS.AccountId}:registry/*`;
   const agentCoreSlrArn = Sub`arn:${AWS.Partition}:iam::${AWS.AccountId}:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreNetwork`;
   const agentLogGroupArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:log-group:/aws/bedrock-agentcore/*`;
   const agentVendedLogGroupArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:log-group:/aws/vendedlogs/bedrock-agentcore/*`;
+  // Transaction Search's span log group; evaluations query it for a session's spans.
+  const spansLogGroupArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:log-group:aws/spans`;
   const deliveryDestinationArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:delivery-destination:loom-*`;
   const deliverySourceArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:delivery-source:loom-*`;
   const deliveryArn = Sub`arn:${AWS.Partition}:logs:*:${AWS.AccountId}:delivery:*`;
@@ -462,6 +467,16 @@ function buildRoles(
             // denies them against any runtime ARN). Loom's ecs.yaml has the
             // same gap; they need Resource "*" (loomster#19).
             { Effect: "Allow", Action: ["bedrock-agentcore:ListAgentRuntimeVersions", "bedrock-agentcore:ListAgentRuntimeEndpoints"], Resource: "*" },
+            // Evaluations (loomster#10, services/evaluations.py). Not in Loom's
+            // ecs.yaml: the list calls and GetBatchEvaluation have no resource
+            // type in IAM, and Evaluate on a built-in evaluator names an
+            // aws-owned ARN, so the wildcard above denies all of them.
+            {
+              Effect: "Allow",
+              Action: ["bedrock-agentcore:ListEvaluators", "bedrock-agentcore:ListOnlineEvaluationConfigs", "bedrock-agentcore:ListBatchEvaluations", "bedrock-agentcore:GetBatchEvaluation"],
+              Resource: "*",
+            },
+            { Effect: "Allow", Action: ["bedrock-agentcore:Evaluate"], Resource: builtinEvaluatorArn },
           ],
         } as unknown as string,
       }),
@@ -551,6 +566,11 @@ function buildRoles(
             // and DeleteDeliverySource to the log-group/delivery-source ARNs
             // above, which the IAM policy simulator denies; they need "*".
             { Effect: "Allow", Action: ["logs:DescribeDeliveries", "logs:DescribeLogGroups", "logs:DeleteDeliverySource"], Resource: "*" },
+            // Evaluation runs find a session's spans with Logs Insights over the
+            // runtime's log group and aws/spans (loomster#10). Not in Loom's
+            // ecs.yaml; GetQueryResults has no resource type.
+            { Effect: "Allow", Action: ["logs:StartQuery"], Resource: [agentLogGroupArn, spansLogGroupArn] },
+            { Effect: "Allow", Action: ["logs:GetQueryResults"], Resource: "*" },
           ],
         } as unknown as string,
       }),
