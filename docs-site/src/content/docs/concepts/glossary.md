@@ -48,7 +48,7 @@ takes [tier](#tier), naming and [seam](#seam) props and returns the resources.
 ## Floci
 
 A local AWS emulator. loomster runs the managed pieces of the stack (RDS,
-Cognito, S3, ECR, ECS, the AgentCore control plane) on Floci 2.2.0 for the local
+Cognito, S3, ECR, ECS, the AgentCore control plane) on Floci for the local
 run and the Floci claims. What it does not reproduce is in
 [Local caveats](/loomster/reference/local-caveats/).
 

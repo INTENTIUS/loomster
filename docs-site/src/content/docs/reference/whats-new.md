@@ -47,7 +47,7 @@ itself is in [Upgrade Loom](/loomster/guides/upgrade-loom/).
 
 ## Local stack
 
-- Floci 2.2.0, a real Cognito login against Floci with Loom's dev-auth bypass
+- Floci 2.2.0 (loomster's own build, `ghcr.io/lex00/floci`), a real Cognito login against Floci with Loom's dev-auth bypass
   off ([Run Loom locally](/loomster/getting-started/)).
 
 ## Proof

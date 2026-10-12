@@ -73,15 +73,14 @@ docker logs loom-local-loomBackend-1 2>&1 | grep -iE "AccessDenied|not authorize
 ```
 
 - An action the role doesn't grant at all is a real gap: it fails on AWS too.
-- A denial for Cognito (`cognito-idp:*`), CloudWatch Logs (`logs:*`) or IAM
-  (`iam:*`) is usually Floci, not the role. Floci 2.2.0 builds request ARNs
-  only for S3, Lambda, SQS, SNS, DynamoDB, Kinesis, Secrets Manager, SSM and
+- A denial for Cognito (`cognito-idp:*`) or CloudWatch Logs (`logs:*`) is
+  usually Floci, not the role. Floci builds request ARNs
+  only for IAM, S3, Lambda, SQS, SNS, DynamoDB, Kinesis, Secrets Manager, SSM and
   KMS, and checks every other service's actions against `Resource: "*"`, so a
-  grant scoped to ARNs (user pools in this account, agent log groups, project
-  roles) never matches there. AWS allows those calls. On a fresh enforced
-  local-up that includes `DescribeUserPool` (the seed's authorizer step fails
-  on it), `FilterLogEvents`, `StartQuery`, `CreateLogGroup`, `ListRoleTags` and
-  `ListRolePolicies`. Check the action against the task role in
+  grant scoped to ARNs (user pools in this account, agent log groups) never
+  matches there. AWS allows those calls. On a fresh enforced local-up that includes
+  `DescribeUserPool` (the seed's authorizer step fails on it),
+  `FilterLogEvents`, `StartQuery` and `CreateLogGroup`. Check the action against the task role in
   `src/composites/loom-backend.ts` before changing anything.
 
 That noise is why enforcement is opt-in.
@@ -110,7 +109,7 @@ port binding local-up needs.
 ### Login through Floci
 
 The light [tier](/loomster/concepts/tiers-and-instances/)'s `loom-cognito` stack
-creates a pool on Floci as it does on AWS. Floci 2.2.0 issues RS256 tokens with
+creates a pool on Floci as it does on AWS. Floci issues RS256 tokens with
 `cognito:groups` and serves the pool's JWKS and discovery under
 `/<pool-id>/.well-known/`. `local-up` then:
 

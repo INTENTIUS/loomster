@@ -14,7 +14,7 @@ Each [tier](/loomster/concepts/tiers-and-instances/) on each target: the
 
 | Tier | Floci | Real AWS |
 |---|---|---|
-| `light` | All seven stacks `CREATE_COMPLETE`, including the agents wave on Floci 2.2.0; the local app runs with a real Cognito login (`just local-up`) | Deployed end to end: the ALB serves Loom, backed by RDS and Cognito, and the backend passes its health check. `backend/deploy-agent` deployed an agent through Loom's API to `READY` on this tier |
+| `light` | All seven stacks `CREATE_COMPLETE`, including the agents wave on Floci; the local app runs with a real Cognito login (`just local-up`) | Deployed end to end: the ALB serves Loom, backed by RDS and Cognito, and the backend passes its health check. `backend/deploy-agent` deployed an agent through Loom's API to `READY` on this tier |
 | `production` | All seven stacks against a bring-your-own VPC, with every tier resource: RDS Proxy, PrivateLink, ACM and Route53, backend autoscaling, the assistant runtime (`just production-floci-e2e`) | All seven stacks `CREATE_COMPLETE` on a custom domain over HTTPS, the assistant runtime `READY` on AgentCore, and the 15 screen checks the harness had at the time passed through a token from an MFA-enforced pool (`just production-live-e2e`) |
 | `production-ha` | As production, plus Multi-AZ RDS, rotation and the two-task floor (`just production-ha-floci-e2e`) | All seven stacks, Multi-AZ RDS and the rotation schedule live, served over HTTPS, the assistant `READY`. It ran as a second [instance](/loomster/concepts/glossary/#instance) next to production in the same account |
 

@@ -3,7 +3,7 @@
 # tier: light
 # summary: the local-up app logs in through Floci's Cognito: the SPA's login reaches Floci, and Loom accepts the token with its local-dev bypass off
 #
-# Needs a running `just local-up` (Floci ${LOOM_CLAIMS_FLOCI_IMAGE:-floci/floci:2.2.0}
+# Needs a running `just local-up` (Floci ${LOOM_CLAIMS_FLOCI_IMAGE:-ghcr.io/lex00/floci:318204f}
 # on :4566, the app on :8080); pending otherwise. Plain, it checks the browser
 # path the way the SPA runs it:
 #   - /api/auth/config serves the Cognito provider with the Floci pool id, and

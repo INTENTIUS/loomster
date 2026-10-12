@@ -3,7 +3,7 @@
 # tier: light
 # summary: Loom's own API deploys an agent on Floci with IAM enforced, running as the backend task role, and it reaches READY
 #
-# The free, local counterpart of backend/deploy-agent: Floci 2.2.0 can enforce
+# The free, local counterpart of backend/deploy-agent: Floci can enforce
 # IAM (FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED=true) and vend the task role's
 # credentials to ECS task containers (FLOCI_SERVICES_ECS_TASK_ROLE_CREDENTIALS_ENABLED=true,
 # which needs FLOCI_SERVICES_ECS_DOCKER_NETWORK on a user-defined network), so
@@ -11,7 +11,7 @@
 # a missing grant (#1) is denied, as on AWS.
 #
 # Planned shape:
-#   plain   start ${LOOM_CLAIMS_FLOCI_IMAGE:-floci/floci:2.2.0} on its own
+#   plain   start ${LOOM_CLAIMS_FLOCI_IMAGE:-ghcr.io/lex00/floci:318204f} on its own
 #           network with enforcement, task-role credentials and the seeded
 #           deployer principal (FLOCI_SERVICES_IAM_SEED_DEPLOYER_PRINCIPAL=true,
 #           keys floci/floci); deploy the light tier with
@@ -39,4 +39,4 @@
 # any IAM condition key or service-linked-role path Floci's evaluator does not
 # model. backend/deploy-agent on AWS stays the claim of record.
 set -euo pipefail
-echo "CLAIM claim=backend/deploy-agent-floci verdict=pending needs a Floci (${LOOM_CLAIMS_FLOCI_IMAGE:-floci/floci:2.2.0}) harness with IAM enforcement and ECS task-role credentials that reaches the backend task directly (no ALB data path), with Cognito omitted or Floci's JWKS honoured, the task reaching Floci RDS, and a Floci model listed; see the header"
+echo "CLAIM claim=backend/deploy-agent-floci verdict=pending needs a Floci (${LOOM_CLAIMS_FLOCI_IMAGE:-ghcr.io/lex00/floci:318204f}) harness with IAM enforcement and ECS task-role credentials that reaches the backend task directly (no ALB data path), with Cognito omitted or Floci's JWKS honoured, the task reaching Floci RDS, and a Floci model listed; see the header"

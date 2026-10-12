@@ -1,11 +1,12 @@
 ---
 title: Local caveats
-description: How the local (Floci 2.2.0) run diverges from real AWS. Read this before you trust anything the local tier shows you.
+description: How the local (Floci) run diverges from real AWS. Read this before you trust anything the local tier shows you.
 ---
 
 The local stack ([Run Loom locally](/loomster/getting-started/)) runs the light
-[tier](/loomster/concepts/tiers-and-instances/) on [Floci](/loomster/concepts/glossary/#floci)
-`2.2.0`, for development, and to show the stacks deploy and the web app runs. It
+[tier](/loomster/concepts/tiers-and-instances/) on [Floci](/loomster/concepts/glossary/#floci),
+loomster's own build `ghcr.io/lex00/floci:318204f` (upstream 2.2.0 plus
+fixes), for development, and to show the stacks deploy and the web app runs. It
 says little about real AWS. Each section below says what differs, why, and what
 holds on AWS instead.
 
@@ -20,13 +21,13 @@ least privilege.
 loom-backend's **task role**, so an action the role doesn't grant at all is
 denied as on AWS. It isn't the default, because it is noisy and partial:
 
-- ARN-scoped grants are denied for most services. Floci 2.2.0 builds the
-  request's resource ARN only for S3, Lambda, SQS, SNS, DynamoDB, Kinesis,
-  Secrets Manager, SSM and KMS. Every other service, Cognito, CloudWatch Logs
-  and IAM included, is checked against `Resource: "*"`, which an allow scoped
+- ARN-scoped grants are denied for most services. Floci builds the
+  request's resource ARN only for IAM, S3, Lambda, SQS, SNS, DynamoDB, Kinesis,
+  Secrets Manager, SSM and KMS. Every other service, Cognito and CloudWatch Logs
+  included, is checked against `Resource: "*"`, which an allow scoped
   to ARNs never matches. The task role's least-privilege grants for those
   services (`DescribeUserPool` on this account's pools, `FilterLogEvents` and
-  `StartQuery` on agent log groups, `ListRoleTags` on project roles) are
+  `StartQuery` on agent log groups) are
   therefore denied locally and allowed on AWS. Seed's authorizer step fails on
   the first. See the [local guide](/loomster/guides/run-locally-in-depth/#check-the-backends-iam-role-locally)
   for reading the denials.
@@ -52,7 +53,7 @@ Secrets Manager `Secrets` into containers. **Real AWS** uses Secrets Manager.
 Don't copy local secret handling into a real deployment. `production` /
 `production-ha` keep the secret.
 
-Floci 2.2.0 does resolve `Fn::Sub` attribute references inside a
+Floci does resolve `Fn::Sub` attribute references inside a
 `SecretString` (`${Db.Endpoint.Address}` included): the `database-url` secret
 loom-db creates on Floci holds a resolved URL.
 
@@ -95,7 +96,7 @@ frontend. There is **no** TLS termination, WAF, or health-based failover.
 
 ## Security groups aren't enforced
 
-Floci 2.2.0 can filter packets by security group
+Floci can filter packets by security group
 (`FLOCI_NETWORK_SECURITY_GROUP_ENFORCEMENT_ENABLED`), but only for its own
 Docker-backed ECS tasks and EC2 instances, and a task under it gets no
 task-role credentials. The compose app tier is outside it, so local-up leaves
@@ -103,7 +104,7 @@ it off. **Real AWS** enforces the ALB, ECS, RDS and agent security groups.
 
 ## KMS is real crypto; rotation isn't exercised
 
-Floci 2.2.0 encrypts with real AES-256-GCM per key, so KMS calls behave like
+Floci encrypts with real AES-256-GCM per key, so KMS calls behave like
 AWS's. Secrets Manager rotation exists in Floci, but the light tier configures
 none, so nothing local exercises it.
 
@@ -122,14 +123,14 @@ definitions are manageable (Postgres). The data plane is a stand-in:
 agent reasoning. See the
 [local guide](/loomster/guides/run-locally-in-depth/#know-what-is-real).
 
-AgentCore **Evaluations** isn't in Floci 2.2.0: the evaluators list and the
+AgentCore **Evaluations** isn't in Floci yet: the evaluators list and the
 online-evaluation configs answer `UnknownOperationException`, so the
 Evaluations tab's evaluator and run views return `502` locally (`npm run
 validate` reports both). Test cases, which Loom keeps in Postgres, work.
 
 ## Single account
 
-Everything runs in Floci's default account `000000000000`. Floci 2.2.0 can
+Everything runs in Floci's default account `000000000000`. Floci can
 emulate several accounts and Organizations SCPs; local-up doesn't use them.
 
 ## Floci's scope
