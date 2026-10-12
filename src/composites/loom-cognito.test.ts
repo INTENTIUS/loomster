@@ -74,7 +74,8 @@ describe("LoomCognito — provision, production tier", () => {
     expect(props.AllowedOAuthFlows).toEqual(["code"]);
     expect(props.AllowedOAuthFlows).not.toContain("implicit");
     expect(props.AllowedOAuthScopes).toEqual(expect.arrayContaining(["openid", "email", "profile"]));
-    expect(props.AllowedOAuthScopes.length).toBe(3 + 23);
+    expect(props.AllowedOAuthScopes.length).toBe(3 + 21);
+    expect(props.AllowedOAuthScopes.some((s: string) => s.includes("settings:"))).toBe(false);
   });
 
   test("MFA on (software token) and advanced security ENFORCED", () => {

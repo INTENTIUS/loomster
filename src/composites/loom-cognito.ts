@@ -3,10 +3,11 @@
  *
  * Folds Loom's `shared/iac/cognito.yaml` (v1.6.0) into one composite emitting
  * one CloudFormation stack: the Cognito UserPool, its hosted-UI domain, the
- * OAuth resource server carrying the 23-scope API surface (`invoke` + 11
- * domains x read/write — catalog/agent/memory/security/settings/tagging/
- * costs/mcp/a2a/registry/admin), the machine-to-machine client
- * (client_credentials, `invoke` only) and — production/production-ha only —
+ * OAuth resource server carrying the 21-scope API surface (`invoke` + 10
+ * domains x read/write — catalog/agent/memory/security/tagging/costs/mcp/
+ * a2a/registry/admin; Loom v1.7.3 retired `settings:read/write`), the
+ * machine-to-machine client (client_credentials, `invoke` only) and —
+ * production/production-ha only —
  * the user-facing client (authorization code, full scope catalog), Cognito
  * groups, and Managed Login branding.
  *
@@ -68,7 +69,7 @@
  * source: `light` = UserPool + hosted-UI domain + resource server (scope
  * catalog trimmed to just `invoke`, matching Loom's own `pScopes` parameter
  * default) + the M2M client only — no groups, no user-facing client, no
- * branding, no seed. `production`/`production-ha` = the full 23-scope
+ * branding, no seed. `production`/`production-ha` = the full 21-scope
  * catalog, both clients, Cognito groups, and Managed Login branding.
  * `AdvancedSecurityMode` is `AUDIT` on light and `ENFORCED` on full tier;
  * `MfaConfiguration` is `OFF` on light and `ON` (software-token TOTP) on full
@@ -169,7 +170,7 @@ export interface CognitoProvisionData {
   callbackUrls?: string[];
   /** Resource server identifier (Loom's `pResourceServerIdentifier`) — the audience clients request scopes against. Default: derived from the naming helper. */
   resourceServerIdentifier?: string;
-  /** OAuth scope catalog. Default: Loom's own 23 (chant#888: `invoke` + 11 domains x read/write) on production/production-ha; `invoke` only on light (matches Loom's own `pScopes` default). Override to set your own org's API surface. */
+  /** OAuth scope catalog. Default: Loom's own 21 (chant#888: `invoke` + 10 domains x read/write; `settings:*` retired in Loom v1.7.3) on production/production-ha; `invoke` only on light (matches Loom's own `pScopes` default). Override to set your own org's API surface. */
   scopes?: CognitoScopeDef[];
   /** RBAC groups (chant#888) — present on production/production-ha only (chant#890: light has no groups at all). */
   groups?: CognitoGroupsSeam;
@@ -231,8 +232,6 @@ const LOOM_DOMAIN_SCOPES: CognitoScopeDef[] = [
   { name: "memory:write", description: "Write memory resources" },
   { name: "security:read", description: "Read security configurations" },
   { name: "security:write", description: "Write security configurations" },
-  { name: "settings:read", description: "Read settings" },
-  { name: "settings:write", description: "Write settings" },
   { name: "tagging:read", description: "View tag policies and profiles" },
   { name: "tagging:write", description: "Manage tag policies and profiles" },
   { name: "costs:read", description: "View cost data" },
@@ -247,7 +246,7 @@ const LOOM_DOMAIN_SCOPES: CognitoScopeDef[] = [
   { name: "admin:write", description: "Manage admin dashboard settings" },
 ];
 
-/** Loom's own full 23-scope resource server surface (`invoke` + 11 domains x read/write). */
+/** Loom's own full 21-scope resource server surface (`invoke` + 10 domains x read/write). Global settings are gated by `admin:read/write` since Loom v1.7.3. */
 export const LOOM_COGNITO_SCOPES: CognitoScopeDef[] = [LOOM_INVOKE_SCOPE, ...LOOM_DOMAIN_SCOPES];
 
 /** Light tier's trimmed scope catalog — matches Loom's own `pScopes` parameter default ("invoke"). */
