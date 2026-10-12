@@ -61,6 +61,8 @@ from `just cognito-token` (production tiers) or a temporary client (light).
 | Apply or record schema changes | `just db apply`, `just db baseline`, `just db reader` | only when the person asked; `just db approve` is theirs to run at a terminal |
 | Loom's operator make targets | `just credentials`, `just memory ...`, `just fix-sequences`, `just cognito-token`, `just cognito-client-id` | `reset-db`, `import-sqlite`, `credentials-delete`, `set-passwords` are never over MCP: a person runs and approves them |
 | Audit the CI YAML | `just audit` | |
+| Check templates against the Guard rules | `just policy` | needs `cfn-guard`; the production upgrade runs the same rules |
+| Roll an upgrade or a rotation tier by tier | `npx chant run wave --spec ops/waves/upgrade.json --wave <k>` | only when the person asked; each production run stops at its Op's gate |
 | Tear down | `chant run loom-teardown` | stops at a gate |
 
 `chant run list` shows every Op and its last run; `chant describe <component>`
