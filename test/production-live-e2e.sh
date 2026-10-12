@@ -114,7 +114,12 @@ teardown() {
     aws cloudformation delete-stack --stack-name "$SN_PREFIX-$s" 2>/dev/null || true
   done
   for s in downstream-stub loom-agents loom-backend loom-frontend loom-db loom-cognito shared-foundation; do
-    aws cloudformation wait stack-delete-complete --stack-name "$SN_PREFIX-$s" 2>/dev/null || true
+    # Poll with a line every 30 s: the gate's stall watch kills a run that
+    # prints nothing for 5 minutes, and `aws cloudformation wait` is silent.
+    while st="$(aws cloudformation describe-stacks --stack-name "$SN_PREFIX-$s" --query 'Stacks[0].StackStatus' --output text 2>/dev/null)" \
+      && [ "$st" != DELETE_COMPLETE ] && [ "$st" != DELETE_FAILED ]; do
+      echo "    waiting for $SN_PREFIX-$s to delete ($st)"; sleep 30
+    done
   done
   if [ "$MADE_VPC" = "1" ]; then
     echo "  (throwaway VPC $LOOM_VPC_ID + NAT left for manual cleanup — NAT/EIP/subnets)"
