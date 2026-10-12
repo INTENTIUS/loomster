@@ -5,6 +5,15 @@ import type { ChantConfig } from "@intentius/chant";
 // The lifecycle Ops under `ops/` come from `@intentius/chant/op` and need no
 // lexicon of their own.
 const loomEnv = process.env.LOOM_ENV ?? "dev";
+// The environments that live on Floci rather than AWS: `local` (local-up) and
+// `floci` (the production-tier Floci E2E), both on :4566. Declaring the
+// endpoint makes `chant lifecycle diff local --live` (and `graph --live`)
+// read Floci without an exported AWS_ENDPOINT_URL, instead of quietly asking
+// real AWS for a stack that isn't there (chant#1166). Only the endpoint is
+// injected: the shell still needs Floci's `test` keys, since real AWS keys are
+// unknown to Floci and rejected when its IAM enforcement is on.
+const FLOCI_ENDPOINT = "http://localhost:4566";
+const onFloci = loomEnv === "local" || loomEnv === "floci";
 
 export default {
   lexicons: ["aws", "docker"],
@@ -22,7 +31,7 @@ export default {
   // Whatever LOOM_ENV this build/lint/lifecycle invocation targets is the
   // only allowed environment — same single-deployment-at-a-time convention
   // every src/*/params.ts file already follows.
-  environments: [loomEnv],
+  environments: [onFloci ? { name: loomEnv, endpoint: FLOCI_ENDPOINT } : loomEnv],
   // Stamps a chant ownership marker (tags `chant:managed-by`/`chant:stack`/
   // `chant:env`) onto every supported resource, so `loom-reconcile`'s
   // `scope: { owned: true }` (ops/loom-reconcile.op.ts, chant#904) can scope

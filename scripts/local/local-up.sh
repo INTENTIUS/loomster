@@ -20,6 +20,16 @@ ENDPOINT="http://localhost:4566"
 export AWS_ENDPOINT_URL="$ENDPOINT" AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_REGION="$REGION"
 export LOOM_TIER=light LOOM_ENV="${LOOM_ENV:-local}" LOOM_DB_PASSWORD="${LOOM_DB_PASSWORD:-loomLocalPass123}"
 OUT=dist/local
+# IAM enforcement on Floci, opt-in (loomster#53): LOOM_LOCAL_IAM_ENFORCEMENT=true
+# runs the backend as loom-backend's task role and Floci evaluates its policies,
+# so an action the role doesn't grant at all fails here as on AWS. Off by
+# default because Floci 2.2.0 checks Cognito, CloudWatch Logs and most IAM
+# actions against Resource "*", so the task role's ARN-scoped grants for those
+# are denied locally although AWS allows them (seed's authorizer step then
+# fails on DescribeUserPool). Off, the backend uses Floci's `test` key, which
+# Floci never checks.
+IAM_ENFORCEMENT="${LOOM_LOCAL_IAM_ENFORCEMENT:-false}"
+case "$IAM_ENFORCEMENT" in true|false) ;; *) echo "LOOM_LOCAL_IAM_ENFORCEMENT must be true or false"; exit 1 ;; esac
 aws() { command aws --endpoint-url "$ENDPOINT" --region "$REGION" "$@"; }
 
 # Docker isolates separate bridges, so the app tier and Floci (incl. its RDS
@@ -47,11 +57,23 @@ if ! docker ps --filter name=^floci$ --format '{{.Names}}' | grep -q floci; then
   # FLOCI_HOSTNAME=floci makes Floci's Cognito issuer http://floci:4566/<pool>:
   # the backend reaches Floci by that name on this network, so the issuer it
   # checks and the JWKS it fetches share one base (LOOM_COGNITO_ENDPOINT_URL).
+  # FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED (LOOM_LOCAL_IAM_ENFORCEMENT, above)
+  # makes Floci evaluate every request against the caller's IAM policies.
+  # Floci's `test` key always bypasses it, so chant and this script (both on
+  # `test`) are unaffected; it bites on the backend, which step 4 then runs as
+  # its own task role.
   docker run -d --rm -p 127.0.0.1:4566:4566 -v /var/run/docker.sock:/var/run/docker.sock \
     --network "$NET" -e FLOCI_SERVICES_DOCKER_NETWORK="$NET" -e FLOCI_SERVICES_ECR_DOCKER_NETWORK="$NET" \
     -e FLOCI_DOCKER_RESOURCE_NAMESPACE=loom-local -e FLOCI_HOSTNAME=floci \
+    -e FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED="$IAM_ENFORCEMENT" \
     --name floci "${FLOCI_IMAGE:-floci/floci:2.2.0}" >/dev/null
   sleep 8
+elif ! docker inspect floci --format '{{range .Config.Env}}{{println .}}{{end}}' \
+  | grep -qx "FLOCI_SERVICES_IAM_ENFORCEMENT_ENABLED=$IAM_ENFORCEMENT"; then
+  # A Floci left running by an older local-up, or by one with the other
+  # LOOM_LOCAL_IAM_ENFORCEMENT, would quietly run the other mode.
+  echo "The running Floci wasn't started with IAM enforcement=$IAM_ENFORCEMENT."
+  echo "Run 'just local-down', then 'just local-up'."; exit 1
 fi
 
 echo "==> [2/8] vendor Loom v1.9.0 (+ loomster's Loom patches)"
@@ -112,6 +134,26 @@ for g in t-admin g-admins-super; do
   aws cognito-idp admin-add-user-to-group --user-pool-id "$POOL" --username "$ADMIN_USER" --group-name "$g" >/dev/null
 done
 
+# The backend's AWS identity. Under enforcement it is loom-backend's task role,
+# as on ECS: Floci then checks every call Loom makes against the role's
+# policies. The role trusts only ecs-tasks.amazonaws.com, so on Floci (never in
+# the template) its trust policy also admits this account, letting the harness
+# assume it. Floci grants a 12-hour session; after that, local-down and up again.
+BACKEND_KEY=test BACKEND_SECRET=test BACKEND_TOKEN=""
+if [ "$IAM_ENFORCEMENT" = true ]; then
+  TASK_ROLE="$(aws cloudformation describe-stack-resources --stack-name "$SN_PREFIX-loom-backend" \
+    --query "StackResources[?LogicalResourceId=='backendTaskRole'].PhysicalResourceId | [0]" --output text)"
+  [ -n "$TASK_ROLE" ] && [ "$TASK_ROLE" != "None" ] || { echo "no backendTaskRole on $SN_PREFIX-loom-backend"; exit 1; }
+  ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
+  aws iam update-assume-role-policy --role-name "$TASK_ROLE" --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[
+    {\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"},
+    {\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::${ACCOUNT}:root\"},\"Action\":\"sts:AssumeRole\"}]}"
+  read -r BACKEND_KEY BACKEND_SECRET BACKEND_TOKEN < <(aws sts assume-role \
+    --role-arn "arn:aws:iam::${ACCOUNT}:role/${TASK_ROLE}" --role-session-name loom-local-backend --duration-seconds 43200 \
+    --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' --output text)
+  [ -n "$BACKEND_TOKEN" ] || { echo "could not assume $TASK_ROLE on Floci"; exit 1; }
+fi
+
 mkdir -p "$OUT"
 ( umask 077; printf 'url=http://localhost:8080\nusername=%s\npassword=%s\n' "$ADMIN_USER" "$ADMIN_PASSWORD" > "$OUT/admin-login.txt" )
 cat > "$OUT/.env" <<EOF
@@ -124,11 +166,14 @@ LOOM_COGNITO_ENDPOINT_URL=${COGNITO_BASE}
 LOOM_LOCAL_USER_CLIENT_ID=${CLIENT}
 AWS_ENDPOINT_URL=http://floci:4566
 AWS_REGION=${REGION}
-AWS_ACCESS_KEY_ID=test
-AWS_SECRET_ACCESS_KEY=test
+AWS_ACCESS_KEY_ID=${BACKEND_KEY}
+AWS_SECRET_ACCESS_KEY=${BACKEND_SECRET}
+AWS_SESSION_TOKEN=${BACKEND_TOKEN}
 LOOM_ALLOWED_ORIGINS=http://localhost:8080
 EOF
+chmod 600 "$OUT/.env"
 echo "    RDS=floci:${RDS_PORT}/${RDS_DB}  AWS_ENDPOINT=http://floci:4566  pool=${POOL}  user client=${CLIENT}"
+echo "    backend identity: $([ "$IAM_ENFORCEMENT" = true ] && echo "task role ${TASK_ROLE} (IAM enforced)" || echo "Floci test key (IAM not enforced)")"
 
 echo "==> [5/8] build the app images"
 docker build -q -t loom-local-backend -f vendor/loom/backend/Dockerfile vendor/loom >/dev/null
@@ -151,7 +196,7 @@ echo "==> [7/8] docker compose up"
 # script exports the host-side AWS_* values (AWS_ENDPOINT_URL=localhost:4566,
 # unreachable from a container). Unset them so the compose file gets .env's
 # in-network values (http://floci:4566).
-env -u AWS_ENDPOINT_URL -u AWS_REGION -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY \
+env -u AWS_ENDPOINT_URL -u AWS_REGION -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY -u AWS_SESSION_TOKEN \
   docker compose --project-name loom-local -f "$OUT/docker-compose.yml" --env-file "$OUT/.env" up -d --force-recreate
 
 echo "==> [8/8] seed demo defaults (loom-seed)"
