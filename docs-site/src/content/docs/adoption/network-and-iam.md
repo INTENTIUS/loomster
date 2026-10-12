@@ -35,11 +35,19 @@ outputs, so you set them once.
 
 IAM is first-class reference-existing across the board:
 
-- **`shared-foundation`'s `agentRole`** — the AgentCore execution role, scoped to
-  that stack's own artifact bucket, ECR KMS, and logs. `provision | reference-existing | omit`.
+- **`shared-foundation`'s `agentRole`** — the shared AgentCore execution role that
+  loom-seed imports and the demo agent runs as. It carries Loom v1.9.0
+  `role.yaml`'s statements for any agent (workload identity, token-vault
+  credential providers named `loom-*`, `bedrock-agentcore-identity!*` and
+  `loom/agents/*` secrets, runtime logs including `logs:PutResourcePolicy`,
+  memory, Code Interpreter) plus pull/read on that stack's ECR, artifact bucket
+  and ECR KMS key. `provision | reference-existing | omit`.
   Set `LOOM_AGENT_ROLE_ARN` to hand over the least-privilege role a security team
   already built (`LOOM_AGENT_ROLE=omit` drops it). `src/examples/byo/` wires it at
   the composite level; the deployable reads the env var (#120).
+- **One role per agent** — what Loom itself expects since v1.9.0, where Loom never
+  creates IAM and every deploy names an existing, registered role. See
+  [per-agent execution roles](#per-agent-execution-roles).
 - **`loom-backend`'s execution + task roles** — `provision | reference-existing`
   via `LOOM_BACKEND_EXECUTION_ROLE_ARN` / `LOOM_BACKEND_TASK_ROLE_ARN`. A referenced
   execution role needs ECR-pull + logs-write; the task role needs whatever the app
@@ -51,6 +59,30 @@ IAM is first-class reference-existing across the board:
 None of this forks a composite. `src/examples/byo/` wires every one of these to
 `reference-existing` against one set of platform-owned resources, with no edits
 under `src/composites/`.
+
+## Per-agent execution roles
+
+Loom's own answer to "which role does this agent run as" is one role stack per
+agent from `shared/iac/role.yaml`. Its credential-provider grant is scoped to
+that agent's own `loom-<agent>-*` providers, so one agent can't read another's
+OAuth or API-key credentials (Loom v1.8.1, H1-3956464), and stopping a role stops
+one agent. The chant version is the `loom-agent-role` composite and Op:
+
+```bash
+LOOM_AGENT_ROLE_AGENT=support_bot LOOM_AGENT_ROLE_GROUP=support \
+LOOM_API_BASE_URL=https://loom.example.com LOOM_API_TOKEN=... \
+  chant run loom-agent-role
+```
+
+It deploys `<project>-<env>-<instance>-agent-role-support-bot` (role name
+`<project>-<env>-<instance>-agent-role-support-bot`, inside the backend task
+role's `<project>-*` `iam:PassRole` grant), then registers it under Security >
+Roles tagged `loom:group=support`, so members of that group can pick it when they
+deploy `support_bot`. Optional: `LOOM_AGENT_ROLE_MEMORY_ARN` (adds the memory
+policy), `LOOM_AGENT_ROLE_CODE_INTERPRETER=true`, `LOOM_AGENT_ROLE_BEDROCK_MODEL_ARNS`
+(comma-separated; default this account's inference profiles and every foundation
+model). Re-running is safe. The stack isn't a component, so `loom-teardown`
+leaves it; delete it with `aws cloudformation delete-stack`.
 
 ## What a BYO backend task role must grant
 

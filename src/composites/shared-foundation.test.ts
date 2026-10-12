@@ -366,6 +366,42 @@ describe("SharedFoundation — serializes to valid CloudFormation", () => {
       { "Fn::Sub": "${sharedFoundationArtifactBucket.Arn}/*" },
     ]);
   });
+
+  // loomster#2: the shared role carries Loom v1.9.0 role.yaml's statements at
+  // every-agent scope (loom-agent-role.test.ts pins the per-agent form).
+  test("agent role policy: Loom v1.9.0 role.yaml statements at every-agent scope (loomster#2)", () => {
+    const instance = SharedFoundation(baseLightProps());
+    const expanded = expandComposite("sharedFoundation", instance);
+    resolveAttrRefs(expanded);
+    const template = JSON.parse(awsSerializer.serialize(expanded) as string);
+    const role = template.Resources.sharedFoundationAgentRole.Properties;
+    const statements: any[] = role.Policies[0].PolicyDocument.Statement;
+    const resourcesFor = (action: string) => statements.find((s) => [s.Action].flat().includes(action))?.Resource;
+
+    expect(role.AssumeRolePolicyDocument.Statement[0].Condition).toEqual({ StringEquals: { "aws:SourceAccount": { "Fn::Sub": "${AWS::AccountId}" } } });
+    expect(resourcesFor("bedrock-agentcore:GetWorkloadAccessToken")).toEqual([
+      { "Fn::Sub": "arn:${AWS::Partition}:bedrock-agentcore:*:${AWS::AccountId}:workload-identity-directory/*" },
+    ]);
+    expect(resourcesFor("bedrock-agentcore:GetResourceOauth2Token")).toEqual([
+      { "Fn::Sub": "arn:${AWS::Partition}:bedrock-agentcore:*:${AWS::AccountId}:token-vault/default/oauth2credentialprovider/loom-*" },
+      { "Fn::Sub": "arn:${AWS::Partition}:bedrock-agentcore:*:${AWS::AccountId}:token-vault/default/apikeycredentialprovider/loom-*" },
+    ]);
+    expect(resourcesFor("secretsmanager:GetSecretValue")).toEqual([
+      { "Fn::Sub": "arn:${AWS::Partition}:secretsmanager:*:${AWS::AccountId}:secret:bedrock-agentcore-identity!*" },
+      { "Fn::Sub": "arn:${AWS::Partition}:secretsmanager:*:${AWS::AccountId}:secret:loom/agents/*" },
+      { "Fn::Sub": "arn:${AWS::Partition}:secretsmanager:*:${AWS::AccountId}:secret:loom/agents/harness_*" },
+    ]);
+    expect(resourcesFor("logs:PutResourcePolicy")).toEqual([
+      { "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/bedrock-agentcore/runtimes/*" },
+      { "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/bedrock-agentcore/runtimes/harness_*" },
+    ]);
+    expect(resourcesFor("bedrock:InvokeModel")).toEqual([
+      { "Fn::Sub": "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/*" },
+      { "Fn::Sub": "arn:${AWS::Partition}:bedrock:*::foundation-model/*" },
+    ]);
+    expect(resourcesFor("bedrock-agentcore:RetrieveMemoryRecords")).toEqual({ "Fn::Sub": "arn:${AWS::Partition}:bedrock-agentcore:*:${AWS::AccountId}:memory/*" });
+    expect(resourcesFor("bedrock-agentcore:InvokeCodeInterpreter")).toHaveLength(3);
+  });
 });
 
 // WAW042 — the artifact bucket needs a companion BucketPolicy denying any

@@ -111,6 +111,12 @@ local-up:
 local-down:
     bash scripts/local/local-down.sh
 
+# One Loom agent's execution role, the way Loom's role.yaml makes it: deploy the
+# role stack and register it in Loom tagged into the group (#2).
+# `just agent-role support_bot support`; LOOM_API_BASE_URL/LOOM_API_TOKEN as for loom-seed.
+agent-role agent group:
+    LOOM_AGENT_ROLE_AGENT={{agent}} LOOM_AGENT_ROLE_GROUP={{group}} npx chant run loom-agent-role
+
 # Validate a running Loom screen by screen against the active seed profile.
 # LOOM_API_BASE_URL (default the local-up proxy) + LOOM_SEED_PROFILE (default demo).
 validate:
