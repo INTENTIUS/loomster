@@ -270,3 +270,30 @@ describe("LoomAgents — serializes to valid CloudFormation", () => {
     });
   });
 });
+
+describe("LoomAgents — AgentCore Runtime V2 (#7)", () => {
+  function synth(props: LoomAgentsProps) {
+    const expanded = expandComposite("loomAgents", LoomAgents(props));
+    resolveAttrRefs(expanded);
+    return JSON.parse(awsSerializer.serialize(expanded) as string);
+  }
+
+  test("every chant-managed runtime is on PlatformVersion V2, as Loom's create_runtime/update_runtime set it", () => {
+    const template = synth(baseProps({
+      naming: prodNaming,
+      privateSubnetIds: ["subnet-priv1", "subnet-priv2"],
+      harnessImageUri: "111111111111.dkr.ecr.us-east-1.amazonaws.com/loom-harness-agent@sha256:def",
+    }));
+    expect(template.Resources.loomAgentsAssistantRuntime.Properties.PlatformVersion).toBe("V2");
+    expect(template.Resources.loomAgentsHarnessAgentRuntime.Properties.PlatformVersion).toBe("V2");
+  });
+
+  test("a caller's own runtime defaults still merge, and can override the platform version", () => {
+    const template = synth(baseProps({
+      defaults: { assistant: { defaults: { runtime: { Description: "mine", PlatformVersion: "V1" } as any } } },
+    }));
+    const runtime = template.Resources.loomAgentsAssistantRuntime.Properties;
+    expect(runtime.Description).toBe("mine");
+    expect(runtime.PlatformVersion).toBe("V1");
+  });
+});
