@@ -1,0 +1,25 @@
+---
+// Starlight's page title, a pointer to llms.txt for an agent reading the page,
+// and the page's agent prompt when it has one.
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+import AgentPrompt from './AgentPrompt.astro';
+
+const { entry } = Astro.locals.starlightRoute;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const real = entry.id !== '404';
+---
+<Default />
+{real && (
+	<p class="ls-llms not-content">
+		<a href={`${base}/llms.txt`}>llms.txt</a> lists every page for a coding agent.
+	</p>
+)}
+{real && <AgentPrompt />}
+
+<style>
+	.ls-llms {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+</style>

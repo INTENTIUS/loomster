@@ -52,7 +52,7 @@ export const domainName = "loom.example.com";
  * composite wires the ALB/ECS/RDS security groups into them directly —
  * chant creates no VPC, subnet, route table, or internet gateway.
  * `privateSubnetIds` is required here because this example runs the
- * production tier, which always provisions PrivateLink (see docs/adoption.md
+ * production tier, which always provisions PrivateLink (see https://intentius.io/loomster/reference/adoption-seams/
  * for why that is currently tier-gated rather than its own seam).
  */
 export const network: NetworkSeam = {

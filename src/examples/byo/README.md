@@ -14,9 +14,10 @@ one of this directory's own sibling modules. Nothing under
 `src/composites/` changed to make this example work — that's the point:
 adoption is parameter choice, not a fork.
 
-See `../../../docs/adoption.md` for the full adoption matrix (every seam,
-its default, what replacing it requires) and the known gaps this example
-deliberately documents rather than hides.
+See https://intentius.io/loomster/reference/adoption-seams/ for every seam, its
+default and what replacing it requires, and
+https://intentius.io/loomster/guides/bring-your-own-everything/ for a walkthrough
+of this example.
 
 ## Layout
 
@@ -37,12 +38,7 @@ npx chant build src/examples/byo/loom-frontend --lexicon aws
 npx chant build src/examples/byo/shared-foundation --lexicon aws
 ```
 
-`loom-backend`/`loom-frontend` build clean end to end. `shared-foundation`
-currently fails `chant build`'s post-synth check on a pre-existing,
-unrelated gap: the artifact bucket has no explicit Deny-non-TLS policy
-(WAW042) — this reproduces identically against the repo's real,
-unmodified `src/shared-foundation` stack, so it isn't something this
-example introduced (see docs/adoption.md's "Known gaps").
+All three build clean end to end.
 
 `loom-db`/`loom-cognito`/`loom-cognito-second-instance` are fully
 `reference-existing` — they provision nothing of their own, so there is no
@@ -53,13 +49,12 @@ proven instead in `./adoption.test.ts`, via the same
 `expandComposite`/`resolveAttrRefs`/`awsSerializer.serialize` pipeline every
 composite's own unit tests use.
 
-## Known gaps (see docs/adoption.md for the full writeup)
+## Seams this example leaves at their defaults
 
-- `LoomBackend`/`LoomFrontend` always provision their own ECS execution/task
-  IAM roles — there is no `reference-existing` seam for those yet, unlike
-  every upstream piece they depend on.
-- PrivateLink (`shared-foundation`) is gated purely by tier, not an
-  independent seam — there is no way to omit it on `production`/
-  `production-ha` without also giving up the full tier.
-- No bastion composite exists in this codebase (Loom's own upstream template
-  has none either) — nothing to reference or omit.
+- `loom-backend` and `loom-frontend` can also take existing IAM roles
+  (`executionRoleArn`, `taskRoleArn`); this example lets them provision their own.
+- PrivateLink follows the tier here; `privateLink.mode` (`LOOM_PRIVATELINK`)
+  omits or adds it on any tier.
+- The optional SSM tunnel host (`loom-tunnel-host`) is outside the component
+  graph; to use a bastion you already run, open the database's security group
+  to it.

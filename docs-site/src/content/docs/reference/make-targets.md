@@ -4,7 +4,10 @@ description: Each operator target in Loom's backend and shared makefiles, and th
 ---
 
 Loom's makefiles (`backend/makefile`, `shared/makefile` at v1.9.0) carry the
-operator tasks you run against a deployment. loomster has a verb for each one.
+operator tasks you run against a deployment. loomster has a verb for each one,
+usually a [chant](/loomster/concepts/glossary/#chant) [Op](/loomster/reference/ops/).
+[Coming from Loom's SAM deploy](/loomster/guides/coming-from-upstream-loom/) maps
+the deploy targets.
 Where Loom reads `etc/environment.sh`, loomster resolves the same inputs from
 the deployment itself: names from the naming helper, ids from stack outputs.
 You pass only what loomster can't know, such as a memory id.
@@ -32,7 +35,7 @@ database stays private, and its credentials never reach your shell.
 | `make cognito.get-client-id` | `just cognito-client-id` | none | |
 | `make cognito.get-tokens` | `just cognito-token` | none | |
 | `make ecs.init`, `make agentcore.init` | `just bootstrap` | `loom-bootstrap` | No |
-| `make ec2` + `make tunnel` | `just tunnel-host`, then `just tunnel` ([guide](/loomster/guides/tunnel/)) | `loom-tunnel-host` | No |
+| `make ec2` + `make tunnel` | `just tunnel-host`, then `just tunnel` ([guide](/loomster/guides/open-a-tunnel-to-the-database/)) | `loom-tunnel-host` | No |
 | `make ci-role` | Not ported (see below) | | |
 
 A gated Op takes a snapshot or prints its plan first, then stops at its gate
@@ -72,7 +75,7 @@ agents in the UI and running `just credentials-delete`, or they're orphaned.
 **credentials delete-all is owned-only.** Upstream deletes every OAuth2
 credential provider in the account. Loom names providers
 `loom-<agent>-<agent id>-<kind>`, with no deployment marker, so that would also
-delete another Loom instance's providers. `loom-credentials-delete` deletes
+delete another Loom [instance](/loomster/concepts/glossary/#instance)'s providers. `loom-credentials-delete` deletes
 only the providers this Loom's database records: the same set Loom removes when
 it deletes an agent, plus API-key providers for LiteLLM. `loom-teardown` runs
 the same delete before it removes the stacks. `just credentials` shows both the
@@ -91,7 +94,7 @@ temporary file, so it never shows up in the process list.
 **cognito-token signs in as a throwaway admin.** Upstream signs in as `admin`
 with a password from `etc/environment.sh`. `just cognito-token` creates (or
 recreates) an `e2e-validator` user in the admin groups, completes the MFA setup
-that the production tiers enforce, and prints its access token. Run
+that the production [tiers](/loomster/concepts/glossary/#tier) enforce, and prints its access token. Run
 `just cognito-token --delete` when you're done. The light tier has no user app
 client: there, `cognito-client-id` prints only the M2M client, and
 `cognito-token` stops with "no oUserClientId output".
@@ -103,9 +106,8 @@ image. On ECS the Settings refresh can't write it: the file is root-owned, the
 backend runs as a non-root user, and every task has its own copy anyway. The
 list updates when you bump the Loom pin (`scripts/vendor-loom.sh`), which
 rebuilds the image with that release's catalog. See the
-[upgrade guide](/loomster/operations/upgrade/).
+[upgrade guide](/loomster/guides/upgrade-loom/).
 
 **ci-role.** `shared/makefile` deploys a CI role from `P_CI_ROLE_TEMPLATE`, but
 Loom doesn't ship that template. loomster's generated pipelines use their own
-OIDC role setup ([CI providers](/loomster/operations/ci/)). This will be
-revisited if upstream publishes the template.
+OIDC role setup ([CI providers](/loomster/reference/ci/)).

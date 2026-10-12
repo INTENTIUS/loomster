@@ -1,77 +1,61 @@
 ---
-title: Tiers & targets
-description: The three deployment tiers (light, production, production-ha), the two deploy targets (Floci and real AWS) plus the local app-run harness, what differs between them, and what has been validated where.
+title: Tiers and targets
+description: What differs between the light, production and production-ha tiers, how a target (Floci or real AWS) is chosen, and the recovery targets of each tier.
 ---
 
-loomster ships one source tree with three tiers. `naming.tier` selects the tier;
-no tier has its own files. Every difference below is a parameter resolved off the
-tier, so `light` and `production-ha` synthesize from the same composites.
-
-A tier is orthogonal to where it deploys. Any tier can target Floci (a local
-emulator) or real AWS; the target is chosen by whether `AWS_ENDPOINT_URL` is set,
-nothing else in the code changes.
+One source tree, three [tiers](/loomster/concepts/tiers-and-instances/).
+`LOOM_TIER` selects one; every difference below is a value resolved from it, so
+`light` and `production-ha` build from the same composites. What has run where
+is on [Validation](/loomster/reference/validation/).
 
 ## Tiers
 
 | | `light` | `production` | `production-ha` |
 |---|---|---|---|
-| Intended use | Browse, evaluate, laptop and single-account dev | Adoptable single-AZ deployment | Adoptable high-availability deployment |
-| VPC | Self-provisioned (public subnets, no NAT) | Bring your own | Bring your own |
-| PrivateLink + private subnets | Omitted | Provisioned | Provisioned |
-| ECS `AssignPublicIp` | `ENABLED` (the only route to ECR without a NAT) | `DISABLED` | `DISABLED` |
-| Backend scaling | 1 task, no autoscaling | 1-task floor + autoscaling | 2-task floor + autoscaling |
-| RDS | Single-AZ | Single-AZ + RDS Proxy | Multi-AZ + RDS Proxy + secret rotation |
+| Intended use | Browse, evaluate, single-account dev | Adoptable single-AZ deployment | Adoptable high-availability deployment |
+| VPC | Built by the stack (public subnets, no NAT) | Yours | Yours |
+| PrivateLink and private subnets | Omitted | Provisioned | Provisioned |
+| ECS `AssignPublicIp` | `ENABLED`, the only route to ECR without a NAT | `DISABLED` | `DISABLED` |
+| Serving | HTTP on the ALB's DNS name | HTTPS on your domain | HTTPS on your domain |
+| Backend scaling | 1 task, no autoscaling | 1-task floor and autoscaling | 2-task floor and autoscaling |
+| RDS | Single-AZ | Single-AZ and RDS Proxy | Multi-AZ, RDS Proxy and secret rotation |
 | RDS deletion protection | Off | On | On |
 | RDS backup retention | 7 days | 7 days | 7 days |
-| Agents | Assistant (code-config) | Assistant (code-config) | Assistant (code-config) |
+| Cognito | MFA off, no end-user client | MFA on (software token), end-user client, deletion protection | As production |
+| Agents | The assistant (code configuration) | The assistant | The assistant |
 | Agent network mode | `PUBLIC` | `VPC` | `VPC` |
 | AgentCore Memory retention | 30 days | 90 days | 90 days |
+| Default seed profile | `demo` | `foundation` | `foundation` |
+| Rotation [Op](/loomster/concepts/glossary/#op) | none | `loom-rotate-production` | `loom-rotate-production-ha` |
 
-Constant across every tier: the six components, cross-stack wiring, cost tags,
-the naming scheme, and always-on secret encryption (no opt-out). Adoption seams
-(`provision | reference-existing | omit`) are also tier-independent — a `light`
-deploy can reference an existing VPC, a `production` deploy can provision one. See
-[Adoption](/loomster/adoption/overview/).
-
-Each tier also comes with seeded application defaults so a fresh deploy is usable
-out of the box: `light` defaults to a `demo` seed profile, the production tiers to
-`foundation` (config only). See [Seeded defaults](/loomster/reference/seeding/).
+The same on every tier: the six components, cross-stack wiring, the cost tags,
+the naming scheme, and secret encryption with no opt-out. Seams are
+independent of the tier ([Adoption seams](/loomster/reference/adoption-seams/)).
 
 ## Targets
 
-| Target | Selected by | What runs | Verify |
+| Target | Chosen by | What runs | Verify phase |
 |---|---|---|---|
-| Floci | `AWS_ENDPOINT_URL` set (e.g. `http://localhost:4566`) | Managed pieces (RDS, Cognito, S3, ECR) plus, on Floci 2.2.0+, the agents wave | Health-gate skipped — the ALB to ECS data path is not emulated |
-| Real AWS | `AWS_ENDPOINT_URL` unset | Everything, on live infrastructure | Full, including the ECS health-gate |
+| [Floci](/loomster/concepts/glossary/#floci) | `AWS_ENDPOINT_URL` set, such as `http://localhost:4566` | The stacks, including the agents wave on Floci 2.2.0 | Skipped: Floci doesn't serve the ALB to ECS path |
+| Real AWS | `AWS_ENDPOINT_URL` unset | Everything | Steady state and the health check |
 
-A third path, `just local-up`, is a laptop harness rather than a tier or target:
-it runs the app tier (frontend, backend, a reverse proxy standing in for the ALB)
-from a chant-generated `docker-compose.yml`, wired to Floci for the managed
-pieces. The result is a browsable Loom with no AWS account, with a real Cognito login against Floci's pool. See
-[Run Loom on your laptop](/loomster/guides/local/).
+`just local-up` is a third path: it deploys the light tier on Floci and runs the
+app from a generated compose file with a proxy in place of the ALB
+([Run Loom locally](/loomster/getting-started/)).
 
-## What has been validated
+## Recovery targets
 
-| Tier | Floci | Real AWS |
-|---|---|---|
-| `light` | Full stack, 7/7 stacks `CREATE_COMPLETE`, including the code-config agents wave against Floci 2.2.0+ | Deployed end to end — the real ALB served the Loom SPA, backed by real RDS and Cognito, backend passed the ECS health-gate. (The agents wave itself is validated live on the production tiers below, where the assistant runtime reaches `READY` on Bedrock AgentCore.) |
-| `production` | Full stack against a BYO VPC — RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend autoscaling, and the assistant code-config Runtime | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, all tier resources present, app served over HTTPS on a custom domain, and the Strands assistant runtime `READY` on Bedrock AgentCore. Every screen validated behind real (MFA-enforced) Cognito** via a minted throwaway-admin token — the foundation floor (agent role + authorizer) is seeded through that same token first |
-| `production-ha` | Full stack, 7/7 `CREATE_COMPLETE` — as production, plus Multi-AZ RDS, secret rotation, and a 2-task backend floor | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, Multi-AZ RDS + the HostedRotationLambda rotation schedule live, app served over HTTPS, assistant runtime `READY`.** Also proved multi-deployment: deployed as a second instance alongside `production` |
+All three tiers keep 7 days of automated backups with point-in-time recovery,
+so for data loss the recovery point is about 5 minutes anywhere in that window.
+They differ in how an infrastructure failure is handled.
 
-Both production tiers deploy end to end on Floci against a bring-your-own VPC
-(the tier guard requires `LOOM_VPC_ID` + subnets and a `LOOM_DOMAIN_NAME`; a
-provisioned VPC is light-only). Every tier-distinguishing resource creates. Two
-things Floci can't reflect: it runs RDS as a single container, so `MultiAZ` is
-requested in the template but reported `false` by the API; and the app data path
-(ALB → ECS) isn't emulated, so the runtime health-gate is real-AWS-only.
+| Tier | AZ or instance failure | Data loss (corruption, bad delete) | Region loss |
+|---|---|---|---|
+| `light` | `loom-restore` and cutover | point-in-time or snapshot `loom-restore` | survivable only with a `loom-backup` DR copy |
+| `production` | `loom-restore` and cutover | point-in-time or snapshot `loom-restore` | survivable only with a DR copy |
+| `production-ha` | Multi-AZ failover, about 1 to 2 minutes, no data loss | point-in-time or snapshot `loom-restore` | survivable only with a DR copy |
 
-Both production tiers have been applied to a **live account** — 7/7 stacks each, with
-Multi-AZ RDS and a live credential rotation on `production-ha`, and the assistant
-runtime `READY` on Bedrock AgentCore. What's still emulator-only is real agent
-*execution* (invoke): the Floci invoke path is a canned stub, so genuine agent
-reasoning needs a live account. Screen-level checks behind real Cognito are proven
-live: the harness mints a throwaway admin against the deployed pool — completing the
-software-token MFA the production pool enforces — seeds the foundation floor through
-that token, then validates every screen (see
-[Authenticated screen validation](/loomster/operations/production-live-e2e/#authenticated-screen-validation)).
-See [Local caveats](/loomster/reference/local-caveats/).
+Recovery time outside a Multi-AZ failover is how long the gated `loom-restore`
+takes to restore, wait for approval and cut over. Data older than the 7-day
+window survives only in a manual snapshot, which `loom-backup` takes.
+[Back up and restore](/loomster/guides/back-up-and-restore/) has the steps.

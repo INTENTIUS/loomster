@@ -24,7 +24,7 @@
 #   LOOM_DOMAIN_NAME / LOOM_DB_PASSWORD
 #                                override this script's example placeholder
 #                                values with a real deployment's own —
-#                                see docs/adoption.md.
+#                                see https://intentius.io/loomster/reference/adoption-seams/.
 #
 # Output: dist/bundle/loom-<version>/{light,production,production-ha}/ —
 # see the generated README.md at the bundle root for the full layout.

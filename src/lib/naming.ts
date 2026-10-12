@@ -23,7 +23,7 @@
  * naming.tags(); // { component: "loom-db", tier: "production", env: "prod", owner: "platform", instance: "a" }
  * ```
  *
- * See `../../docs/naming.md` for the full convention, the per-service
+ * See https://intentius.io/loomster/reference/naming/ for the full convention, the per-service
  * length/char limits below, and the uniqueness strategy.
  */
 

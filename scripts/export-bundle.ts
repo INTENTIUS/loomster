@@ -31,7 +31,7 @@
  *
  * **Per-tier bundles** (light / production / production-ha) so a consumer
  * picks a tier and deploys — see `README.md` (this repo's root) for the
- * tier/component matrix and `docs/adoption.md` for every BYO seam. Pinned
+ * tier/component matrix and https://intentius.io/loomster/reference/adoption-seams/ for every BYO seam. Pinned
  * to Loom `v1.9.0` (`LOOM_VERSION` below) — a human version label layered
  * on top of the manifest's own content digest, per chant#901's "optional
  * human version label ... pinned to the Loom release" acceptance line; the
@@ -40,7 +40,7 @@
  *
  * **BYO-seam placeholders.** `shared-foundation`'s network/domain seams and
  * `loom-db`'s network/password seam are always reference-existing/
- * externally supplied (docs/adoption.md) — there is no from-scratch value
+ * externally supplied (https://intentius.io/loomster/reference/adoption-seams/) — there is no from-scratch value
  * chant can synthesize for a real VPC id or DB master password. This script
  * falls back to clearly-labeled example values (`EXAMPLE_PARAMS` below)
  * *only* for whichever of those an adopter's own environment leaves unset,
@@ -115,7 +115,7 @@ export function defaultBundleRoot(version: string = LOOM_VERSION): string {
 }
 
 /**
- * Example values for the BYO seams every tier needs (docs/adoption.md):
+ * Example values for the BYO seams every tier needs (https://intentius.io/loomster/reference/adoption-seams/):
  * `shared-foundation`'s reference-existing network (always required on
  * production/production-ha; light provisions its own VPC) and custom
  * domain (production/production-ha only), and `loom-db`'s
@@ -333,9 +333,9 @@ export function generateCiPipelines(scratchDir: string): GeneratedCi {
 
 function tierParamNote(tier: Tier): string {
   if (tier === "light") {
-    return "`shared-foundation` provisions its own VPC/subnets on `light` — `loom-db` still needs `LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS` set to that VPC's own ids (loom-db never provisions a VPC itself; see docs/adoption.md).";
+    return "`shared-foundation` provisions its own VPC/subnets on `light` — `loom-db` still needs `LOOM_VPC_ID`/`LOOM_PRIVATE_SUBNET_IDS` set to that VPC's own ids (loom-db never provisions a VPC itself; see https://intentius.io/loomster/reference/adoption-seams/).";
   }
-  return "`shared-foundation` requires a pre-existing VPC (`LOOM_VPC_ID`/`LOOM_PUBLIC_SUBNET_IDS`/`LOOM_PRIVATE_SUBNET_IDS`) and a custom domain (`LOOM_DOMAIN_NAME`) on this tier — see docs/adoption.md's reference-existing-network case.";
+  return "`shared-foundation` requires a pre-existing VPC (`LOOM_VPC_ID`/`LOOM_PUBLIC_SUBNET_IDS`/`LOOM_PRIVATE_SUBNET_IDS`) and a custom domain (`LOOM_DOMAIN_NAME`) on this tier — see https://intentius.io/loomster/guides/bring-your-own-network-and-iam/.";
 }
 
 /** Per-component CloudFormation `Parameters` table for one tier — read straight from `templates/*.template.json`'s own `Parameters` block (see `extractCfnParameters`), so it can never drift from what's actually in this tier's templates. A component with zero `Parameters` (e.g. `shared-foundation`, `loom-cognito` at their defaults) is omitted — nothing to fill in for `aws cloudformation deploy --parameter-overrides` there. */
@@ -375,7 +375,7 @@ Actions workflow and GitLab CI pipeline, and this tier's own
 ${tierRows}
 
 Pick one tier directory (\`light/\`, \`production/\`, or \`production-ha/\`) and
-deploy everything inside it — see docs/adoption.md (this repo's root) for
+deploy everything inside it — see https://intentius.io/loomster/reference/adoption-seams/ for
 the full tier/seam matrix. Tier choice affects resource shape (single-AZ vs.
 Multi-AZ RDS, an RDS Proxy, PrivateLink, ...), not the deploy mechanics
 below.
@@ -416,11 +416,11 @@ installed) is how you change them, not editing the JSON:
 | Env var | Used by | Meaning |
 |---|---|---|
 | \`LOOM_TIER\` | every component | \`light\` \\| \`production\` \\| \`production-ha\` — this bundle ships one directory per tier |
-| \`LOOM_VPC_ID\` / \`LOOM_PUBLIC_SUBNET_IDS\` / \`LOOM_PRIVATE_SUBNET_IDS\` | \`shared-foundation\` (production/production-ha only), \`loom-db\` (every tier) | A pre-existing VPC's own ids — \`loom-db\` never provisions a VPC (docs/adoption.md) |
+| \`LOOM_VPC_ID\` / \`LOOM_PUBLIC_SUBNET_IDS\` / \`LOOM_PRIVATE_SUBNET_IDS\` | \`shared-foundation\` (production/production-ha only), \`loom-db\` (every tier) | A pre-existing VPC's own ids — \`loom-db\` never provisions a VPC (https://intentius.io/loomster/reference/adoption-seams/) |
 | \`LOOM_DOMAIN_NAME\` | \`shared-foundation\` (production/production-ha only) | Custom domain name, DNS-validated against the referenced Route53 zone |
 | \`LOOM_DB_PASSWORD\` | \`loom-db\` | RDS master password (\`data.mode: provision\`, the default) |
 | \`LOOM_DB_MODE\` | \`loom-db\` | \`provision\` (default) \\| \`reference-existing\` \\| \`omit\` — bring-your-own-DB |
-| \`LOOM_COGNITO_MODE\` / similar per-composite seams | \`loom-cognito\`, others | See docs/adoption.md's full seam matrix (\`provision\` \\| \`reference-existing\` \\| \`omit\` per composite) |
+| \`LOOM_COGNITO_MODE\` / similar per-composite seams | \`loom-cognito\`, others | See the seam matrix at https://intentius.io/loomster/reference/adoption-seams/ (\`provision\` \\| \`reference-existing\` \\| \`omit\` per composite) |
 
 **This bundle's own templates were synthesized with example placeholder
 values** (\`vpc-0123456789abcdef0\`, \`loom.example.com\`, ...) wherever the

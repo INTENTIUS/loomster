@@ -1,95 +1,74 @@
 ---
 title: loomster
-description: Typed, tiered infrastructure-as-code for awslabs/loom on chant.
+description: A deployment of awslabs/loom you run from a repo, on chant. Three tiers from one source, a local stack on Floci, gated lifecycle Ops and generated CI.
 template: splash
 hero:
-  tagline: Typed, tiered infrastructure-as-code for awslabs/loom on chant. Six components, three tiers, generated CI, and a naming scheme that lets many Loom instances coexist in one or many AWS accounts without collision.
+  tagline: Run awslabs/loom on your laptop or your AWS account from one repo, on chant, with one command per tier.
   actions:
-    - text: Read the Tutorial
-      link: /loomster/getting-started/tutorial/
+    - text: Run Loom locally
+      link: /loomster/getting-started/
       icon: right-arrow
+    - text: Go to production
+      link: /loomster/tutorial/light-on-aws/
+      icon: right-arrow
+      variant: secondary
     - text: View on GitHub
       link: https://github.com/INTENTIUS/loomster
       icon: external
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import AgentPrompt from '../../components/AgentPrompt.astro';
+import { setupPrompt } from '../../prompts';
 
-## What this is
+[Loom](https://github.com/awslabs/loom) is AWS Labs' application for building,
+deploying and governing agents on Bedrock AgentCore. loomster deploys Loom
+v1.9.0 as six CloudFormation stacks written in [chant](/loomster/concepts/glossary/#chant),
+in three [tiers](/loomster/concepts/tiers-and-instances/), with the backup,
+restore, upgrade, rotation and drift [Ops](/loomster/reference/ops/) to run it.
 
-Typed infrastructure-as-code for running [Loom](https://github.com/awslabs/loom),
-built to the same bar as a production stack. Loom's own deploy today is a manual,
-multi-step SAM process behind a `DEPLOYMENT.md`. chant types it, lints it, dedupes
-the cross-stack glue, orders it, tiers it, and generates the pipeline.
+## Coming from
 
-Six components, deployed in dependency order (`shared-foundation`, `loom-cognito`,
-`loom-db`, `loom-frontend`, `loom-backend`, `loom-agents`), pinned to Loom
-`v1.9.0`.
-
-## Run it locally
-
-```
-just local-up   # browsable Loom on your laptop, no login (Docker, no AWS account)
-```
-
-Floci (a local AWS emulator) provides RDS, Cognito, S3, and ECR; the app runs
-from a chant-generated compose, browsable at `localhost:8080`. The web app runs
-for real. Only agents need real AWS. See
-[Run Loom on your laptop](/loomster/guides/local/).
-
-**Where it runs today:** the full stack runs on Floci, the **light tier is deployed
-end to end to a real AWS account**, and **`production` is validated end to end on a
-real account — 7/7 stacks `CREATE_COMPLETE`**, including the agents wave (the Strands
-assistant's code-config Runtime reaches `READY` on Bedrock AgentCore, app served over
-HTTPS). **`production-ha` is validated end to end on a real account too — 7/7 stacks**, adding
-Multi-AZ RDS + a live credential rotation, and it ran as a second instance alongside
-`production` (multi-deployment). The
-[Overview](/loomster/getting-started/overview/) has the full picture.
-
-## Same discipline, one layer down
-
-Loom's own [launch post](https://aws.amazon.com/blogs/opensource/building-secure-ai-agents-at-scale-introducing-loom-for-aws/)
-states its model plainly: no code is generated at runtime and deployed into any
-environment. Only configuration changes, and the control plane manages that
-configuration. That is chant's pitch too, one layer beneath:
-
-- Loom scans the agent code once, ahead of any deployment. chant type-checks and
-  lints a stack at author time, before anything synthesizes.
-- Loom never generates agent code at runtime. chant never generates
-  infrastructure code at deploy time. `chant build` emits a CloudFormation
-  template once, and every environment applies that same template.
-- Loom redeploys by changing config, not by hand-editing a running agent. chant
-  redeploys by changing tier, instance, or an adoption seam's mode.
-
-## Tier and topology, two independent dials
-
-Every physical name and cost tag traces back to one call,
-`loomNaming(params, component)`, keyed
-`{project}-{env}-{instance}-{component}-{resource}`. Two axes, independent of each
-other:
-
-- **Tier** (`light` / `production` / `production-ha`) sizes one Loom. HTTP vs.
-  HTTPS + PrivateLink, single-AZ RDS vs. Multi-AZ + RDS Proxy + rotation, one
-  agent vs. two.
-- **Instance** is the tenant/boundary segment, the topology axis. Two instance
-  values are two collision-free Looms in the same account and region.
-
-**Rule of thumb: groups inside a boundary, a new Loom per boundary.** See the
-[Tutorial](/loomster/getting-started/tutorial/#org-topology)'s Org topology
-section.
-
-<CardGrid stagger>
-	<Card title="Tutorial" icon="rocket">
-		From a browsable local Loom to the light tier on real AWS to production. One codebase, tier and target as parameters. [Start here](/loomster/getting-started/tutorial/).
-	</Card>
-	<Card title="Run Loom on your laptop" icon="laptop">
-		`just local-up` runs a browsable Loom against Floci, no AWS account, with a real Cognito login against Floci. What's real, what's patched, and how it's wired. [The local guide](/loomster/guides/local/).
-	</Card>
-	<Card title="Adoption" icon="puzzle">
-		Every composite exposes a `provision | reference-existing | omit` choice where meaningful. Bring your own VPC, KMS key, ACM cert, Route53 zone, ECR repos, agent IAM role, Postgres endpoint, or Cognito pool. [The full matrix](/loomster/adoption/overview/).
-	</Card>
-	<Card title="Naming & Tagging" icon="document">
-		One shared parameter source for every physical resource name and cost-allocation tag. Segment order, per-service limits, uniqueness strategy, and lint enforcement. [Read the convention](/loomster/reference/naming/).
-	</Card>
+<CardGrid>
+	<LinkCard title="Loom's SAM deploy" description="Your make targets and environment.sh settings, mapped." href="/loomster/guides/coming-from-upstream-loom/" />
+	<LinkCard title="CDK, SAM or CloudFormation" description="Stacks, synth, deploy and cross-stack references, in chant." href="/loomster/guides/coming-from-cdk-or-sam/" />
+	<LinkCard title="Terraform, Terragrunt or Pulumi" description="Modules, plans and state, and what changes without a state file." href="/loomster/guides/coming-from-terraform-or-pulumi/" />
+	<LinkCard title="The AgentCore starter toolkit" description="What Loom adds around your agents, and where they fit." href="/loomster/guides/coming-from-agentcore-starter-toolkit/" />
+	<LinkCard title="Nothing yet" description="Start with Loom on your laptop." href="/loomster/getting-started/" />
 </CardGrid>
+
+## Your setup
+
+<CardGrid>
+	<LinkCard title="I'm evaluating for my org" href="/loomster/for/evaluate/" />
+	<LinkCard title="I review security" href="/loomster/for/security/" />
+	<LinkCard title="I run the platform" href="/loomster/for/platform-team/" />
+	<LinkCard title="I'm on call" href="/loomster/for/on-call/" />
+	<LinkCard title="I work with a coding agent" href="/loomster/for/agents/" />
+	<LinkCard title="I want to try it" href="/loomster/for/try-it/" />
+</CardGrid>
+
+## Status
+
+Every tier deploys end to end on [Floci](/loomster/concepts/glossary/#floci) and
+on a real AWS account, and Loom's own API has deployed an agent to `READY` as
+loomster's backend role.
+
+| Tier | Floci | Real AWS |
+|---|---|---|
+| `light` | all stacks, local app with a real login | deployed, served, an agent deployed through Loom's API |
+| `production` | all stacks and tier resources | all stacks over HTTPS, assistant `READY`, screens validated through MFA Cognito |
+| `production-ha` | all stacks, Multi-AZ requested | all stacks, Multi-AZ and rotation live, beside a second instance |
+
+[Validation](/loomster/reference/validation/) has the details, the recorded
+claims, and what no run has shown.
+
+## Hand the setup to your agent
+
+[Run Loom locally](/loomster/getting-started/) has the same steps by hand. Or
+paste this into your coding agent in a clone of the repository. It brings Loom
+up on your laptop and never touches an AWS account
+([Drive loomster with an agent](/loomster/guides/drive-with-an-agent/)).
+
+<AgentPrompt label="Set up loomster with your coding agent" text={setupPrompt} />

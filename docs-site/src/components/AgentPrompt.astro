@@ -1,0 +1,94 @@
+---
+// "Optional: hand this page to your coding agent": the page's `prompt:` front
+// matter (or `text`, which the home page passes), with a button that copies
+// it. The steps on the page work by hand too. PageTitle.astro renders it under
+// the title of every page that has a prompt.
+import { promptText } from '../prompts';
+
+interface Props {
+	label?: string;
+	text?: string;
+}
+const { label = 'Optional: hand this page to your coding agent', text } = Astro.props;
+const prompt = text ?? promptText(Astro.locals.starlightRoute?.entry.data.prompt);
+---
+{prompt && (
+	<figure class="ls-prompt not-content" id="agent-prompt">
+		<figcaption>
+			<span class="label">{label}</span>
+			<span class="note">The steps work by hand too.</span>
+		</figcaption>
+		<details>
+			<summary>Show the prompt</summary>
+			<pre><code>{prompt}</code></pre>
+		</details>
+		<button type="button" data-copy={prompt}>Copy prompt</button>
+	</figure>
+)}
+
+<script>
+	for (const button of document.querySelectorAll<HTMLButtonElement>('.ls-prompt button')) {
+		button.addEventListener('click', async () => {
+			const was = button.textContent;
+			try {
+				await navigator.clipboard.writeText(button.dataset.copy ?? '');
+				button.textContent = 'Copied';
+			} catch {
+				button.closest('figure')?.querySelector('details')?.setAttribute('open', '');
+				button.textContent = 'Copy it from above';
+			}
+			setTimeout(() => (button.textContent = was), 1600);
+		});
+	}
+</script>
+
+<style>
+	.ls-prompt {
+		margin: 1rem 0 0;
+		max-width: 44rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-left: 3px solid var(--sl-color-accent);
+		border-radius: 0.5rem;
+		padding: 0.7rem 1rem 0.8rem;
+		background: var(--sl-color-gray-7, var(--sl-color-black));
+	}
+	figcaption {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 0.75rem;
+		align-items: baseline;
+	}
+	.label {
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+	.note {
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	summary {
+		cursor: pointer;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-accent-high);
+		margin-top: 0.3rem;
+	}
+	pre {
+		margin: 0.5rem 0 0;
+		font-size: var(--sl-text-xs);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	button {
+		margin-top: 0.6rem;
+		font: inherit;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		color: var(--sl-color-black);
+		background: var(--sl-color-accent);
+		border: 0;
+		border-radius: 0.4rem;
+		padding: 0.3rem 0.8rem;
+		cursor: pointer;
+	}
+</style>
