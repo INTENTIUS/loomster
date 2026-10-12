@@ -34,12 +34,15 @@ CA_ALERT_USD="${LOOM_CLAIMS_ALERT_USD:-10}"
 CA_CAP_USD="${LOOM_CLAIMS_SPEND_CAP_USD:-25}"
 # Cost Explorer bills $0.01 a request, so a passed guard is kept this long.
 CA_GUARD_TTL="${LOOM_CLAIMS_GUARD_TTL:-1800}"
-# Delete order: consumers before what they consume (the component graph's
-# waves, last wave first).
 # The inline policy a BREAK run attaches to a role it denies; the cleanup
 # removes it from every role of the prefix's stacks.
 CLAIMS_BREAK_POLICY=loomster-claim-break
-CA_STACK_ORDER="loom-agents downstream-stub loom-backend loom-frontend loom-db loom-cognito shared-foundation"
+# Delete waves, "|" between waves: the component graph's deploy waves (`chant
+# graph --components --json`), last wave first. A wave's stacks share no
+# dependency, so the cleanup deletes them together and waits for the slowest
+# instead of the sum. A component added later and missing here is still
+# deleted by the sweep after the waves.
+CA_STACK_WAVES="loom-agents | loom-backend | downstream-stub loom-db loom-frontend | loom-cognito shared-foundation"
 
 ca_log() { echo "[claims-aws] $*" >&2; }
 
@@ -208,12 +211,22 @@ claims_aws_cleanup() { # [--list]
   done
   # ECR repositories with images block shared-foundation's delete.
   for r in $(ca_repos); do ca ecr delete-repository --repository-name "$r" --force >/dev/null || true; done
-  for c in $CA_STACK_ORDER; do
-    s="$CLAIMS_AWS_PREFIX-$c"
-    grep -qx "stack $s" <<<"$listing" || continue
-    ca_log "deleting $s"
-    ca cloudformation delete-stack --stack-name "$s" >/dev/null || true
-    ca_wait_deleted "$s" || ca_log "$s did not delete cleanly"
+  local wave waves deleting
+  IFS='|' read -ra waves <<<"$CA_STACK_WAVES"
+  for wave in "${waves[@]}"; do
+    deleting=""
+    for c in $wave; do
+      s="$CLAIMS_AWS_PREFIX-$c"
+      grep -qx "stack $s" <<<"$listing" || continue
+      ca_log "deleting $s"
+      ca cloudformation delete-stack --stack-name "$s" >/dev/null || true
+      deleting="$deleting $s"
+    done
+    # One at a time is fine here: all of them are already deleting, so this
+    # waits as long as the slowest one.
+    for s in $deleting; do
+      ca_wait_deleted "$s" || ca_log "$s did not delete cleanly"
+    done
   done
   # Any other stack with the prefix (a component added since this list).
   for s in $(ca_stacks); do

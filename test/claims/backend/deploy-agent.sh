@@ -9,8 +9,13 @@
 # there were deployed by CloudFormation with the operator's credentials.
 #
 # Plain:
-#   1. deploy the light tier as the tutorial does (`chant run --components all`)
-#      under the claims prefix (test/claims-aws.sh), with LOOM_ENV=claims;
+#   1. deploy the light tier's shared-foundation, loom-cognito, loom-db and
+#      loom-backend under the claims prefix (test/claims-aws.sh), with
+#      LOOM_ENV=claims: one `chant run --components <name>` each, in graph
+#      order, seeding each from the outputs of the ones before it
+#      (--dump-outputs/--seed-outputs, as one CI job per component does). The
+#      claim talks to the backend only, so loom-frontend, downstream-stub and
+#      loom-agents, with their image builds and deletes, are left out;
 #   2. mint a throwaway admin token (scripts/validate/get-user-token.sh; light
 #      has no user client, so a temporary one is added to the pool and removed
 #      afterwards) and seed the foundation profile through it;
@@ -145,38 +150,49 @@ if [ -n "${BREAK:-}" ] && stacks_ready >/dev/null; then
 else
   log "deploying the light tier under $P to $ACCT/$AWS_REGION ($LOOM_CPU_ARCHITECTURE)"
   npm run vendor || stop "npm run vendor failed"
-  # The agents wave (last) may fail where AgentCore is unavailable; this claim
-  # needs only the waves through loom-backend, checked below.
   # A failed status a stack already had before this run (a rollback left by
   # an earlier attempt) is not this run failing. Once the stack's status has
   # moved off it, any failed status counts.
   for s in $NEEDED; do printf -v "BEFORE_${s//-/_}" '%s' "$(stack_status "$s")"; done
-  ./node_modules/.bin/chant run --components all --env "$LOOM_ENV" &
-  DEPLOY_PID=$!
-  # Watch the stacks this claim needs while chant works: stop at the first one
-  # that fails or rolls back instead of waiting for the rest of the run, and
-  # print a line a minute so a granted run's watch sees progress.
-  ticks=0
-  while kill -0 "$DEPLOY_PID" 2>/dev/null; do
-    line=""
-    for s in $NEEDED; do
-      st="$(stack_status "$s")"
-      line="$line$s=$st "
-      var="BEFORE_${s//-/_}"
-      [ "$st" = "${!var}" ] || printf -v "$var" '%s' moved
-      if stack_failed "$st" && [ "${!var}" = moved ]; then
-        kill "$DEPLOY_PID" 2>/dev/null || true
-        wait "$DEPLOY_PID" 2>/dev/null || true
-        DEPLOY_PID=""
-        stop "deploy: $(failure_detail "$s" "$st")"
-      fi
+  # `chant run --components` takes one name or all, so each component this
+  # claim needs runs on its own, in the graph's wave order and one at a time
+  # (two chant runs at once would share the release ledger). Each dumps its
+  # outputs for the later ones to seed their stackOutput() references from.
+  outdir="$CA_STATE/outputs"
+  rm -rf "$outdir"
+  mkdir -p "$outdir"
+  for c in loom-cognito shared-foundation loom-db loom-backend; do
+    seeds=()
+    for f in "$outdir"/*.json; do [ -e "$f" ] && seeds+=(--seed-outputs "$f"); done
+    log "deploying $c"
+    ./node_modules/.bin/chant run --components "$c" --env "$LOOM_ENV" \
+      ${seeds[@]+"${seeds[@]}"} --dump-outputs "$outdir/$c.json" &
+    DEPLOY_PID=$!
+    # Watch the stacks this claim needs while chant works: stop at the first
+    # one that fails or rolls back, and print a line a minute so a granted
+    # run's watch sees progress.
+    ticks=0
+    while kill -0 "$DEPLOY_PID" 2>/dev/null; do
+      line=""
+      for s in $NEEDED; do
+        st="$(stack_status "$s")"
+        line="$line$s=$st "
+        var="BEFORE_${s//-/_}"
+        [ "$st" = "${!var}" ] || printf -v "$var" '%s' moved
+        if stack_failed "$st" && [ "${!var}" = moved ]; then
+          kill "$DEPLOY_PID" 2>/dev/null || true
+          wait "$DEPLOY_PID" 2>/dev/null || true
+          DEPLOY_PID=""
+          stop "deploy: $(failure_detail "$s" "$st")"
+        fi
+      done
+      [ $((ticks % 4)) -ne 0 ] || log "$line"
+      ticks=$((ticks + 1))
+      sleep 15
     done
-    [ $((ticks % 4)) -ne 0 ] || log "$line"
-    ticks=$((ticks + 1))
-    sleep 15
+    wait "$DEPLOY_PID" || log "chant run --components $c exited non-zero; checking the stacks this claim needs"
+    DEPLOY_PID=""
   done
-  wait "$DEPLOY_PID" || log "chant run exited non-zero; checking the stacks this claim needs"
-  DEPLOY_PID=""
 fi
 why="$(stacks_ready)" || stop "deploy: $why"
 
