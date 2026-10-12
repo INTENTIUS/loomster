@@ -123,6 +123,17 @@ bootstrap:
 agent-role agent group:
     LOOM_AGENT_ROLE_AGENT={{agent}} LOOM_AGENT_ROLE_GROUP={{group}} npx chant run loom-agent-role
 
+# The optional SSM tunnel host (Loom's ec2.yaml, #37), off unless you run this:
+# deploys {project}-{env}-{instance}-tunnel-host into shared-foundation's private
+# subnets. LOOM_TUNNEL_SSM_ENDPOINTS=true adds the SSM endpoints a subnet without NAT needs.
+tunnel-host:
+    npx chant run loom-tunnel-host
+
+# Port-forward localhost:<port> to the database (RDS Proxy on production tiers)
+# through the tunnel host, Loom's `make tunnel`. Runs until Ctrl-C.
+tunnel port="5432":
+    bash scripts/tunnel.sh {{port}}
+
 # Validate a running Loom screen by screen against the active seed profile.
 # LOOM_API_BASE_URL (default the local-up proxy) + LOOM_SEED_PROFILE (default demo).
 validate:

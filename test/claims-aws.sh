@@ -41,8 +41,9 @@ CLAIMS_BREAK_POLICY=loomster-claim-break
 # graph --components --json`), last wave first. A wave's stacks share no
 # dependency, so the cleanup deletes them together and waits for the slowest
 # instead of the sum. A component added later and missing here is still
-# deleted by the sweep after the waves.
-CA_STACK_WAVES="loom-agents | loom-backend | downstream-stub loom-db loom-frontend | loom-cognito shared-foundation"
+# deleted by the sweep after the waves. The optional tunnel host (not a
+# component, ops/loom-tunnel-host.op.ts) goes first: it sits on the network.
+CA_STACK_WAVES="tunnel-host | loom-agents | loom-backend | downstream-stub loom-db loom-frontend | loom-cognito shared-foundation"
 
 ca_log() { echo "[claims-aws] $*" >&2; }
 

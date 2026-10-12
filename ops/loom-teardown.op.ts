@@ -10,7 +10,8 @@
  *   chant approve loom-teardown approve-loom-teardown
  *   chant run loom-teardown                 # continues past the approved gate
  *
- * Deletes run **sequentially**, in the order `discoverTeardownOrder()`
+ * Deletes run **sequentially**: the optional tunnel host if it exists
+ * (`OPTIONAL_STACKS_FIRST`), then the order `discoverTeardownOrder()`
  * derives from the component graph (the deploy waves reversed, so
  * `loom-agents` first and `shared-foundation`/`loom-cognito` last), not
  * `parallel: true`, since that order is the whole point of tearing down
@@ -26,14 +27,16 @@
 
 import { Op, phase, gate, shell } from "@intentius/chant/op";
 import { namingParamsFromEnv } from "./lib/naming-env";
-import { discoverTeardownOrder, deleteStackScript } from "./lib/teardown-plan";
+import { teardownStackOrder, deleteStackScript } from "./lib/teardown-plan";
 
 const naming = namingParamsFromEnv();
 
 // CFN stack names are namespaced by project+env+instance (loomster#140), so this
 // tears down exactly THIS deployment's stacks, never another instance's.
 const stackName = (component: string): string => `${naming.project}-${naming.env}-${naming.instance}-${component}`;
-const stacks = (await discoverTeardownOrder()).map(stackName);
+// The optional tunnel host first (it sits on the network and the database),
+// then every component, consumers first.
+const stacks = (await teardownStackOrder()).map(stackName);
 
 export default Op({
   name: "loom-teardown",

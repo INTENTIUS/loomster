@@ -1,6 +1,7 @@
 import { test, expect } from "vitest";
 import { computeComponentGraph } from "@intentius/chant/components";
-import { COMPONENTS_DIR, discoverTeardownOrder } from "./teardown-plan";
+import { COMPONENTS_DIR, discoverTeardownOrder, teardownStackOrder } from "./teardown-plan";
+import { TUNNEL_HOST_STACK } from "./tunnel-host";
 
 // loomster#44: the delete order must cover every discovered component and put
 // each consumer before everything it depends on. Checked against the real
@@ -18,4 +19,12 @@ test("teardown order is a reverse topological order of every discovered componen
       order.indexOf(dependency),
     );
   }
+}, 60_000);
+
+// loomster#37: the optional tunnel host sits in shared-foundation's subnets
+// and on loom-db's security group, so it goes before every component.
+test("the tunnel host stack is deleted first", async () => {
+  const order = await teardownStackOrder();
+  expect(order[0]).toBe(TUNNEL_HOST_STACK);
+  expect(order.slice(1)).toEqual(await discoverTeardownOrder());
 }, 60_000);

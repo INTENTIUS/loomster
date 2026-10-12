@@ -77,8 +77,11 @@ reference-existing seam set holds at **light, production, and production-ha**.
 
 ## Known gaps
 
-- **No bastion composite.** Nothing here models a bastion host, and Loom's own
-  upstream template doesn't define one either. There's nothing to reference or omit.
+- **The tunnel host is optional and has no seam.** Loom ships an SSM tunnel host
+  (`backend/iac/ec2.yaml`, `make tunnel`), and loomster's version is
+  `just tunnel-host` ([Open a tunnel to the database](/loomster/guides/tunnel/)). It's off
+  unless you deploy it. To use a bastion you already run, skip it and open your
+  database's security group to that host yourself.
 - **A fully-`reference-existing` `loom-db` / `loom-cognito` stack has zero resources
   of its own**, by design. `chant build --lexicon aws` on a directory with no
   lexicon-tagged declarable at all (not even a `Parameter`) fails its own
