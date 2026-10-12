@@ -1,0 +1,33 @@
+Loom patch: pin an IPv4 address in the SSRF guard when the host has one.
+
+Applied to vendor/loom by scripts/vendor-loom.sh, which checks it first and
+fails if it no longer applies, so a Loom bump surfaces it. Nothing here goes
+upstream.
+
+net_guard._resolve_and_validate resolves a host, checks every address, then
+connects to next(iter(resolved_ips)): an arbitrary member of a set of strings,
+whose order Python randomizes per process. For a dual-stack host such as
+cognito-idp.<region>.amazonaws.com, a backend task picks IPv4 or IPv6 by chance
+and keeps that choice. On an IPv4-only network (loomster's VPCs, and most) an
+IPv6 pick fails with "[Errno 101] Network is unreachable", so that task rejects
+every token while its JWKS fetch fails. A live backend/deploy-agent claim run
+hit it: one task worked, the next one 401'd everything.
+
+The fix keeps every address check and only makes the pick deterministic, IPv4
+first.
+
+diff --git a/backend/app/services/net_guard.py b/backend/app/services/net_guard.py
+index 9ce330e..07a8a82 100644
+--- a/backend/app/services/net_guard.py
++++ b/backend/app/services/net_guard.py
+@@ -123,7 +123,9 @@ def _resolve_and_validate(hostname: str, *, allow_private: bool = False) -> str:
+         if is_disallowed(ip):
+             raise SSRFBlockedError(f"{hostname!r} resolves to disallowed address {ip_str}")
+ 
+-    return next(iter(resolved_ips))
++    # Prefer IPv4: a set's iteration order varies per process, and an IPv6 pick
++    # fails with ENETUNREACH on IPv4-only networks (most VPCs).
++    return sorted(resolved_ips, key=lambda a: (ipaddress.ip_address(a).version, a))[0]
+ 
+ 
+ def _validate_url(url: str, *, require_https: bool, allow_private: bool) -> tuple[urllib.parse.ParseResult, str]:
