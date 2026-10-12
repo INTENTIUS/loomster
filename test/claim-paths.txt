@@ -10,38 +10,61 @@
 # The runner and what every claim shares.
 test/claims.sh                      ALL
 test/human-gate.sh                  ALL
-test/claims-aws.sh                  backend/*
+test/claims-aws.sh                  backend/* tier/* screens/* agents/* tunnel/* db/* ops/* seed/*
+test/claims-db.sh                   db/*
 chant.config.ts                     ALL
 package.json                        ALL
 package-lock.json                   ALL
 
 # Build params: the params files and the composites they feed.
 src/lib/params-helpers.ts           params/*
-src/loom-db/params.ts               params/* backend/*
+src/loom-db/params.ts               params/* backend/* db/*
 src/loom-backend/params.ts          params/* backend/*
-src/composites/loom-db.ts           params/* backend/*
-src/composites/loom-backend.ts      params/* backend/*
-src/loom-db/                        backend/*
+src/composites/loom-db.ts           params/* backend/* db/* tunnel/*
+src/composites/loom-backend.ts      params/* backend/* agents/*
+src/composites/loom-cognito.ts      cognito/* tier/* backend/*
+src/composites/loom-agents.ts       agents/*
+src/composites/loom-agent-role.ts   agents/*
+src/composites/loom-tunnel-host.ts  tunnel/* db/*
+src/loom-db/                        backend/* db/* tunnel/*
 src/loom-backend/                   backend/*
-src/composites/                     backend/*
-src/shared-foundation/              backend/*
-src/loom-cognito/                   backend/*
-src/loom-frontend/                  backend/*
-src/loom-agents/                    backend/*
-src/lib/naming.ts                   backend/* teardown/*
+src/composites/                     backend/* tier/*
+src/shared-foundation/              backend/* tier/* tunnel/*
+src/loom-cognito/                   backend/* cognito/* tier/*
+src/loom-frontend/                  cognito/* tier/*
+src/loom-agents/                    agents/*
+src/loom-agent-role/                agents/per-agent-role
+src/loom-tunnel-host/               tunnel/* db/*
+src/lib/naming.ts                   backend/* teardown/* tier/*
 src/lib/stack-name.ts               backend/* teardown/*
 
 # The component graph and the teardown that must cover it.
+src/components/loom-frontend.component.ts  cognito/* tier/* teardown/*
 src/components/                     teardown/* backend/* params/reach-deploy
 ops/lib/teardown-plan.ts            teardown/*
 ops/loom-teardown.op.ts             teardown/*
 
+# Ops a claim runs.
+ops/lib/bootstrap.ts                ops/bootstrap
+ops/loom-bootstrap.op.ts            ops/bootstrap
+ops/lib/agent-role.ts               agents/per-agent-role
+ops/loom-agent-role.op.ts           agents/per-agent-role
+ops/lib/tunnel-host.ts              tunnel/* db/baseline
+ops/loom-tunnel-host.op.ts          tunnel/* db/baseline
+ops/lib/preflight.ts                ops/* agents/per-agent-role tunnel/*
+
 # Seeding, and the scripts the backend claims call.
-ops/lib/seed.ts                     seed/*
-ops/loom-seed.op.ts                 seed/*
-scripts/local/                      seed/* local/*
+ops/lib/seed.ts                     seed/* screens/*
+ops/loom-seed.op.ts                 seed/* screens/*
+scripts/local/                      seed/* local/* db/migrate-local
 src/local/                          local/*
 scripts/loom-patches/               local/*
-scripts/validate/run.ts             local/*
-scripts/validate/get-user-token.sh  backend/* local/*
+scripts/validate/checks.ts          screens/*
+scripts/validate/run.ts             local/* screens/*
+scripts/validate/get-user-token.sh  backend/* local/* tier/* screens/* agents/*
 scripts/vendor-loom.sh              backend/* seed/* local/*
+scripts/tunnel.sh                   tunnel/* db/baseline
+
+# Loom's database schema (SQL Yodeler).
+scripts/db/                         db/*
+db/                                 db/*

@@ -25,6 +25,10 @@ The header of each script declares:
 | `target` | `static` (nothing deployed), `floci` (the local emulator) or `aws` (a real account) |
 | `tier` | `any`, `light`, `production` or `production-ha` |
 | `summary` | the statement it proves |
+| `order` | optional, 50 by default: within a target, lower runs first |
+
+The runner runs static claims first, then Floci, then AWS, so the cheap ones
+fail fast.
 
 It prints exactly one line:
 
@@ -44,7 +48,10 @@ component, denies the IAM action) and must print `caught`. A claim that still
 prints `pass` there can't fail, and the runner records it as `fail`.
 
 `just claims` writes a row per claim and run (claim, target, [tier](/loomster/concepts/glossary/#tier), run, verdict,
-detail, time, git sha) to `test/.state/claims.json`.
+detail, time, git sha) to `test/claims-record.json`, which is committed, and
+rewrites the table on [Validation](/loomster/reference/validation/) from it
+(`npm run claims:page`). The docs check fails when the page and the record
+disagree, so the status page only states what a recorded run showed.
 
 ## The gate and grants
 
@@ -74,8 +81,41 @@ an AWS Budgets cost budget alerts at $10 or less (`LOOM_CLAIMS_ALERT_USD`) and
 this month's spend is under $25 (`LOOM_CLAIMS_SPEND_CAP_USD`). Claims deploy
 with `LOOM_ENV=claims` under the prefix `loom-claims-<instance>`, and after the
 run `test/claims-aws.sh cleanup` lists, then deletes, everything carrying that
-prefix (`LOOM_CLAIMS_KEEP=1` keeps it up). `backend/deploy-agent` also needs
-`LOOM_CLAIMS_ACCOUNT_ID` set to the account your credentials resolve to.
+prefix (`LOOM_CLAIMS_KEEP=1` keeps it up). Every `aws` claim needs
+`LOOM_CLAIMS_ACCOUNT_ID` set to the account your credentials resolve to, so a
+claim never deploys into an account by accident.
+
+The `aws` claims of one run share one deployment. Each asks for the components
+it needs (`claims_aws_ensure` in `test/claims-aws.sh`), which deploys those and
+what they depend on, unless an earlier claim in the run already did, and the
+one cleanup at the end removes it all: the stacks, the tunnel host and
+per-agent role stacks, the agents, memories and A2A agents Loom created
+through its API, and the runtimes on the claims
+[instance](/loomster/concepts/glossary/#instance)'s roles. A claim's `BREAK`
+undoes itself on exit, so it never breaks a later claim.
+
+| Claim | Deploys or uses |
+|---|---|
+| `ops/bootstrap` | nothing (account-level roles only) |
+| `tier/light-live` | every component but `loom-agents` |
+| `screens/all`, `backend/deploy-agent`, `agents/per-agent-role` | `loom-backend` and its dependencies |
+| `agents/ready-and-invoke` | adds `loom-agents` |
+| `tunnel/rds`, `db/baseline` | adds the tunnel host; need the Session Manager plugin |
+
+Run them together, so the deployment is made once:
+
+```
+just grant ops tier screens backend/deploy-agent agents tunnel db/baseline
+LOOM_CLAIMS_ACCOUNT_ID=<account> just claims ops,tier,screens,backend/deploy-agent,agents,tunnel,db/baseline
+```
+
+The claims' own [chant](/loomster/concepts/glossary/#chant) runs (component
+deploys, [Op](/loomster/concepts/glossary/#op) runs) write their lifecycle
+records to a scratch clone of the repository with no remote, not to this
+repository's `chant/lifecycle`, and the cleanup deletes it. Claims that pass a
+yodel gate (`db/baseline`, `db/migrate-local`) approve the plan in a scratch
+copy of `db/` with its own repository, the way a person's `just db approve`
+would record it; the real gates and ledger are never touched.
 
 ## Adding a claim
 

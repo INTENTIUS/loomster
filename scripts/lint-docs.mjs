@@ -11,12 +11,15 @@
 //     reference/ops, the build parameters (chant.config.ts) and
 //     reference/parameters, the validation checks (scripts/validate/checks.ts)
 //     and reference/screens;
+//   - reference/validation's recorded-claims table matches test/claims-record.json
+//     (scripts/claims-page.mjs writes it);
 //   - every internal link reaches a page or a redirect, and its anchor a heading.
 //
 //   node scripts/lint-docs.mjs        (npm run lint:docs)
 // Exits 1 with one line per problem.
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { stale, PAGE } from "./claims-page.mjs";
 
 const DOCS = "docs-site/src/content/docs/";
 const SITE = "https://intentius.io/loomster";
@@ -182,6 +185,8 @@ function compare(what, inCode, onPage, page) {
   const rows = new Set([...table.matchAll(/^\| ([^|`]+?) \| `/gm)].map((m) => m[1].trim()));
   compare("validation check", checks, rows, page);
 }
+
+if (stale()) fail(PAGE.slice(DOCS.length), "the recorded-claims table does not match test/claims-record.json: run npm run claims:page");
 
 for (const p of problems) console.log(`FAIL  ${p}`);
 console.log(problems.length ? `lint-docs: ${problems.length} problem(s)` : `lint-docs: ${pages.size} pages ok`);

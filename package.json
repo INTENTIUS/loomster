@@ -8,6 +8,7 @@
     "tsc": "tsc --noEmit",
     "lint": "chant lint .",
     "lint:docs": "node scripts/lint-docs.mjs",
+    "claims:page": "node scripts/claims-page.mjs",
     "test": "vitest run",
     "synth:shared-foundation": "chant build src/shared-foundation --lexicon aws -o dist/shared-foundation.template.json",
     "synth:downstream-stub": "chant build src/downstream-stub --lexicon aws -o dist/downstream-stub.template.json",

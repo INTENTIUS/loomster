@@ -25,6 +25,8 @@ test/forgejo-runtime-e2e/ci.yml
 
 # claims runner state (the aws claims instance, the spend-guard cache) and logs
 test/.state/
+# cognito/user-client's probe module, removed when the claim ends
+.claim-frontend-*.ts
 
 # Claude Code agent worktrees
 .claude/worktrees/

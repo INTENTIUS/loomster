@@ -9,6 +9,7 @@
 #   scripts/db/yodel.sh baseline    # record the baseline on a database Loom created (writer)
 #   scripts/db/yodel.sh reader      # create the read-only user (writer)
 #   scripts/db/yodel.sh watch       # the drift watch Op (reader)
+#   scripts/db/yodel.sh sql < file  # run SQL from stdin as the writer, outside yodel
 #   scripts/db/yodel.sh lint|new <name>|test|docs|...   # offline, no database
 #
 # Reaching the database:
@@ -31,7 +32,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cmd="${1:-}"
-[ -n "$cmd" ] || { sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
+[ -n "$cmd" ] || { sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 1; }
 shift
 
 PREFIX="${LOOM_PROJECT:-loom}-${LOOM_ENV:-dev}-${LOOM_INSTANCE:-a}"
@@ -44,9 +45,12 @@ PROJECT="${LOOM_DB_PROJECT_DIR:-$ROOT/db}"
 run_offline() { cd "$PROJECT" && exec "${YODEL[@]}" "$@"; }
 
 case "$cmd" in
-  status|plan|drift|approve|report|apply|baseline|reader|watch) ;;
+  status|plan|drift|approve|report|apply|baseline|reader|watch|sql) ;;
   *) run_offline "$cmd" "$@" ;;
 esac
+# `sql` reads its statements before the forward opens, so a heredoc or a pipe works.
+SQL_IN=""
+[ "$cmd" != sql ] || SQL_IN="$(cat)"
 
 onFloci=false
 case "${LOOM_ENV:-dev}" in local|floci) onFloci=true ;; esac
@@ -126,5 +130,18 @@ case "$cmd" in
     writer "${YODEL[@]}" apply "$ENV_NAME" "$@" ;;
   baseline) writer "${YODEL[@]}" init --baseline "$ENV_NAME" "$@" ;;
   reader) (cd "$ROOT" && "$ROOT/node_modules/.bin/tsx" scripts/db/reader.ts) ;;
+  # An out-of-band change, as an operator's psql session would make it: the
+  # claims use it to make the live schema differ from the declared one. The
+  # credentials come from the environment, never argv.
+  sql)
+    (cd "$ROOT" && SQL_IN="$SQL_IN" node -e '
+      const { Client } = require("pg");
+      const u = new URL(process.env.LOOM_YODEL_URL);
+      const c = new Client({ host: u.hostname, port: Number(u.port || 5432), database: u.pathname.slice(1),
+        user: process.env.LOOM_DB_WRITER_USER, password: process.env.LOOM_DB_WRITER_PASSWORD });
+      c.connect().then(() => c.query(process.env.SQL_IN)).then((r) => {
+        for (const res of [].concat(r)) if (res.rows && res.rows.length) console.log(JSON.stringify(res.rows));
+        return c.end();
+      }).catch((e) => { console.error("db sql: " + e.message); process.exit(1); });') ;;
   watch) "$ROOT/node_modules/.bin/chant" run "watch-$ENV_NAME" "$@" ;;
 esac
