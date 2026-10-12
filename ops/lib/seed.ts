@@ -187,10 +187,13 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `AID=$(curl -fsS "$BASE/api/agents" 2>/dev/null | jq -r '.[] | select(.name=="loomster_demo_agent") | .id // empty' | head -n1 || true)`,
     `ASTATUS=""`,
     `if [ -n "$AID" ]; then`,
-    `  for i in $(seq 1 40); do`,
-    `    ASTATUS=$(curl -fsS "$BASE/api/agents" 2>/dev/null | jq -r '.[] | select(.name=="loomster_demo_agent") | .status // empty' | head -n1 || true)`,
+    // GET /api/agents/<id>/status (what Loom's UI polls) refreshes the status
+    // from AgentCore and creates the endpoint once the runtime is READY; the
+    // list endpoint only returns stored rows, which stay CREATING.
+    `  for i in $(seq 1 180); do`,
+    `    ASTATUS=$(curl -fsS "$BASE/api/agents/$AID/status" 2>/dev/null | jq -r '.status // empty' || true)`,
     `    if [ "$ASTATUS" = "READY" ] || [ "$ASTATUS" = "FAILED" ]; then break; fi`,
-    `    sleep 3`,
+    `    sleep 5`,
     `  done`,
     `fi`,
     `if [ "$ASTATUS" = "READY" ]; then verdict demo-agent-ready ok`,
