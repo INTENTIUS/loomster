@@ -154,8 +154,15 @@ export AWS_REGION=us-east-2               # your region
 export AWS_ACCOUNT_ID=<your account id>
 export LOOM_DB_PASSWORD=<a real secret, not a literal in any file>
 npm run vendor                            # fetch Loom v1.9.0 source for the image builds
+npx chant run loom-bootstrap              # once per account (just bootstrap)
 npx chant run --components all --env dev
 ```
+
+`loom-bootstrap` creates the two service-linked roles a fresh account may not
+have yet, for ECS and for AgentCore Runtime's workload identity: the chant
+version of Loom's `make ecs.init` and `make agentcore.init`. It creates only
+what's missing, so running it again is harmless. It needs
+`iam:CreateServiceLinkedRole` the first time.
 
 `--components all` runs every component in the dependency order from the graph,
 threading each stack's outputs into the next (the cluster ARN, the DB secret,

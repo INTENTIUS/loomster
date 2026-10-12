@@ -27,6 +27,7 @@ lists them with the guardrails.
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes, one per component, in reverse `chant graph --components` order (`loom-agents` first, `shared-foundation` last). No foreign deletes. | Yes |
 | `loom-audit` | Security-audit the generated CI YAML. | No |
 | `loom-dns-setup` | Create + delegate the Route53 zone for a custom domain, then wait for the delegation to resolve. Human-in-the-loop, local. | No |
+| `loom-bootstrap` | Once per account: create the ECS and AgentCore runtime-identity service-linked roles if missing (Loom's `make ecs.init`/`agentcore.init`). Idempotent. | No |
 
 ## Running them
 
