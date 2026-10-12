@@ -225,7 +225,25 @@ run_claim() { # name, run (plain|break)
   emit "$n" "$run" "$verdict" "$detail"
 }
 
+# Stopped part way (the grant's stall watch sends TERM, or ^C): stop the claim
+# that is running, so its exit trap undoes any BREAK, then clean up what the
+# aws claims deployed instead of leaving it running.
+aws_started=0
+# shellcheck disable=SC2329 # invoked by the trap below
+on_stop() {
+  trap - TERM INT
+  echo "claims: stopped; ending the running claim" >&2
+  pkill -TERM -P $$ 2>/dev/null || true
+  wait 2>/dev/null || true
+  if [ "$aws_started" = 1 ] && [ "${LOOM_CLAIMS_KEEP:-}" != 1 ]; then
+    claims_aws_cleanup || echo "claims: the aws cleanup left resources behind (test/claims-aws.sh cleanup --list)" >&2
+  fi
+  exit 143
+}
+trap on_stop TERM INT
+
 for n in $selected; do
+  [ "$(field "$n" 2)" != aws ] || aws_started=1
   run_claim "$n" plain
   run_claim "$n" break
 done
