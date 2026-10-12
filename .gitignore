@@ -25,3 +25,6 @@ test/forgejo-runtime-e2e/ci.yml
 
 # claims runner state (the aws claims instance, the spend-guard cache) and logs
 test/.state/
+
+# Claude Code agent worktrees
+.claude/worktrees/

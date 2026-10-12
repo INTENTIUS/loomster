@@ -2,10 +2,11 @@
  * shared-foundation composite (chant#886).
  *
  * Folds Loom's `shared/iac/{infra,dns,security_group,privatelink,ecs,role}.yaml`
- * (v1.6.0) into one composite emitting one CloudFormation stack: the ALB +
+ * (v1.9.0) into one composite emitting one CloudFormation stack: the ALB +
  * listener/rules/target-groups, ACM cert, Route53 zone + record, KMS key,
  * S3 artifact bucket, 2 ECR repos, security groups, ECS cluster, PrivateLink
- * VPCEndpointService, and the agent IAM role. Every service/agent Loom
+ * VPCEndpointService, and the agent IAM role (its policy still matches v1.6.0's
+ * role.yaml; the v1.9.0 per-agent credential-provider scoping is #2). Every service/agent Loom
  * deploys depends on this stack's outputs (`stackOutput("shared-foundation",
  * "<key>")` — see src/shared-foundation/outputs.ts for the exact key list).
  *

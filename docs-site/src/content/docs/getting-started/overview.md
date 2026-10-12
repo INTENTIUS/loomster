@@ -7,7 +7,7 @@ loomster deploys [awslabs/loom](https://github.com/awslabs/loom) — an AWS Labs
 sample for building and running Bedrock agents — as real, tiered infrastructure you
 can stand up yourself. Six components, three tiers (`light` / `production` /
 `production-ha`), generated CI, and a seed step that leaves the app usable on first
-login, not only serving. It is pinned to Loom `v1.6.0`; upstream is a moving `as-is`
+login, not only serving. It is pinned to Loom `v1.9.0`; upstream is a moving `as-is`
 sample, so expect breaking changes between versions.
 
 It is built with [chant](https://intentius.io/chant), which types and lints the

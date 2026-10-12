@@ -6,7 +6,7 @@ user-invocable: true
 
 # Operating loomster
 
-loomster deploys [awslabs/loom](https://github.com/awslabs/loom) `v1.6.0` as typed
+loomster deploys [awslabs/loom](https://github.com/awslabs/loom) `v1.9.0` as typed
 infrastructure on chant. You drive it from this repo — clone, install, then run
 the verbs below. Nothing in `src/` changes between runs; two parameters do the
 varying:

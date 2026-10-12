@@ -32,7 +32,7 @@
  * **Per-tier bundles** (light / production / production-ha) so a consumer
  * picks a tier and deploys — see `README.md` (this repo's root) for the
  * tier/component matrix and `docs/adoption.md` for every BYO seam. Pinned
- * to Loom `v1.6.0` (`LOOM_VERSION` below) — a human version label layered
+ * to Loom `v1.9.0` (`LOOM_VERSION` below) — a human version label layered
  * on top of the manifest's own content digest, per chant#901's "optional
  * human version label ... pinned to the Loom release" acceptance line; the
  * digest, not this label, is what `manifestDigest`/promote-by-digest key
@@ -82,8 +82,8 @@ import { pushLifecycle } from "@intentius/chant/lifecycle/git";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
-/** Loom release this bundle is pinned to (README.md: "Pinned to Loom v1.6.0"). The human label layered on `manifestDigest` — see module doc. */
-export const LOOM_VERSION = "v1.6.0";
+/** Loom release this bundle is pinned to (README.md: "Pinned to Loom v1.9.0"). The human label layered on `manifestDigest` — see module doc. */
+export const LOOM_VERSION = "v1.9.0";
 
 export const TIERS = ["light", "production", "production-ha"] as const;
 export type Tier = (typeof TIERS)[number];

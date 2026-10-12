@@ -20,7 +20,7 @@ lint:
 test:
     npx vitest run
 
-# Fetch awslabs/loom's application source (pinned v1.6.0) into vendor/loom/
+# Fetch awslabs/loom's application source (pinned v1.9.0) into vendor/loom/
 # (gitignored) — the docker-build context loom-backend/loom-frontend need for
 # a real `chant run` deploy. Not required for build/lint/test/synth.
 vendor:

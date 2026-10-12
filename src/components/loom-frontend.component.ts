@@ -17,7 +17,7 @@ import { namingParams } from "../loom-frontend/params";
  *
  * **Docker build context.** Same note as `loom-backend.component.ts`:
  * Loom's `frontend/` source + Dockerfile lives upstream at `awslabs/loom`
- * (pinned `v1.6.0`), fetched via `npm run vendor` (`scripts/vendor-loom.sh`)
+ * (pinned `v1.9.0`), fetched via `npm run vendor` (`scripts/vendor-loom.sh`)
  * into `vendor/loom` (gitignored) before a real deploy — not required for
  * this component's typecheck/lint/test/synth gates, only for an actual
  * `chant run`. Unlike `loom-backend`, the frontend's `Dockerfile` only

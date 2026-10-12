@@ -1,7 +1,7 @@
 /**
  * loom-backend composite (chant#889).
  *
- * Folds Loom's `backend/iac/ecs.yaml` (v1.6.0) into one composite emitting
+ * Folds Loom's `backend/iac/ecs.yaml` (v1.9.0) into one composite emitting
  * one CloudFormation stack: a dedicated CloudWatch Logs KMS key + log group,
  * the ECS task execution role + task role, the Fargate task definition and
  * service, and — production/production-ha only — Application Auto Scaling
