@@ -31,9 +31,10 @@ every page; each task page has a prompt for you.
    Proxy, Multi-AZ on production-ha. Needs the person's VPC and domain.
 
 All three have run end to end on a real account; the status, with what no run
-has shown, is https://intentius.io/loomster/reference/validation/. On AWS the
-served app's sign-in form isn't wired, so use Loom through its API with a token
-from `just cognito-token` (production tiers) or a temporary client (light).
+has shown, is https://intentius.io/loomster/reference/validation/. A deployed
+pool starts with no users: for the web app, add an admin as
+https://intentius.io/loomster/guides/add-the-first-admin/ shows; for the API,
+`just cognito-token` mints a throwaway admin's token on any tier.
 
 ## Command map
 

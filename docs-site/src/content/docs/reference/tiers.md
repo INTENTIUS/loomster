@@ -21,7 +21,7 @@ is on [Validation](/loomster/reference/validation/).
 | RDS | Single-AZ | Single-AZ and RDS Proxy | Multi-AZ, RDS Proxy and secret rotation |
 | RDS deletion protection | Off | On | On |
 | RDS backup retention | 7 days | 7 days | 7 days |
-| Cognito | MFA off, no end-user client | MFA on (software token), end-user client, deletion protection | As production |
+| Cognito | End-user client and admin groups, MFA off | End-user client and admin groups, MFA optional (software token), deletion protection | As production |
 | Agents | The assistant (code configuration) | The assistant | The assistant |
 | Agent network mode | `PUBLIC` | `VPC` | `VPC` |
 | AgentCore Memory retention | 30 days | 90 days | 90 days |

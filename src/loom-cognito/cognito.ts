@@ -47,6 +47,7 @@ function buildIdentity(): IdentitySeam {
       owner: params.abacOwner,
     },
     managedLoginBranding: params.managedLoginBranding,
+    mfa: params.mfa,
   };
 }
 

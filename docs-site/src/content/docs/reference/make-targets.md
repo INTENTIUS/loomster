@@ -94,10 +94,9 @@ temporary file, so it never shows up in the process list.
 **cognito-token signs in as a throwaway admin.** Upstream signs in as `admin`
 with a password from `etc/environment.sh`. `just cognito-token` creates (or
 recreates) an `e2e-validator` user in the admin groups, completes the MFA setup
-that the production [tiers](/loomster/concepts/glossary/#tier) enforce, and prints its access token. Run
-`just cognito-token --delete` when you're done. The light tier has no user app
-client: there, `cognito-client-id` prints only the M2M client, and
-`cognito-token` stops with "no oUserClientId output".
+when the pool requires MFA (`LOOM_COGNITO_MFA=ON`), and prints its access token.
+Run `just cognito-token --delete` when you're done. It works on every
+[tier](/loomster/concepts/glossary/#tier), since every tier has the user app client.
 
 ## Not ported
 

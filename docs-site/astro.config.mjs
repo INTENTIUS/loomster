@@ -94,6 +94,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Deploy to production on AWS', slug: 'guides/deploy-to-production' },
 								{ label: 'Set up a custom domain', slug: 'guides/set-up-a-custom-domain' },
+								{ label: 'Add the first admin', slug: 'guides/add-the-first-admin' },
 								{ label: 'Seed and validate a deploy', slug: 'guides/seed-and-validate' },
 								{ label: 'Run a second deployment', slug: 'guides/run-a-second-deployment' },
 								{ label: 'Deploy without chant', slug: 'guides/deploy-without-chant' },

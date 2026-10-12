@@ -26,14 +26,12 @@ Cognito pool.
 
 ## Steps
 
-1. Mint a Cognito token. On the production [tiers](/loomster/concepts/tiers-and-instances/):
+1. Mint a Cognito token, on any [tier](/loomster/concepts/tiers-and-instances/):
 
    ```
    export LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh)
    ```
 
-   Light has no end-user client; add a temporary one first
-   ([Deploy the light tier to AWS](/loomster/tutorial/light-on-aws/#3-get-a-token)).
    The token's user is in `g-admins-super`, which provider management needs.
 
 2. Find the provider:

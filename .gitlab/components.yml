@@ -51,8 +51,9 @@ loom-frontend:
   stage: wave-2
   image: node:22
   script:
-    - chant run --components loom-frontend --env production --seed-outputs shared-foundation.outputs.json
+    - chant run --components loom-frontend --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-cognito.outputs.json
   needs:
+    - loom-cognito
     - shared-foundation
 
 loom-backend:

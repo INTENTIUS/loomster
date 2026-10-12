@@ -63,6 +63,7 @@ jobs:
   loom-frontend:
     runs-on: docker
     needs:
+      - loom-cognito
       - shared-foundation
     container: node:22
     steps:
@@ -72,7 +73,12 @@ jobs:
         with:
           name: shared-foundation-outputs
           path: .
-      - run: chant run --components loom-frontend --env production --seed-outputs shared-foundation.outputs.json
+      - name: Download loom-cognito outputs
+        uses: https://code.forgejo.org/actions/download-artifact@v4
+        with:
+          name: loom-cognito-outputs
+          path: .
+      - run: chant run --components loom-frontend --env production --seed-outputs shared-foundation.outputs.json --seed-outputs loom-cognito.outputs.json
   loom-backend:
     runs-on: docker
     needs:

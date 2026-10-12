@@ -70,22 +70,17 @@ curl -s -o /dev/null -w '%{http_code}\n' http://$ALB/health    # 200
 
 ### 3. Get a token
 
-Loom checks a Cognito token on every API call. The light tier creates no
-end-user client, so add a temporary one, mint a throwaway admin through it, and
-remove both afterwards:
+Loom checks a Cognito token on every API call. Mint one for a throwaway admin
+through the pool's end-user client (`bash scripts/validate/get-user-token.sh
+--delete` removes the user afterwards):
 
 ```
-POOL=$(aws cloudformation describe-stacks --stack-name loom-dev-a-loom-cognito \
-  --query "Stacks[0].Outputs[?OutputKey=='oCognitoUserPoolId'].OutputValue" --output text)
-CLIENT=$(aws cognito-idp create-user-pool-client --user-pool-id $POOL --client-name loom-dev-a-admin-client \
-  --explicit-auth-flows ALLOW_ADMIN_USER_PASSWORD_AUTH ALLOW_REFRESH_TOKEN_AUTH --no-generate-secret \
-  --query UserPoolClient.ClientId --output text)
-export LOOM_API_TOKEN=$(LOOM_E2E_POOL_ID=$POOL LOOM_E2E_CLIENT_ID=$CLIENT bash scripts/validate/get-user-token.sh)
+export LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh)
 ```
 
-The served web app's sign-in form needs an end-user client id built into the
-frontend image, and loomster's frontend build on AWS passes none, so on a
-deployed tier you work with Loom through its API and this token.
+The served web app at `http://$ALB` signs in through the same client. The pool
+starts with no users; [Add the first admin](/loomster/guides/add-the-first-admin/)
+to sign in there yourself.
 
 ### 4. Seed and validate
 
@@ -101,11 +96,10 @@ which also deploys an agent, creates a memory, invokes the agent and runs an
 evaluation; on a real account those are billable. [Screens](/loomster/reference/screens/)
 lists what each profile writes.
 
-Then remove the throwaway user and client:
+Then remove the throwaway user:
 
 ```
-LOOM_E2E_POOL_ID=$POOL LOOM_E2E_CLIENT_ID=$CLIENT bash scripts/validate/get-user-token.sh --delete
-aws cognito-idp delete-user-pool-client --user-pool-id $POOL --client-id $CLIENT
+bash scripts/validate/get-user-token.sh --delete
 ```
 
 ### 5. Tear it down

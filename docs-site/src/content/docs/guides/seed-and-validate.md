@@ -18,11 +18,9 @@ that passes.
 - A running Loom: `just local-up`, or a deployed tier.
 - The deployment's `LOOM_*` variables and AWS credentials. The seed looks up the
   agent role and the Cognito pool from the stacks.
-- For a deployed tier, a token. On the production tiers
-  `export LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh)` mints one.
-  Light has no end-user client, so add a temporary one first
-  ([Deploy the light tier to AWS](/loomster/tutorial/light-on-aws/#3-get-a-token)).
-  Against the local stack both commands mint their own.
+- For a deployed tier, a token:
+  `export LOOM_API_TOKEN=$(bash scripts/validate/get-user-token.sh)` mints one
+  on any tier. Against the local stack both commands mint their own.
 
 ## Steps
 

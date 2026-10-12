@@ -101,10 +101,12 @@ Every parameter is in [Build parameters](/loomster/reference/parameters/).
   IP; Loom's example puts the frontend in public subnets.
 - Images deploy by digest, not by git sha tag, and a failed service deploy rolls
   back to the previous task definition.
-- Loom's frontend build passes the Cognito end-user client id
-  (`podman.build.frontend`); loomster's AWS build passes none, so the served app's
-  sign-in form isn't wired on a deployed tier, and you use Loom through its API
-  with a token. The local stack does sign in through the form.
+- Like Loom's `podman.build.frontend`, the frontend build passes the Cognito
+  end-user client id, so the served app signs in on every tier. Loom's pool
+  creates demo users; loomster's creates none, so you
+  [add the first admin](/loomster/guides/add-the-first-admin/) yourself. The
+  production tiers' pool defaults to optional MFA, since the web app can't
+  answer an MFA challenge (Loom's own pool leaves MFA off).
 - The tunnel host is optional and off until you run `just tunnel-host`. The
   database [Ops](/loomster/concepts/glossary/#op) (`import-sqlite`, `fix-sequences`, `reset-db`) don't need it:
   they run as one-off tasks of the backend inside the VPC.

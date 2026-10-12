@@ -76,21 +76,22 @@ these ([Bring your own network and IAM](/loomster/guides/bring-your-own-network-
 | Variable | Parameter | Type | Default | Sets |
 |---|---|---|---|---|
 | `LOOM_COGNITO_MODE` | `cognitoMode` | string: `provision`, `reference-existing`, `omit` | `provision` | The identity seam |
-| `LOOM_COGNITO_CALLBACK_URLS` | `cognitoCallbackUrls` | string | | Hosted-UI callback URLs |
+| `LOOM_COGNITO_CALLBACK_URLS` | `cognitoCallbackUrls` | string | | Hosted-UI callback URLs. Unset: `https://<LOOM_DOMAIN_NAME>` when set, else `https://localhost` |
 | `LOOM_COGNITO_RESOURCE_SERVER_ID` | `cognitoResourceServerId` | string | | Resource server identifier |
 | `LOOM_COGNITO_SCOPES_JSON` | `cognitoScopesJson` | string | | Scopes, as JSON |
 | `LOOM_COGNITO_UI_TIER_GROUPS_JSON` | `cognitoUiTierGroupsJson` | string | | Type groups (`t-admin`, `t-user`), as JSON |
-| `LOOM_COGNITO_RESOURCE_GROUPS_JSON` | `cognitoResourceGroupsJson` | string | | Resource groups (`g-admins-*`, `g-users-*`), as JSON; none by default |
+| `LOOM_COGNITO_RESOURCE_GROUPS_JSON` | `cognitoResourceGroupsJson` | string | | Resource groups (`g-admins-*`, `g-users-*`), as JSON. Default: `g-admins-super` only |
 | `LOOM_COGNITO_DEMO_SEED_USERS_JSON` | `cognitoDemoSeedUsersJson` | string | | Demo users, as JSON; none by default |
 | `LOOM_COGNITO_ABAC_APPLICATION` | `cognitoAbacApplication` | string | | `loom:application` tag value |
 | `LOOM_COGNITO_ABAC_GROUP` | `cognitoAbacGroup` | string | | `loom:group` tag value |
 | `LOOM_COGNITO_ABAC_OWNER` | `cognitoAbacOwner` | string | | `loom:owner` tag value |
 | `LOOM_COGNITO_MANAGED_LOGIN_BRANDING` | `cognitoManagedLoginBranding` | boolean | | Managed Login branding on the end-user client (production tiers) |
+| `LOOM_COGNITO_MFA` | `cognitoMfa` | `OFF`, `OPTIONAL`, `ON` | | The pool's MFA. Unset: `OFF` on light, `OPTIONAL` on the production tiers. `ON` locks users out of the web app, which can't answer an MFA challenge |
 | `LOOM_COGNITO_USER_POOL_ID` | `cognitoUserPoolId` | string | | With `reference-existing`: the pool |
 | `LOOM_COGNITO_USER_POOL_ARN` | `cognitoUserPoolArn` | string | | Its ARN; derived when unset |
 | `LOOM_COGNITO_DOMAIN` | `cognitoDomain` | string | | Its hosted-UI domain |
 | `LOOM_COGNITO_M2M_CLIENT_ID` | `cognitoM2mClientId` | string | | Its machine-to-machine client |
-| `LOOM_COGNITO_USER_CLIENT_ID` | `cognitoUserClientId` | string | | Its end-user client |
+| `LOOM_COGNITO_USER_CLIENT_ID` | `cognitoUserClientId` | string | | Its end-user client; the frontend image is built with it, so without it the web app can't sign anyone in |
 | `LOOM_COGNITO_ISSUER` | `cognitoIssuer` | string | | Its issuer; derived when unset |
 | `LOOM_COGNITO_DISCOVERY_URL` | `cognitoDiscoveryUrl` | string | | Its discovery URL; derived when unset |
 | `LOOM_COGNITO_TOKEN_URL` | `cognitoTokenUrl` | string | | Its token URL; derived when unset |

@@ -52,6 +52,24 @@ describe("LoomCognito — provision, light tier", () => {
     expect(props.GenerateSecret).toBe(true);
   });
 
+  test("has the user client the web app signs in with (loomster#75): password auth, code flow, no secret, never implicit", () => {
+    const instance = LoomCognito(baseProvisionProps());
+    const props = (instance.userClient as any).props;
+    expect(props.GenerateSecret).toBe(false);
+    expect(props.ExplicitAuthFlows).toContain("ALLOW_USER_PASSWORD_AUTH");
+    expect(props.AllowedOAuthFlows).toEqual(["code"]);
+    expect(props.AllowedOAuthScopes).toEqual(expect.arrayContaining(["openid", "email", "profile"]));
+  });
+
+  test("has the groups a first admin needs (Loom takes every scope from cognito:groups), and no branding", () => {
+    const instance = LoomCognito(baseProvisionProps());
+    const members = instance.members as any;
+    expect(members.uiTierGroup0.props.GroupName).toBe("t-admin");
+    expect(members.uiTierGroup1.props.GroupName).toBe("t-user");
+    expect(members.resourceGroup0.props.GroupName).toBe("g-admins-super");
+    expect(Object.keys(instance.members)).not.toContain("managedLoginBranding");
+  });
+
 });
 
 describe("LoomCognito — provision, production tier", () => {
@@ -59,13 +77,14 @@ describe("LoomCognito — provision, production tier", () => {
     return { naming: prodNaming, identity: { mode: "provision" }, ...overrides };
   }
 
-  test("adds user client, Managed Login branding, and the default UI-tier groups", () => {
+  test("adds user client, Managed Login branding, the default UI-tier groups and g-admins-super", () => {
     const instance = LoomCognito(prodProps());
     const names = Object.keys(instance.members);
-    for (const expected of ["userClient", "managedLoginBranding", "uiTierGroup0", "uiTierGroup1"]) {
+    for (const expected of ["userClient", "managedLoginBranding", "uiTierGroup0", "uiTierGroup1", "resourceGroup0"]) {
       expect(names).toContain(expected);
     }
-    expect(names).not.toContain("resourceGroup0");
+    expect((instance.members as any).resourceGroup0.props.GroupName).toBe("g-admins-super");
+    expect(names).not.toContain("resourceGroup1");
   });
 
   test("user client never allows implicit grant, requests OIDC + all domain scopes", () => {
@@ -78,12 +97,21 @@ describe("LoomCognito — provision, production tier", () => {
     expect(props.AllowedOAuthScopes.some((s: string) => s.includes("settings:"))).toBe(false);
   });
 
-  test("MFA on (software token) and advanced security ENFORCED", () => {
+  test("MFA optional (software token) by default, so Loom's web app can sign in; advanced security ENFORCED", () => {
     const instance = LoomCognito(prodProps());
     const props = (instance.userPool as any).props;
-    expect(props.MfaConfiguration).toBe("ON");
+    expect(props.MfaConfiguration).toBe("OPTIONAL");
     expect(props.EnabledMfas).toEqual(["SOFTWARE_TOKEN_MFA"]);
     expect((props.UserPoolAddOns as any).props.AdvancedSecurityMode).toBe("ENFORCED");
+  });
+
+  test("identity.mfa: ON requires MFA; OFF drops the enabled factors", () => {
+    const on = (LoomCognito(prodProps({ identity: { mode: "provision", mfa: "ON" } })).userPool as any).props;
+    expect(on.MfaConfiguration).toBe("ON");
+    expect(on.EnabledMfas).toEqual(["SOFTWARE_TOKEN_MFA"]);
+    const off = (LoomCognito(prodProps({ identity: { mode: "provision", mfa: "OFF" } })).userPool as any).props;
+    expect(off.MfaConfiguration).toBe("OFF");
+    expect(off.EnabledMfas).toBeUndefined();
   });
 
   test("still no deletion protection at plain production", () => {
@@ -163,7 +191,7 @@ describe("LoomCognito — demo seed (chant#888: opt-in only)", () => {
     expect((tierAttachmentProps.GroupName as any).target).toBe(members.uiTierGroup0);
   });
 
-  test("demoSeed on light tier is ignored — no groups exist there to attach to", () => {
+  test("demoSeed on light tier is ignored", () => {
     const instance = LoomCognito({
       naming: lightNaming,
       identity: { mode: "provision", demoSeed: { users: [{ username: "admin", email: "a@example.com", uiTier: "t-admin" }] } },
