@@ -83,7 +83,7 @@ The script vendors Loom, synthesizes, deploys all seven stacks, then asserts:
   service, ACM certificate, Route53 alias record, backend autoscaling, both agent
   runtimes (`production-ha` also asserts the credential-rotation schedule),
 - the app is served at `https://<domain>`,
-- the foundation floor is seeded through the minted admin token, then all 15 screens
+- the foundation floor is seeded through the minted admin token, then all screens
   validate behind real Cognito auth (last live run: 15/15).
 
 ### Authenticated screen validation

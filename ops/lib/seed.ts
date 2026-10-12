@@ -164,18 +164,6 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `    -d "{\\"name\\":\\"$POLICY_NAME\\",\\"policy_type\\":\\"tool_context\\",\\"tool_match_rules\\":[\\"*\\"],\\"approval_mode\\":\\"notify_only\\",\\"timeout_seconds\\":300,\\"agent_scope\\":{\\"type\\":\\"all\\"},\\"enabled\\":true}" >/dev/null \\`,
     `    && echo "loom-seed: seeded approval policy" || echo "loom-seed: approval policy skipped" >&2`,
     `fi`,
-    // Permission request (Security > Permission Requests) — a single demo pending
-    // request against the seeded role. Requests have no unique name, so only seed
-    // one when the list is empty (keeps re-runs from piling them up).
-    `RID=$(curl -fsS "$BASE/api/security/roles" 2>/dev/null | jq -r '.[0].id // empty')`,
-    `if [ -z "$RID" ]; then echo "loom-seed: no managed role, skipping permission request" >&2`,
-    `elif curl -fsS "$BASE/api/security/permission-requests" | jq -e 'length > 0' >/dev/null; then`,
-    `  echo "loom-seed: permission request already present"`,
-    `else`,
-    `  curl -fsS -X POST "$BASE/api/security/permission-requests" -H 'Content-Type: application/json' \\`,
-    `    -d "{\\"managed_role_id\\":$RID,\\"requested_actions\\":[\\"bedrock:InvokeModel\\"],\\"requested_resources\\":[\\"*\\"],\\"justification\\":\\"Loomster demo permission request (seeded demo content)\\"}" >/dev/null \\`,
-    `    && echo "loom-seed: seeded permission request" || echo "loom-seed: permission request skipped" >&2`,
-    `fi`,
     // Runtime dashboards (Costs, Admin audit, Invocations, Chat) fill from real
     // invocation records, not seeding — so light them up honestly by invoking the
     // demo agent a few times. Idempotent: skip once any invocation exists. Guarded

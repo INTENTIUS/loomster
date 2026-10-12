@@ -109,7 +109,7 @@ And it comes up **usable, not empty**. `local-up`'s last step seeds the app
 through Loom's own API, so on first login the Security screen already has an
 imported agent role and a Cognito authorizer, the Catalog is populated (a
 deployed agent, a memory, an MCP server, an A2A agent), and the approval-policy
-and permission-request tabs aren't blank. A fresh Loom database seeds almost
+tab isn't blank. A fresh Loom database seeds almost
 none of that on its own — see [Screens](/loomster/reference/screens/) for what's
 populated and what's deliberately left empty (and why). You can confirm it:
 
@@ -439,7 +439,7 @@ authoring and orchestration path that produces the template, not the output form
 - Screen-level validation behind real Cognito is proven live: the harness mints a
   throwaway admin against the deployed pool (completing the software-token MFA the
   production pool enforces), seeds the foundation floor through that token, and reads
-  all 15 screens. loomster seeds no users of its own.
+  every screen. loomster seeds no users of its own.
 - Agents deploy locally against the AgentCore-enabled Floci image, but real agent
   execution needs Bedrock AgentCore on a live account (not enabled everywhere).
   See steps 1 and 2.
