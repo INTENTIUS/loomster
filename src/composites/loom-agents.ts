@@ -175,6 +175,17 @@ export type LoomAgentsResult = {
 const ASSISTANT_RUNTIME = "PYTHON_3_13" as const;
 const ASSISTANT_ENTRY_POINT = ["opentelemetry-instrument", "src/handler.py"] as const;
 
+// Loom v1.8.0+ creates and redeploys every runtime with platformVersion "V2"
+// (AgentCore Runtime v2, snapshot-restore cold starts; `create_runtime` and
+// `update_runtime` in deployment.py), so chant-managed runtimes match the
+// agents Loom deploys (#7). CloudFormation's AWS::BedrockAgentCore::Runtime has
+// `PlatformVersion` (string, updatable in place); the lexicon's pinned schema
+// predates it, so it goes through `AgentCoreAgent`'s raw `defaults.runtime`
+// override and is typed here. V2 also caps the env var payload at 1536 bytes
+// in total: `sharedEnvironment` below stays well under it.
+type RuntimeDefaults = NonNullable<NonNullable<AgentCoreAgentProps["defaults"]>["runtime"]>;
+const RUNTIME_PLATFORM_V2 = { PlatformVersion: "V2" } as RuntimeDefaults;
+
 type TagList = Array<{ Key: string; Value: string }>;
 
 /** `{ project, env, ... }` tags -> CloudFormation `[{ Key, Value }, ...]` — same convention as every sibling composite. */
@@ -420,6 +431,7 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
       role: { Tags: tags },
       gatewayRole: { Tags: tags },
       ...(assistantOverrides.defaults ?? {}),
+      runtime: { ...RUNTIME_PLATFORM_V2, ...(assistantOverrides.defaults?.runtime ?? {}) },
     },
   };
   const assistant = AgentCoreAgent(assistantProps);
@@ -452,6 +464,7 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
           role: { Tags: tags },
           gatewayRole: { Tags: tags },
           ...(harnessOverrides.defaults ?? {}),
+          runtime: { ...RUNTIME_PLATFORM_V2, ...(harnessOverrides.defaults?.runtime ?? {}) },
         },
       } satisfies AgentCoreAgentProps)
     : undefined;
