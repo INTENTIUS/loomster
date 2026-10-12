@@ -41,20 +41,20 @@ out of the box: `light` defaults to a `demo` seed profile, the production tiers 
 
 | Target | Selected by | What runs | Verify |
 |---|---|---|---|
-| Floci | `AWS_ENDPOINT_URL` set (e.g. `http://localhost:4566`) | Managed pieces (RDS, Cognito, S3, ECR) plus, on the AgentCore-enabled image, the agents wave | Health-gate skipped — the ALB to ECS data path is not emulated |
+| Floci | `AWS_ENDPOINT_URL` set (e.g. `http://localhost:4566`) | Managed pieces (RDS, Cognito, S3, ECR) plus, on Floci 2.2.0+, the agents wave | Health-gate skipped — the ALB to ECS data path is not emulated |
 | Real AWS | `AWS_ENDPOINT_URL` unset | Everything, on live infrastructure | Full, including the ECS health-gate |
 
 A third path, `just local-up`, is a laptop harness rather than a tier or target:
 it runs the app tier (frontend, backend, a reverse proxy standing in for the ALB)
 from a chant-generated `docker-compose.yml`, wired to Floci for the managed
-pieces. The result is a browsable, authenticated Loom with no AWS account. See
+pieces. The result is a browsable Loom with no AWS account, running Loom's dev-auth bypass instead of a login. See
 [Run Loom on your laptop](/loomster/guides/local/).
 
 ## What has been validated
 
 | Tier | Floci | Real AWS |
 |---|---|---|
-| `light` | Full stack, 7/7 stacks `CREATE_COMPLETE`, including the code-config agents wave against the AgentCore-enabled image | Deployed end to end — the real ALB served the Loom SPA, backed by real RDS and Cognito, backend passed the ECS health-gate. (The agents wave itself is validated live on the production tiers below, where the assistant runtime reaches `READY` on Bedrock AgentCore.) |
+| `light` | Full stack, 7/7 stacks `CREATE_COMPLETE`, including the code-config agents wave against Floci 2.2.0+ | Deployed end to end — the real ALB served the Loom SPA, backed by real RDS and Cognito, backend passed the ECS health-gate. (The agents wave itself is validated live on the production tiers below, where the assistant runtime reaches `READY` on Bedrock AgentCore.) |
 | `production` | Full stack against a BYO VPC — RDS Proxy, PrivateLink (NLB + VPC endpoint service), ACM + Route53, backend autoscaling, and the assistant code-config Runtime | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, all tier resources present, app served over HTTPS on a custom domain, and the Strands assistant runtime `READY` on Bedrock AgentCore. Every screen validated behind real (MFA-enforced) Cognito** via a minted throwaway-admin token — the foundation floor (agent role + authorizer) is seeded through that same token first |
 | `production-ha` | Full stack, 7/7 `CREATE_COMPLETE` — as production, plus Multi-AZ RDS, secret rotation, and a 2-task backend floor | **Validated end to end — 7/7 stacks `CREATE_COMPLETE`, Multi-AZ RDS + the HostedRotationLambda rotation schedule live, app served over HTTPS, assistant runtime `READY`.** Also proved multi-deployment: deployed as a second instance alongside `production` |
 

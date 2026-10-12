@@ -1,10 +1,11 @@
 ---
 title: Run Loom on your laptop
-description: The light tier runs a browsable, authenticated Loom locally against Floci. What works, what's a dev shortcut, and what can't run without real AWS.
+description: The light tier runs a browsable Loom locally against Floci, signed in as a dev user with no login. What works, what's a dev shortcut, and what can't run without real AWS.
 ---
 
-`just local-up` stands up a **browsable, authenticated Loom on a laptop**, with no
-AWS account. [Floci](https://floci.io), a local AWS emulator, provides the
+`just local-up` stands up a **browsable Loom on a laptop**, with no AWS account
+and no login: authentication is Loom's local-dev bypass, so every request runs
+as an admin `local-dev` user. [Floci](https://floci.io), a local AWS emulator, provides the
 managed pieces (RDS, Cognito, S3, ECR); the app tier (frontend, backend, and a
 reverse proxy standing in for the ALB) runs from a chant-generated
 `docker-compose.yml`, wired to Floci. You get the full web app. Real Postgres,
@@ -34,7 +35,8 @@ open http://localhost:8080
 
 You land in the Loom UI as `local-dev` (admin, all scopes), with no login step.
 Browse the catalog, settings, memories, credentials, costs; everything the API
-serves from Postgres is live.
+serves from Postgres is live. The port is bound to `127.0.0.1`, so the app is
+reachable from this machine only, not from your network.
 
 ```
 just local-down    # tear down the app stack and Floci
@@ -49,26 +51,57 @@ just local-down    # tear down the app stack and Floci
 | Frontend (SPA) | Real — served through the proxy at one origin |
 | S3 / ECR / KMS / ECS | Real — bucket, image registry, cluster all provisioned by chant on Floci |
 | Auth / login | Dev shortcut — Loom's built-in bypass (see below), not a real login |
-| The "ALB" | Proxy stand-in — path routing only (`/api/*` and `/health` to the backend, everything else to the frontend); no TLS or WAF |
+| The "ALB" | Proxy stand-in — path routing only (`/api/*` and `/health` to the backend over loopback, everything else to the frontend); no TLS or WAF |
 | Agents (deploy) | Real — the Floci image emulates AgentCore's control plane (runtimes, endpoints, gateways, memory, workload identity) |
 | Agents (invoke) | Stub — `invoke-agent-runtime` returns a canned response, not real agent reasoning |
 | IAM enforcement, KMS crypto, CloudWatch/OTel | Not real — see [Local caveats](/loomster/reference/local-caveats/) |
 
 ## Auth is a dev bypass
 
-Floci's Cognito can't mint validatable JWTs. It returns opaque tokens, and the
-Cognito validator fetches its JWKS from real AWS for a pool that only exists in
-Floci. So the local tier leaves `LOOM_COGNITO_USER_POOL_ID` unset, which engages
-**Loom's own dev bypass** (`backend/app/dependencies/auth.py`): with no Cognito
-pool and no external IdP, every request is a `local-dev` user with the admin
-groups and all scopes. This is Loom's sanctioned local-dev path. It exercises
-the real auth code and short-circuits only the identity check. Production uses
-the real Cognito pool and real JWT validation.
+The local tier doesn't authenticate anyone. It leaves `LOOM_COGNITO_USER_POOL_ID`
+unset, which engages **Loom's own dev bypass** (`backend/app/dependencies/auth.py`):
+with no Cognito pool and no external IdP, every request is a `local-dev` user
+with the admin groups and all scopes. Production uses the real Cognito pool and
+real JWT validation.
+
+Why not log in against Floci's Cognito? Floci 2.2.0 issues RS256 JWTs (with
+`cognito:groups`), serves discovery and JWKS under `/<pool-id>/.well-known/`,
+runs a managed login page, and with `FLOCI_TLS_ENABLED=true` advertises all of
+it over `https`. Loom v1.9.0 still can't use it:
+
+- Loom's Cognito validator builds the issuer and JWKS URL as
+  `https://cognito-idp.<region>.amazonaws.com/<pool-id>`, with no endpoint
+  override, and the SPA's login posts to the same AWS host.
+- Loom's external OIDC path takes any issuer, but from v1.7.0 it fetches the
+  JWKS through an SSRF guard that refuses private addresses, and Floci sits on
+  a private Docker network address. Getting past that means putting Floci on a
+  subnet the guard doesn't classify as private, which defeats the guard.
+- That path also checks the access token's `aud` against the client id.
+  Cognito access tokens carry `client_id` and no `aud`, on AWS and on Floci, so
+  it would also need a pre token generation trigger that adds `aud`.
+
+Newer Loom versions tighten the bypass, and the local tier is wired for them:
+
+- v1.6.1+ only bypasses with `LOOM_ALLOW_UNAUTHENTICATED_LOCAL_DEV=true`, which
+  the local compose sets. Older versions ignore it.
+- v1.8.1+ also requires the request to come from a loopback address and to
+  carry no `X-Forwarded-*`, `X-Real-IP` or `Forwarded` header. The proxy
+  therefore runs inside the backend container's network namespace, reaches the
+  backend at `127.0.0.1:8000`, and clears those headers. The browser, `npm run
+  seed` and `npm run validate` all go through it at `http://localhost:8080`.
+
+This has two consequences. The published port is bound to the host's `127.0.0.1`, since
+anyone who can reach it is an admin. And if you reach the backend any other way
+(a different proxy, a port published on another interface) on Loom v1.8.1+,
+every API call returns `401 No identity provider configured` and the UI loads
+with empty, failing screens. Upstream plans to remove the bypass entirely
+([awslabs/loom#79](https://github.com/awslabs/loom/issues/79)); when that lands,
+the local tier needs a Loom-side way to trust a local issuer.
 
 ## Agents deploy locally; invoke is a stub
 
-The AgentCore-enabled Floci image (`ghcr.io/lex00/floci:agentcore`, loomster#98)
-emulates Bedrock AgentCore's **control plane** with full state — the resources
+Floci (`floci/floci:2.2.0`; upstream Floci now includes what the loomster#98 fork
+added) emulates Bedrock AgentCore's **control plane** with full state — the resources
 chant synthesizes (Runtime, RuntimeEndpoint, Memory, Gateway, WorkloadIdentity)
 actually deploy and are queryable, so the `loom-agents` wave reaches a real
 `CREATE_COMPLETE` on Floci — the resources exist and respond, they aren't

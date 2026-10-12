@@ -71,19 +71,28 @@ LOG="$(mktemp)"
 cleanup() {
   docker rm -f "$FLOCI_NAME" >/dev/null 2>&1 || true
   # Floci starts real backing containers for emulated services that need one
-  # (RDS's `floci-rds-*` postgres, ECR's `floci-ecr-registry`, ...) — these
-  # outlive the main Floci container's own `--rm` teardown, so sweep them too.
-  docker ps -aq --filter "name=^floci-" 2>/dev/null | xargs -r docker rm -f >/dev/null 2>&1 || true
+  # (RDS postgres, the ECR registry, ...) — these outlive the main Floci
+  # container's own `--rm` teardown, so sweep them too. They're all on this
+  # run's network, which leaves any other Floci on the daemon alone.
+  ids="$(docker ps -aq --filter "network=$FLOCI_NAME-net" 2>/dev/null)"; [ -n "$ids" ] && docker rm -f $ids >/dev/null 2>&1
+  docker network rm "$FLOCI_NAME-net" >/dev/null 2>&1 || true
+  vols="$(docker volume ls -q --filter "name=floci-aws-$FLOCI_NAME-" 2>/dev/null)"; [ -n "$vols" ] && docker volume rm $vols >/dev/null 2>&1
   rm -f "$FIXTURE/.gitlab-ci.yml" "$LOG"
 }
 trap cleanup EXIT
 
 echo "=== Starting Floci ==="
-# AgentCore-enabled Floci fork (loomster#98) — emulates Bedrock AgentCore so the
-# agents wave is exercisable locally. Multiarch image (amd64 + arm64): runs
-# natively on CI runners and Apple Silicon alike.
+# Upstream Floci 2.2.0 emulates Bedrock AgentCore's control plane (it replaced
+# the loomster#98 fork), so the agents wave is exercisable locally. Multiarch
+# image (amd64 + arm64): runs natively on CI runners and Apple Silicon alike.
+# Floci 2.x reaches its ECR registry by container name, which only resolves on a
+# user-defined network, so Floci and the containers it spawns share one.
+# The resource namespace names its child containers and volumes after this run,
+# so cleanup removes exactly those.
+docker network create "$FLOCI_NAME-net" >/dev/null
 docker run -d --rm -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock \
-  --name "$FLOCI_NAME" ghcr.io/lex00/floci:agentcore >/dev/null
+  --network "$FLOCI_NAME-net" -e FLOCI_SERVICES_DOCKER_NETWORK="$FLOCI_NAME-net" -e FLOCI_SERVICES_ECR_DOCKER_NETWORK="$FLOCI_NAME-net" -e FLOCI_DOCKER_RESOURCE_NAMESPACE="$FLOCI_NAME" \
+  --name "$FLOCI_NAME" "${FLOCI_IMAGE:-floci/floci:2.2.0}" >/dev/null
 
 for _ in $(seq 1 30); do
   curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1 && break

@@ -124,8 +124,8 @@ and fails if a section that should be seeded is empty or an agent deploy died.
 just local-down    # tear down the app stack and Floci
 ```
 
-One thing is only partly local: **agent execution**. The AgentCore-enabled Floci
-image emulates the control plane, so agents deploy and definitions are manageable,
+One thing is only partly local: **agent execution**. Floci (2.2.0+)
+emulates the AgentCore control plane, so agents deploy and definitions are manageable,
 but invoking one returns a canned stub rather than real reasoning — that needs
 AgentCore on a live account. Beyond that, anything depending on real AWS behavior
 (IAM enforcement, KMS crypto, CloudWatch telemetry) is a stand-in too. The full
@@ -444,7 +444,7 @@ authoring and orchestration path that produces the template, not the output form
   throwaway admin against the deployed pool (completing the software-token MFA the
   production pool enforces), seeds the foundation floor through that token, and reads
   every screen. loomster seeds no users of its own.
-- Agents deploy locally against the AgentCore-enabled Floci image, but real agent
+- Agents deploy locally against Floci (2.2.0+), but real agent
   execution needs Bedrock AgentCore on a live account (not enabled everywhere).
   See steps 1 and 2.
 
