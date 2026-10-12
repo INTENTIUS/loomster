@@ -1,34 +1,30 @@
 import { describe, expect, test } from "vitest";
-import { buildProxyRoutingConfig, loomLocalProxy, loopbackPublishedPort } from "./proxy";
+import { buildProxyRoutingConfig, loomLocalProxy, localPublishedPort } from "./proxy";
 
-// Loom v1.8.1+ honours LOOM_ALLOW_UNAUTHENTICATED_LOCAL_DEV only for loopback
-// clients with no forwarding headers (loomster#3). These pin the proxy shape
-// that makes the local run satisfy that.
-describe("local proxy, loopback mode", () => {
-  const opts = { backendService: "loomBackend", frontendService: "loomFrontend", backendOverLoopback: true };
+// The local proxy mirrors Loom's ALB and, since loomster#58 (real Cognito login
+// against Floci), runs in its own container on the shared network.
+describe("local proxy", () => {
+  const opts = { backendService: "loomBackend", frontendService: "loomFrontend", network: "loomNet" };
 
-  test("proxies the API to the backend over 127.0.0.1", () => {
+  test("routes /api and /health to the backend by service name, the rest to the SPA", () => {
     const conf = buildProxyRoutingConfig(opts);
-    expect(conf).toContain("location /api/ { proxy_pass http://127.0.0.1:8000;");
-    expect(conf).toContain("location = /health { proxy_pass http://127.0.0.1:8000;");
+    expect(conf).toContain("location /api/ { proxy_pass http://loomBackend:8000;");
+    expect(conf).toContain("location = /health { proxy_pass http://loomBackend:8000;");
     expect(conf).toContain("location / { proxy_pass http://loomFrontend:8000;");
+    expect(conf).not.toContain("127.0.0.1");
   });
 
-  test("clears every header Loom treats as proxy forwarding", () => {
-    const conf = buildProxyRoutingConfig(opts);
-    for (const h of ["X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Proto", "X-Real-IP", "Forwarded"]) {
-      expect(conf).toContain(`proxy_set_header ${h} "";`);
-    }
+  test("injects extra locations before the SPA catch-all", () => {
+    const conf = buildProxyRoutingConfig({ ...opts, extraLocations: ["location /x/ { return 204; }"] });
+    expect(conf.indexOf("location /x/")).toBeGreaterThan(-1);
+    expect(conf.indexOf("location /x/")).toBeLessThan(conf.indexOf("location / {"));
   });
 
-  test("joins the backend's network namespace with no ports of its own", () => {
+  test("joins the shared network and publishes on the host's loopback only", () => {
     const props = (loomLocalProxy(opts) as unknown as { props: Record<string, unknown> }).props;
-    expect(props.network_mode).toBe("service:loomBackend");
-    expect(props.ports).toBeUndefined();
-    expect(props.networks).toBeUndefined();
-  });
-
-  test("the published port binds the host's loopback only", () => {
-    expect(loopbackPublishedPort(8080)).toBe("127.0.0.1:8080:8080");
+    expect(props.network_mode).toBeUndefined();
+    expect(props.networks).toEqual(["loomNet"]);
+    expect(props.ports).toEqual(["127.0.0.1:8080:8080"]);
+    expect(localPublishedPort(9090)).toBe("127.0.0.1:9090:8080");
   });
 });

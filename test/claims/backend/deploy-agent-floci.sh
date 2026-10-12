@@ -26,8 +26,9 @@
 #      network (a curl container on that network, or docker exec).
 #   2. Auth: the light tier gives the backend LOOM_COGNITO_USER_POOL_ID, and
 #      Loom validates tokens against the real cognito-idp JWKS URL, not
-#      Floci's. Either deploy with LOOM_COGNITO_MODE=omit (Loom's auth bypass)
-#      or confirm Loom's JWKS fetch honours AWS_ENDPOINT_URL.
+#      Floci's. loomster's Loom patch (scripts/loom-patches/, used by
+#      local-up since #58) adds LOOM_COGNITO_ENDPOINT_URL for exactly this;
+#      the light tier's task definition would need to set it.
 #   3. The database: the task container must reach Floci's RDS endpoint from
 #      the user-defined network (LOOM_DATABASE_URL is plain env on light).
 #   4. A model: GET /api/agents/models must list one from Floci's Bedrock.

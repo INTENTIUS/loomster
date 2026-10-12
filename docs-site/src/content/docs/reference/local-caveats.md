@@ -23,23 +23,30 @@ inside a `SecretString`, leaving the literal instead. That's why the light tier
 delivers the DB URL via a cross-stack input rather than the secret. The secret
 template is correct for real AWS.
 
-## Auth is a dev bypass, not a login
+## Login is real Cognito, on Floci, through a Loom patch
 
-Floci's Cognito issues signed JWTs, but Loom only validates Cognito tokens
-against `cognito-idp.<region>.amazonaws.com` and only fetches OIDC JWKS over
-`https` from public addresses, so it can't validate them. The local tier runs
-Loom's built-in bypass (`local-dev` user, all scopes) instead of a login. On
-Loom v1.8.1+ the bypass only answers loopback requests with no forwarding
-headers, which is why the proxy shares the backend's network namespace (see the
-[local guide](/loomster/guides/local/#auth-is-a-dev-bypass)). **Real AWS** uses
-real Cognito JWTs and real scope enforcement. A local success says nothing about
-your production access model.
+Locally you log in as `loom-admin` against Floci's Cognito, and Loom validates
+the tokens and derives scopes from `cognito:groups`. Two things differ from AWS:
+
+- Loom runs with loomster's patch
+  (`scripts/loom-patches/0001-cognito-endpoint-override.patch`), configured
+  with `LOOM_COGNITO_ENDPOINT_URL` and `VITE_COGNITO_ENDPOINT_URL`. Upstream
+  Loom only talks to `cognito-idp.<region>.amazonaws.com`. Every real tier
+  leaves both settings unset. See the
+  [local guide](/loomster/guides/local/#the-loom-patch).
+- The user client, the two admin groups and the admin user are created by
+  local-up on Floci; the light tier doesn't provision them. MFA is off (as on
+  the light tier), the password is a printed throwaway, and Floci's Cognito is
+  an emulator: advanced security, hosted-UI branding and token revocation
+  details aren't AWS's. **Real AWS** uses the production tiers' user client,
+  MFA and your own users. A local login proves the token path, not your
+  production access model.
 
 ## The "ALB" is a reverse proxy
 
-Locally, a reverse proxy path-routes `/api/*` + `/health` to the backend (over
-loopback, from inside the backend container's network namespace) and everything
-else to the frontend. There is **no** TLS termination, WAF, or
+Locally, a reverse proxy path-routes `/api/*` + `/health` to the backend,
+`/floci-cognito/` (the login calls) to Floci, and everything else to the
+frontend. There is **no** TLS termination, WAF, or
 health-based failover. **Real AWS** uses the actual ALB with all of that.
 
 ## IAM is not enforced

@@ -14,16 +14,15 @@ mkdirSync(OUT_DIR, { recursive: true });
 // A static A2A agent card served from the proxy, so the demo seed (loom-seed)
 // can register a real A2A agent and the Catalog's A2A section isn't empty. The
 // backend fetches `<base_url>/.well-known/agent.json`; base_url is
-// `http://loomBackend:8080/a2a-demo` (LOOM_DEMO_A2A_URL, set by local-up.sh).
-// The proxy runs in the backend's network namespace (#3), so it answers on the
-// backend's Docker-network address. That address is RFC 1918, which Loom
+// `http://loomProxy:8080/a2a-demo` (LOOM_DEMO_A2A_URL, set by local-up.sh): the
+// proxy's own Docker-network address. That address is RFC 1918, which Loom
 // v1.7.0+'s A2A SSRF guard (net_guard.guarded_get) allows; 127.0.0.1 would be
 // refused as loopback.
 const A2A_CARD = JSON.stringify({
   name: "Loomster Demo A2A",
   description: "A demo agent-to-agent integration seeded by loomster",
   version: "1.0.0",
-  url: "http://loomBackend:8080/a2a-demo",
+  url: "http://loomProxy:8080/a2a-demo",
   capabilities: {},
   defaultInputModes: ["text"],
   defaultOutputModes: ["text"],
@@ -31,8 +30,16 @@ const A2A_CARD = JSON.stringify({
 });
 const a2aCardLocation = `location = /a2a-demo/.well-known/agent.json { default_type application/json; return 200 '${A2A_CARD}'; }`;
 
+// The SPA's Cognito login (InitiateAuth, the new-password challenge, refresh)
+// posts here, same-origin: the frontend is built with
+// VITE_COGNITO_ENDPOINT_URL=/floci-cognito/ (loomster#58's Loom patch), and this
+// forwards to Floci's Cognito JSON API on the shared network. Only the Cognito
+// targets are let through, so the browser origin isn't a door to every Floci API.
+const flociCognitoLocation =
+  'location = /floci-cognito/ { if ($http_x_amz_target !~ "^AWSCognitoIdentityProviderService\\.(InitiateAuth|RespondToAuthChallenge)$") { return 403; } proxy_pass http://floci:4566/; }';
+
 writeFileSync(
   `${OUT_DIR}/nginx.local.conf`,
-  buildProxyRoutingConfig({ backendService: "loomBackend", frontendService: "loomFrontend", servicePort: 8000, backendOverLoopback: true, extraLocations: [a2aCardLocation] }),
+  buildProxyRoutingConfig({ backendService: "loomBackend", frontendService: "loomFrontend", servicePort: 8000, network: "loomNet", extraLocations: [a2aCardLocation, flociCognitoLocation] }),
 );
 console.log(`wrote ${OUT_DIR}/nginx.local.conf`);

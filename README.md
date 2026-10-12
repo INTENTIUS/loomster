@@ -47,12 +47,16 @@ stdio) for inspecting and building the graph. From the checkout, ask your agent 
 ## Run it locally
 
 ```
-just local-up     # browsable Loom, dev-auth bypass, no login (needs Docker, no AWS account)
+just local-up     # browsable Loom, real Cognito login against Floci (needs Docker, no AWS account)
 just local-down   # tear it down
 ```
 
 Floci provides the managed pieces (RDS, Cognito, S3, ECR); the app tier runs from
-a chant-generated `docker-compose`, browsable at `http://localhost:8080`. The web
+a chant-generated `docker-compose`, browsable at `http://localhost:8080`. You log
+in as `loom-admin` with the throwaway password local-up prints, against the
+Cognito pool on Floci. Loom can't talk to a non-AWS Cognito endpoint on its own,
+so `scripts/vendor-loom.sh` applies a small opt-in patch
+(`scripts/loom-patches/`) that adds one; real tiers leave it unset. The web
 app runs for real, and agents now deploy locally too — the Floci image emulates
 Bedrock AgentCore's control plane — though invoking one returns a canned stub, not
 real reasoning. See the [local guide](https://intentius.io/loomster/guides/local/)

@@ -56,11 +56,11 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     // LOOM_SEED_GROUP (default "loomster").
     `GROUP="\${LOOM_SEED_GROUP:-loomster}"`,
     `echo "loom-seed: profile=$PROFILE base=$BASE group=$GROUP"`,
-    // Real-Cognito deployments enforce auth on every endpoint; a local-up app runs
-    // Loom's dev-auth bypass and needs none. When LOOM_API_TOKEN is set (e.g. the
-    // throwaway admin the live-e2e harness mints, loomster#147), pass it as a bearer
+    // Every deployment enforces auth, local-up included (Cognito on Floci,
+    // loomster#58). When LOOM_API_TOKEN is set (e.g. the throwaway admin the
+    // live-e2e harness or scripts/local/local-token.sh mints), pass it as a bearer
     // via a curl -K config file — kept out of argv/`ps`, quoting-safe, and simply
-    // absent (empty file) on local-up. Every curl below reads it (`-K "$AUTHCFG"`).
+    // absent (empty file) when no token is set. Every curl below reads it (`-K "$AUTHCFG"`).
     `AUTHCFG="$(mktemp)"; trap 'rm -f "$AUTHCFG"' EXIT`,
     `if [ -n "\${LOOM_API_TOKEN:-}" ]; then printf 'header = "Authorization: Bearer %s"\\n' "$LOOM_API_TOKEN" > "$AUTHCFG"; echo "loom-seed: authenticating with LOOM_API_TOKEN"; fi`,
     `if [ "$PROFILE" = "none" ]; then echo "loom-seed: profile=none, nothing to seed"; exit 0; fi`,
@@ -169,7 +169,7 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `  verdict demo-a2a-agent skipped "LOOM_DEMO_A2A_URL unset (needs a reachable A2A endpoint)"`,
     `fi`,
     // Security screen extras. NOT seeded here: an Identity Provider — creating
-    // one flips Loom out of its dev-auth bypass into real-OIDC mode, which locks
+    // one switches Loom's login to that provider, which locks
     // a local/demo deploy (there's no real IdP to authenticate against). That tab
     // is left for you to fill with a real provider on a real deploy.
     // Approval policy (Security > Approval Policies) — idempotent by name.

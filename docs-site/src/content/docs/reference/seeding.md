@@ -80,9 +80,9 @@ authorizer); run `npm run seed`, then validate again and every screen passes.
 a Cognito authorizer. `demo` additionally seeds an approval policy, so that tab
 isn't empty either.
 
-One tab is deliberately left empty: **Identity Providers**. Registering one flips
-Loom out of its dev-auth bypass into real-OIDC mode, which locks a local or demo
-deploy (there's no real IdP to authenticate against). You add a real provider
+One tab is deliberately left empty: **Identity Providers**. Registering one switches
+Loom's login page to that provider, which locks a local or demo deploy (there's
+no real IdP to authenticate against). You add a real provider
 there on a real deploy; seeding a fake one would only break the app.
 
 ## Demo content and cost

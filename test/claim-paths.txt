@@ -39,6 +39,9 @@ ops/loom-teardown.op.ts             teardown/*
 # Seeding, and the scripts the backend claims call.
 ops/lib/seed.ts                     seed/*
 ops/loom-seed.op.ts                 seed/*
-scripts/local/                      seed/*
-scripts/validate/get-user-token.sh  backend/*
-scripts/vendor-loom.sh              backend/* seed/*
+scripts/local/                      seed/* local/*
+src/local/                          local/*
+scripts/loom-patches/               local/*
+scripts/validate/run.ts             local/*
+scripts/validate/get-user-token.sh  backend/* local/*
+scripts/vendor-loom.sh              backend/* seed/* local/*
