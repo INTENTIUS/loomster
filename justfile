@@ -134,6 +134,52 @@ tunnel-host:
 tunnel port="5432":
     bash scripts/tunnel.sh {{port}}
 
+# ── Loom's operator make targets (#39; docs reference/make-targets) ─────────
+# Gated ones (import-sqlite, reset-db, credentials-delete) stop at their gate:
+# `chant approve <op> approve-<op>`, then run the same verb again.
+
+# make migrate: copy a SQLite Loom into this deployment's Postgres, then fix the sequences.
+import-sqlite file:
+    LOOM_IMPORT_SQLITE={{file}} npx chant run loom-import-sqlite
+
+# make fix-sequences: reset the id sequences to each table's max id.
+fix-sequences:
+    npx chant run loom-fix-sequences
+
+# make reset-db: snapshot, then wipe the database (gated, never over MCP).
+reset-db:
+    npx chant run loom-reset-db
+
+# make agentcore.credentials.list: providers in the region, and the ones this Loom recorded.
+credentials:
+    npx chant run loom-credentials
+
+# make agentcore.credentials.delete-all, owned-only: delete the providers this Loom recorded.
+credentials-delete:
+    npx chant run loom-credentials-delete
+
+# `just memory`, `just memory get <id>`, `just memory records <id> <actor>`,
+# `just memory records-by-namespace <id> <namespace>`, `just memory extraction-jobs <id>`.
+# make agentcore.memory.*: inspect AgentCore memory (read-only).
+memory query="list" id="" who="":
+    LOOM_MEMORY_QUERY={{query}} LOOM_MEMORY_ID={{id}} LOOM_MEMORY_ACTOR_ID={{who}} LOOM_MEMORY_NAMESPACE={{who}} npx chant run loom-memory
+
+# LOOM_COGNITO_PASSWORD=... just set-passwords [alice,bob]; no users means every
+# one still in FORCE_CHANGE_PASSWORD.
+# make cognito.set-passwords: set a permanent password for first sign-in.
+set-passwords users="":
+    LOOM_COGNITO_USERS={{users}} npx chant run loom-cognito-set-passwords
+
+# make cognito.get-client-id: the user and M2M app-client ids from the loom-cognito stack.
+cognito-client-id:
+    @aws cloudformation describe-stacks --stack-name "${LOOM_PROJECT:-loom}-${LOOM_ENV:-dev}-${LOOM_INSTANCE:-a}-loom-cognito" --query "Stacks[0].Outputs[?OutputKey=='oUserClientId' || OutputKey=='oM2MClientId'].[OutputKey,OutputValue]" --output text
+
+# A throwaway admin user, MFA handled; `just cognito-token --delete` removes it.
+# export LOOM_API_TOKEN=$(just cognito-token)
+# make cognito.get-tokens: an admin access token for Loom's API.
+cognito-token *args:
+    @bash scripts/validate/get-user-token.sh {{args}}
+
 # Validate a running Loom screen by screen against the active seed profile.
 # LOOM_API_BASE_URL (default the local-up proxy) + LOOM_SEED_PROFILE (default demo).
 validate:

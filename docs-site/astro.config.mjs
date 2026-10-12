@@ -51,6 +51,7 @@ export default defineConfig({
 						{ label: 'Tiers & targets', slug: 'reference/tiers' },
 						{ label: 'Screens', slug: 'reference/screens' },
 						{ label: 'Seeded defaults', slug: 'reference/seeding' },
+						{ label: 'Loom make targets', slug: 'reference/make-targets' },
 						{ label: 'Naming & Tagging', slug: 'reference/naming' },
 						{ label: 'Local caveats', slug: 'reference/local-caveats' },
 						{ label: 'Claims', slug: 'reference/claims' },

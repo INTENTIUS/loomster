@@ -10,6 +10,10 @@
  *   chant approve loom-teardown approve-loom-teardown
  *   chant run loom-teardown                 # continues past the approved gate
  *
+ * After the gate and before any stack goes, the AgentCore credential
+ * providers this Loom's database records are deleted (`./lib/operator.ts`;
+ * Loom creates them outside every stack, so no stack delete reaches them).
+ *
  * Deletes run **sequentially**: the optional tunnel host if it exists
  * (`OPTIONAL_STACKS_FIRST`), then the order `discoverTeardownOrder()`
  * derives from the component graph (the deploy waves reversed, so
@@ -28,8 +32,10 @@
 import { Op, phase, gate, shell } from "@intentius/chant/op";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { teardownStackOrder, deleteStackScript } from "./lib/teardown-plan";
+import { operatorRefs, ownedCredentialProvidersScript } from "./lib/operator";
 
 const naming = namingParamsFromEnv();
+const refs = operatorRefs(naming);
 
 // CFN stack names are namespaced by project+env+instance (loomster#140), so this
 // tears down exactly THIS deployment's stacks, never another instance's.
@@ -40,7 +46,7 @@ const stacks = (await teardownStackOrder()).map(stackName);
 
 export default Op({
   name: "loom-teardown",
-  overview: `Decommission the Loom deployment (env=${naming.env}, instance=${naming.instance}): gated, owned-only, marker-scoped stack deletes, no foreign deletes`,
+  overview: `Decommission the Loom deployment (env=${naming.env}, instance=${naming.instance}): gated; deletes the credential providers this Loom recorded, then owned-only, marker-scoped stack deletes, no foreign deletes`,
   labels: { Env: naming.env, Teardown: "true" },
   phases: [
     phase("Approve", [
@@ -49,6 +55,11 @@ export default Op({
         description: `Approve deleting all ${stacks.length} Loom stacks for env=${naming.env}/instance=${naming.instance}: ${stacks.join(", ")}`,
       }),
     ]),
+    // AgentCore credential providers Loom created for MCP/A2A/LiteLLM live
+    // outside every stack. Delete the ones this Loom's database records
+    // (owned-only, like the stacks) while the backend can still read it; a
+    // re-run after the backend is gone skips this.
+    phase("Credentials", [shell(ownedCredentialProvidersScript(refs.backend, "delete", { missingServiceOk: true }), { profile: "longInfra" })]),
     phase(
       "Teardown",
       stacks.map((s) => shell(deleteStackScript(s), { profile: "longInfra" })),

@@ -49,6 +49,7 @@ Pick the cheapest one that answers the question in front of you.
 | Reconcile cloud → code | `npm run reconcile` | opens a PR, never mutates the cloud |
 | Audit the CI YAML | `just audit` | security audit of the generated pipeline |
 | Tear down | `chant run loom-teardown` | |
+| Loom's operator make targets | `just credentials`, `just memory ...`, `just fix-sequences`, `just cognito-token` | `reset-db`, `import-sqlite`, `credentials-delete`, `set-passwords` are never over MCP: a person runs and approves them |
 
 Discover the rest with `chant list` (entities), `chant run list` (Ops + status),
 and `chant describe <component>` (effective config for one stack).
