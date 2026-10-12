@@ -23,7 +23,7 @@ import { loomAgentsStackName } from "../lib/component-stack-names";
  * see chant#882 (GA-gated on Bedrock AgentCore Runtime, not on this stack).
  *
  * **No `docker-build` here, and not just a modeling choice (#20).** Vendoring
- * real `awslabs/loom` v1.6.0 source to wire `loom-backend`/`loom-frontend`'s
+ * real `awslabs/loom` v1.9.0 source to wire `loom-backend`/`loom-frontend`'s
  * `docker-build` context (#20) turned up the reason this stack has never had
  * one: `agents/strands_agent/` ships no `Dockerfile` at all. Loom's own
  * backend builds this agent's deploy artifact at runtime

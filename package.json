@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Production deployment of awslabs/loom (pinned v1.6.0) on chant \u2014 component-based, tiered light/production/production-ha, generated CI.",
+  "description": "Production deployment of awslabs/loom (pinned v1.9.0) on chant \u2014 component-based, tiered light/production/production-ha, generated CI.",
   "scripts": {
     "tsc": "tsc --noEmit",
     "lint": "chant lint .",

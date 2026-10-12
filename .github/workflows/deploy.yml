@@ -33,7 +33,7 @@ jobs:
           node-version: '22'
       - run: npm install
 
-      # Fetch Loom v1.6.0 app source so the service docker-build steps have a context.
+      # Fetch Loom v1.9.0 app source so the service docker-build steps have a context.
       - name: Vendor Loom source
         run: npm run vendor
 

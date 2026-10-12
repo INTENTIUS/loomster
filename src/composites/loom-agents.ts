@@ -2,7 +2,7 @@
  * loom-agents composite (chant#893).
  *
  * The Bedrock AgentCore agents Loom's backend provisions at runtime
- * (`backend/app/services/deployment.py`, pinned v1.6.0) expressed as a
+ * (`backend/app/services/deployment.py`, pinned v1.9.0) expressed as a
  * static, chant-managed reference deployment: one `AgentCoreAgent(...)` call
  * (chant#882, `@intentius/chant-lexicon-aws`) per agent, composed into one
  * CloudFormation stack via nested-composite expansion. The #882 composite is
@@ -14,7 +14,7 @@
  * **Two agent flavors** (chant#893 blog-refinement comment):
  * - **low-code** — a Strands Python agent (Loom's own
  *   `agents/strands_agent`). One per deployment, every tier. It ships as a
- *   **zip code artifact**, not a container: vendoring real Loom v1.6.0 source
+ *   **zip code artifact**, not a container: vendoring real Loom v1.9.0 source
  *   (#20) found `agents/strands_agent/` has no `Dockerfile` upstream at all —
  *   Loom's own backend zips this agent and uploads it to S3
  *   (`build_agent_artifact()` in `backend/app/services/deployment.py`), then
@@ -112,7 +112,7 @@ export interface LoomAgentsProps {
 
   /**
    * Provision an AgentCore Code Interpreter sandbox execution role per agent
-   * (Loom's own `shared/iac/code_interpreter_role.yaml`, v1.6.0). Default:
+   * (Loom's own `shared/iac/code_interpreter_role.yaml`, v1.9.0). Default:
    * `true` — Loom ships this role as part of the standard deploy, so agents
    * that use the code-interpreter tool have an execution role. Set `false` to
    * omit it (e.g. a deployment whose agents never invoke the sandbox).
@@ -284,7 +284,7 @@ function buildAgentExecutionPolicies(
  * The AgentCore Code Interpreter sandbox execution role — a standalone IAM
  * role the Code Interpreter sandbox assumes at runtime, separate from the
  * agent's own Runtime role (`buildAgentExecutionPolicies` above), modeled on
- * Loom's own `shared/iac/code_interpreter_role.yaml` (v1.6.0). Scoped to the
+ * Loom's own `shared/iac/code_interpreter_role.yaml` (v1.9.0). Scoped to the
  * AgentCore-managed code-interpreter S3 bucket + its CloudWatch log group,
  * both under fixed `bedrock-agentcore-*` name patterns AWS owns — narrowed to
  * this deploy's own account + region (tighter than Loom's own default `*`

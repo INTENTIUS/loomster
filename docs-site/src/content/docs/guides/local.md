@@ -23,7 +23,7 @@ invoking one returns a canned stub, not real agent reasoning (see below).
 just local-up
 ```
 
-That runs, in order: Floci up, vendor Loom `v1.6.0`, synth and provision the
+That runs, in order: Floci up, vendor Loom `v1.9.0`, synth and provision the
 infrastructure on Floci, build the app images, resolve the Floci values into a
 `.env`, generate the compose and nginx config, and `docker compose up`. When it
 finishes:

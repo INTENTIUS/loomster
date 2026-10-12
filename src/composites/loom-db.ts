@@ -1,7 +1,7 @@
 /**
  * loom-db composite (chant#887).
  *
- * Folds Loom's `backend/iac/rds.yaml` (v1.6.0) into one composite emitting
+ * Folds Loom's `backend/iac/rds.yaml` (v1.9.0) into one composite emitting
  * one CloudFormation stack: the RDS Postgres instance, its subnet group and
  * security group, a KMS key dedicated to Secrets Manager encryption, the two
  * secrets (`RdsCredentialsSecret`/`RdsConnectionSecret` in Loom's own

@@ -3,7 +3,7 @@
 A deployment of [awslabs/loom](https://github.com/awslabs/loom) you drive from the
 repo. Six components, three tiers (`light` / `production` / `production-ha`),
 generated CI, and a naming scheme that lets many Loom instances coexist in one or
-many AWS accounts without collision. Pinned to Loom `v1.6.0`. Built with
+many AWS accounts without collision. Pinned to Loom `v1.9.0`. Built with
 [chant](https://intentius.io/chant), though you run loomster by its verbs, not by
 knowing chant.
 
@@ -115,14 +115,14 @@ tier-by-tier walkthrough.
 
 `loom-backend` / `loom-frontend` build Loom's actual images, but Loom's source
 isn't vendored into this repo. It lives upstream at
-[`awslabs/loom`](https://github.com/awslabs/loom), pinned `v1.6.0`. Fetch it
+[`awslabs/loom`](https://github.com/awslabs/loom), pinned `v1.9.0`. Fetch it
 before a real `chant run` deploy or a manual `docker build`:
 
 ```
 npm run vendor   # or: just vendor
 ```
 
-`scripts/vendor-loom.sh` resolves `refs/tags/v1.6.0`, checks it against a sha
+`scripts/vendor-loom.sh` resolves `refs/tags/v1.9.0`, checks it against a sha
 pinned in the script (a tag is mutable, so this fails loudly if it's ever
 force-moved), then sparse-checks out just `backend/`, `frontend/`, and `agents/`
 into `vendor/loom` (gitignored).
@@ -255,7 +255,7 @@ installed at deploy time.
 npm run export-bundle
 ```
 
-writes `dist/bundle/loom-v1.6.0/{light,production,production-ha}/`. Each tier a
+writes `dist/bundle/loom-v1.9.0/{light,production,production-ha}/`. Each tier a
 self-contained directory: a synthesized CloudFormation template per component
 (`templates/`), the generated GitHub Actions + GitLab CI pipelines (`ci/`), and
 the tier's own `manifest.json`. The bundle's generated `README.md` has the deploy

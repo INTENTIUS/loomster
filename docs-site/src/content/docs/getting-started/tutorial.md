@@ -92,7 +92,7 @@ just local-up
 ```
 
 That brings up [Floci](https://floci.io) for the managed pieces (RDS, Cognito,
-S3, ECR), vendors Loom `v1.6.0`, provisions the infrastructure on Floci, builds
+S3, ECR), vendors Loom `v1.9.0`, provisions the infrastructure on Floci, builds
 the app images, and starts the frontend, backend, and a reverse proxy from a
 chant-generated `docker-compose`. When it settles:
 
@@ -151,7 +151,7 @@ export LOOM_TIER=light LOOM_ENV=dev LOOM_INSTANCE=a
 export AWS_REGION=us-east-2               # your region
 export AWS_ACCOUNT_ID=<your account id>
 export LOOM_DB_PASSWORD=<a real secret, not a literal in any file>
-npm run vendor                            # fetch Loom v1.6.0 source for the image builds
+npm run vendor                            # fetch Loom v1.9.0 source for the image builds
 npx chant run --components all --env dev
 ```
 

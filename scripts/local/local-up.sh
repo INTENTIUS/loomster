@@ -26,7 +26,7 @@ if ! docker ps --filter name=^floci$ --format '{{.Names}}' | grep -q floci; then
   sleep 8
 fi
 
-echo "==> [2/7] vendor Loom v1.6.0"
+echo "==> [2/7] vendor Loom v1.9.0"
 npm run vendor >/dev/null 2>&1
 
 echo "==> [3/7] synth AWS templates + provision infra on Floci (chant)"

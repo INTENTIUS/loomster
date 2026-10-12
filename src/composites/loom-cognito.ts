@@ -1,7 +1,7 @@
 /**
  * loom-cognito composite (chant#888).
  *
- * Folds Loom's `shared/iac/cognito.yaml` (v1.6.0) into one composite emitting
+ * Folds Loom's `shared/iac/cognito.yaml` (v1.9.0) into one composite emitting
  * one CloudFormation stack: the Cognito UserPool, its hosted-UI domain, the
  * OAuth resource server carrying the 21-scope API surface (`invoke` + 10
  * domains x read/write — catalog/agent/memory/security/tagging/costs/mcp/

@@ -45,10 +45,10 @@
 set -euo pipefail
 
 LOOM_REPO="${LOOM_REPO:-https://github.com/awslabs/loom}"
-LOOM_TAG="${LOOM_TAG:-v1.6.0}"
-# Commit `refs/tags/v1.6.0` resolved to as of this script's authoring —
+LOOM_TAG="${LOOM_TAG:-v1.9.0}"
+# Commit `refs/tags/v1.9.0` resolved to as of this script's authoring —
 # see the file header. Verify with: git ls-remote --tags "$LOOM_REPO" "$LOOM_TAG"
-LOOM_EXPECTED_SHA="${LOOM_EXPECTED_SHA:-8c658d61ca28d11bdc63c42d8f2787f1ed82e65c}"
+LOOM_EXPECTED_SHA="${LOOM_EXPECTED_SHA:-a3050669f5b4c83210a44ed4346f17e01641e82f}"
 VENDOR_DIR="${VENDOR_DIR:-vendor/loom}"
 
 notice() { echo "vendor-loom: $*"; }
@@ -106,6 +106,9 @@ fi
 git -C "$VENDOR_DIR" sparse-checkout init --cone
 git -C "$VENDOR_DIR" sparse-checkout set backend frontend agents
 git -C "$VENDOR_DIR" checkout --quiet "$fetched_sha"
+# Loom's images run as a non-root user (USER appuser) and COPY these files
+# as-is, so a strict umask (e.g. 077) would leave them unreadable in the image.
+chmod -R a+rX "$VENDOR_DIR"
 
 for required in backend/Dockerfile backend/scripts frontend/Dockerfile agents/strands_agent/src agents/strands_agent/requirements.txt; do
   [ -e "$VENDOR_DIR/$required" ] || fail "expected $VENDOR_DIR/$required after checkout but it's missing — Loom's layout may have changed at $LOOM_TAG."

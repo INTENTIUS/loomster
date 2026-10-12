@@ -15,7 +15,7 @@ import { namingParams } from "../loom-backend/params";
  *
  * **Docker build context.** Loom's application source (the `backend/`
  * directory + its `Dockerfile`) is not vendored into this repo — it lives
- * upstream at `awslabs/loom` (pinned `v1.6.0`). `npm run vendor`
+ * upstream at `awslabs/loom` (pinned `v1.9.0`). `npm run vendor`
  * (`scripts/vendor-loom.sh`) fetches it into `vendor/loom` (gitignored)
  * before running a real deploy; `context`/`dockerfile` below assume that
  * layout. None of this component's gates (typecheck/lint/test/synth/`chant
@@ -34,7 +34,7 @@ import { namingParams } from "../loom-backend/params";
  * the layout Loom's own `shared/makefile`
  * (`podman build -f ../backend/Dockerfile ..`, run from `shared/`) actually
  * uses. Verified by building this exact Dockerfile/context pair with real
- * `docker build` against a real `v1.6.0` checkout while wiring this up
+ * `docker build` against a real `v1.9.0` checkout while wiring this up
  * (#20) — the image builds clean.
  *
  * **`dockerfile` is context-relative** (chant#936, fixed in 0.18.17).
