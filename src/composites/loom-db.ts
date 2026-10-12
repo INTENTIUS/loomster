@@ -55,6 +55,7 @@ import {
   Role_Policy,
   DbInstance,
   Secret,
+  Secret_GenerateSecretString,
   DBProxy,
   DBProxy_AuthFormat,
   DBProxyTargetGroup,
@@ -193,6 +194,9 @@ const MONITORING_ASSUME_ROLE_POLICY = {
 // managed policy — not a physical name this project controls.
 const RDS_MONITORING_MANAGED_POLICY_ARN = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole";
 
+/** The read-only Postgres user SQL Yodeler plans and watches with (loomster#78). */
+export const READER_USERNAME = "loom_reader";
+
 const PROXY_ASSUME_ROLE_POLICY = {
   Version: "2012-10-17",
   Statement: [{ Effect: "Allow", Principal: { Service: "rds.amazonaws.com" }, Action: "sts:AssumeRole" }],
@@ -213,6 +217,7 @@ interface DbCoreResult {
     rdsMonitoringRole: InstanceType<typeof Role>;
     rdsInstance: InstanceType<typeof DbInstance>;
     rdsCredentialsSecret: InstanceType<typeof Secret>;
+    rdsReaderSecret: InstanceType<typeof Secret>;
   };
   rdsInstance: InstanceType<typeof DbInstance>;
   dbInstanceIdentifier: string;
@@ -350,10 +355,28 @@ function buildDbCore(naming: LoomNaming, tags: TagList, tier: Tier, data: LoomDb
   });
   const credentialsSecretArn = Ref(rdsCredentialsSecret) as unknown as string;
 
+  // The read-only database user SQL Yodeler reads with (loomster#78): plan,
+  // status and the drift watch run as this user, never as the master user.
+  // CloudFormation generates the password; `scripts/db/yodel.sh reader`
+  // creates the role in Postgres with it, as the master user, and grants it
+  // read access to Loom's tables and yodel's history.
+  const rdsReaderSecret = new Secret({
+    Name: naming.name("reader"),
+    Description: "Read-only database user for schema plans, status and drift (SQL Yodeler)",
+    KmsKeyId: kmsKeyId,
+    GenerateSecretString: new Secret_GenerateSecretString({
+      SecretStringTemplate: `{"username":"${READER_USERNAME}"}`,
+      GenerateStringKey: "password",
+      PasswordLength: 32,
+      ExcludePunctuation: true,
+    }),
+    Tags: tags,
+  });
+
   const subnetIdsCsv = data.network.subnetIdsCsv ?? data.network.subnetIds.join(",");
 
   return {
-    members: { rdsSecurityGroup, rdsSubnetGroup, secretsKmsKey, secretsKmsKeyAlias, rdsMonitoringRole, rdsInstance, rdsCredentialsSecret },
+    members: { rdsSecurityGroup, rdsSubnetGroup, secretsKmsKey, secretsKmsKeyAlias, rdsMonitoringRole, rdsInstance, rdsCredentialsSecret, rdsReaderSecret },
     rdsInstance,
     dbInstanceIdentifier,
     credentialsSecretArn,
@@ -502,6 +525,7 @@ export type LoomDbResult = {
   rdsMonitoringRole?: InstanceType<typeof Role>;
   rdsInstance?: InstanceType<typeof DbInstance>;
   rdsCredentialsSecret?: InstanceType<typeof Secret>;
+  rdsReaderSecret?: InstanceType<typeof Secret>;
   rdsConnectionSecret?: InstanceType<typeof Secret>;
 
   // RDS Proxy — production/production-ha only.

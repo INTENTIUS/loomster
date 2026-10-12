@@ -28,3 +28,6 @@ test/.state/
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# scripts/db/schema.sh's throwaway copy of the db/ project (Loom schema import)
+db/.scratch/

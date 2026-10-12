@@ -63,6 +63,13 @@ export const oRdsSecretArn = mode === "provision"
     ? output(literalOutputValue(params.referenceConnectionSecretArn), "oRdsSecretArn")
     : undefined;
 
+// The read-only user's credentials (`{username,password}`), for SQL Yodeler's
+// plan, status and drift (loomster#78). Provision mode only: with a database
+// you bring, the reader is yours to create (docs: Migrate Loom's database).
+export const oRdsReaderSecretArn = mode === "provision"
+  ? output(Ref(db.rdsReaderSecret!), "oRdsReaderSecretArn")
+  : undefined;
+
 export const oRdsCredentialsSecretArn = mode === "provision"
   ? output(Ref(db.rdsCredentialsSecret!), "oRdsCredentialsSecretArn")
   : mode === "reference-existing"

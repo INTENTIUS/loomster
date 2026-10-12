@@ -26,8 +26,10 @@ export default {
   sourceDir: "src",
   // `chant lint .` and Op discovery share one walk of the whole project
   // (chant 0.81). Keep it out of the Astro docs site, whose config imports
-  // `astro:` modules the ESM loader refuses.
-  exclude: ["docs-site"],
+  // `astro:` modules the ESM loader refuses. `db/` is its own chant project
+  // (SQL Yodeler's, for Loom's Postgres schema, loomster#78) with its own
+  // chant.config.ts, lexicon and Ops; it runs from db/ (scripts/db/yodel.sh).
+  exclude: ["docs-site", "db"],
   // Whatever LOOM_ENV this build/lint/lifecycle invocation targets is the
   // only allowed environment — same single-deployment-at-a-time convention
   // every src/*/params.ts file already follows.

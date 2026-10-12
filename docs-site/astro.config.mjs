@@ -118,6 +118,7 @@ export default defineConfig({
 								{ label: 'Back up and restore', slug: 'guides/back-up-and-restore' },
 								{ label: 'Rotate credentials', slug: 'guides/rotate-credentials' },
 								{ label: 'Upgrade Loom', slug: 'guides/upgrade-loom' },
+								{ label: "Migrate Loom's database", slug: 'guides/migrate-the-database' },
 								{ label: 'Watch and reconcile drift', slug: 'guides/watch-and-reconcile-drift' },
 								{ label: 'Tear down a deployment', slug: 'guides/tear-down' },
 								{ label: 'Recover from an IdP lockout', slug: 'guides/recover-from-an-idp-lockout' },

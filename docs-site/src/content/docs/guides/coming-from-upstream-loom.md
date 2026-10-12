@@ -119,8 +119,9 @@ Every parameter is in [Build parameters](/loomster/reference/parameters/).
 - Data: point `loom-db` at your existing database with
   `LOOM_DB_MODE=reference-existing`, `LOOM_DB_ENDPOINT` and the secret Loom's
   `rds.yaml` created ([Bring your own KMS, ECR and database](/loomster/guides/bring-your-own-kms-ecr-and-database/)).
-  The backend migrates the schema on startup, as it does under SAM. A Phase 1
-  Loom's `loom.db` comes across with `just import-sqlite loom.db`.
+  Record its schema as the v1.9.0 baseline with `just db baseline`, so later
+  Loom versions arrive as reviewed migrations ([Migrate Loom's database](/loomster/guides/migrate-the-database/)).
+  A Phase 1 Loom's `loom.db` comes across with `just import-sqlite loom.db`.
 - Agent roles: they keep working; register any Loom created on demand before
   v1.9.0 under Security > IAM roles.
 

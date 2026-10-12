@@ -4,27 +4,29 @@
  * the phase shape is defined once and the tier dial (chant#890) is just a
  * config flag, not three hand-copied Op bodies.
  *
- * Phases: **Snapshot -> [Approve] -> Migrate -> Apply -> [Scripts]**, with
- * `onFailure: [Rollback]` only when gated. `gated` maps to chant#905's
+ * Phases: **Snapshot -> [Approve] -> Schema -> Backend -> Apply -> [Scripts]**,
+ * with `onFailure: [Rollback]` only when gated. `gated` maps to chant#905's
  * acceptance line ("prod/prod-ha carry gate + rollback; light is
  * additive/local with no gate"). The snapshot runs on every tier; only the
  * approval/rollback posture and the one-time-scripts phase are
  * tier-conditioned.
  *
- * **Loom's migration model (loomster#5).** Loom has no Alembic or other
- * migration tool. The backend migrates its own schema when a new task starts
- * (`backend/app/db.py` `init_db`: `create_all` plus `_migrate_add_columns`).
- * So "Migrate" is the backend component deploy itself: `chant run
- * --components loom-backend` (`../../src/components/loom-backend.component.ts`:
- * docker-build from `vendor/loom` -> publish-image -> cfn-deploy, which
- * registers a new task-definition revision and rolls the service -> Verify:
- * wait-steady-state + health-gate on real AWS, with its own
- * `rollback-previous` compensation). Steady state plus a passing `/health` is
- * the signal that the new tasks started and migrated. This Op does not repeat
- * that roll/verify logic.
+ * **The schema (loomster#78).** Loom has no migration tool of its own: the
+ * backend runs `create_all` plus a list of ADD COLUMN statements when a task
+ * starts (`backend/app/db.py` `init_db`). loomster hands the schema to SQL
+ * Yodeler instead (`../../db/`): each Loom version's change is a reviewed,
+ * versioned migration, and **Schema** applies the pending ones
+ * (`scripts/db/yodel.sh apply`) behind yodel's own gate, which is bound to the
+ * plan digest (approve it with `just db approve`, before or after this Op
+ * stops there). It runs while the old backend still serves, so a bump's
+ * migration has to be one the old code tolerates, which yodel's lint and its
+ * expand-and-contract steps are for. Then **Backend** rolls the new backend
+ * (`chant run --components loom-backend`: build, publish, cfn-deploy, and on
+ * real AWS wait-steady-state + health-gate with its own `rollback-previous`),
+ * whose startup migration finds nothing left to do.
  *
- * Because the migration is the cutover, the approval gate sits before
- * Migrate.
+ * The Op's own approval gate (gated tiers) sits before Schema, since the
+ * schema change is the first irreversible step after the snapshot.
  *
  * **Scripts** (gated tiers only) runs Loom's one-time `backend/scripts/*.py`
  * named in `LOOM_UPGRADE_SCRIPTS` at run time, each as a one-off ECS task of
@@ -50,6 +52,15 @@ export interface LoomUpgradeOpConfig {
 /** Container name in the backend task definition (`../../src/composites/loom-backend.ts`). */
 const BACKEND_CONTAINER = "backend";
 
+/**
+ * The Schema phase: apply the pending migrations of Loom's schema with SQL
+ * Yodeler (`../../scripts/db/yodel.sh`, which reaches the database through
+ * the SSM tunnel and runs db/'s migrate Op). It exits 3 at yodel's gate until
+ * `just db approve` has approved this exact plan, and 4 when the deployment's
+ * history records nothing yet (`just db baseline` first).
+ */
+export const SCHEMA_SCRIPT = "bash scripts/db/yodel.sh apply";
+
 export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<typeof OpResource> {
   const { naming, gated } = config;
   const tier = naming.tier;
@@ -65,14 +76,15 @@ export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<ty
       phase("Approve", [
         gate(`approve-${opName}`, {
           timeout: "24h",
-          description: `Approve rolling the new Loom backend (it migrates the schema on startup) and frontend to ${tier} (env=${naming.env}, instance=${naming.instance})`,
+          description: `Approve migrating the schema (SQL Yodeler, behind its own plan-bound gate) and rolling the new Loom backend and frontend to ${tier} (env=${naming.env}, instance=${naming.instance})`,
         }),
       ]),
     );
   }
 
   phases.push(
-    phase("Migrate", [shell(`npx chant run --components loom-backend --env ${naming.env}`, { profile: "longInfra" })]),
+    phase("Schema", [shell(SCHEMA_SCRIPT, { profile: "longInfra" })]),
+    phase("Backend", [shell(`npx chant run --components loom-backend --env ${naming.env}`, { profile: "longInfra" })]),
     phase("Apply", [shell(`npx chant run --components loom-frontend --env ${naming.env}`, { profile: "longInfra" })]),
   );
 
@@ -101,7 +113,7 @@ export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<ty
 
   return Op({
     name: opName,
-    overview: `Upgrade the Loom "${tier}" deployment (env=${naming.env}): snapshot ->${gated ? " approve ->" : ""} roll the backend (schema migrates on startup) -> roll the frontend${gated ? " -> one-time scripts (LOOM_UPGRADE_SCRIPTS)" : ""}`,
+    overview: `Upgrade the Loom "${tier}" deployment (env=${naming.env}): snapshot ->${gated ? " approve ->" : ""} migrate the schema (SQL Yodeler, plan-bound gate) -> roll the backend -> roll the frontend${gated ? " -> one-time scripts (LOOM_UPGRADE_SCRIPTS)" : ""}`,
     labels: { Tier: tier, Env: naming.env },
     phases,
     ...onFailureConfig,
