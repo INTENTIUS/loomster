@@ -3,12 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Production deployment of awslabs/loom (pinned v1.6.0) on chant — component-based, tiered light/production/production-ha, generated CI.",
+  "description": "Production deployment of awslabs/loom (pinned v1.6.0) on chant \u2014 component-based, tiered light/production/production-ha, generated CI.",
   "scripts": {
     "tsc": "tsc --noEmit",
     "lint": "chant lint .",
     "test": "vitest run",
-    "build": "npm run tsc",
     "synth:shared-foundation": "chant build src/shared-foundation --lexicon aws -o dist/shared-foundation.template.json",
     "synth:downstream-stub": "chant build src/downstream-stub --lexicon aws -o dist/downstream-stub.template.json",
     "synth:loom-db": "chant build src/loom-db --lexicon aws -o dist/loom-db.template.json",
@@ -34,10 +33,7 @@
     "generate:forgejo": "chant build --components --generate forgejo -o .forgejo/workflows/components.yml",
     "ops:build": "chant build ops",
     "export-bundle": "bash scripts/export-bundle.sh",
-    "vendor": "bash scripts/vendor-loom.sh",
-    "local-up": "bash scripts/local/local-up.sh",
-    "local-down": "bash scripts/local/local-down.sh",
-    "synth:local": "chant build src/local --lexicon docker -o dist/local/docker-compose.yml"
+    "vendor": "bash scripts/vendor-loom.sh"
   },
   "dependencies": {
     "@intentius/chant": "^0.21.0",

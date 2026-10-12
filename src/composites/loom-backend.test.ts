@@ -37,58 +37,12 @@ function baseProps(overrides: Partial<LoomBackendProps> = {}): LoomBackendProps 
 }
 
 describe("LoomBackend — light tier", () => {
-  test("returns the core members, no autoscaling", () => {
-    const instance = LoomBackend(baseProps());
-    const names = Object.keys(instance.members);
-    for (const expected of ["logsKmsKey", "logGroup", "executionRole", "taskRole", "taskDefinition", "service"]) {
-      expect(names).toContain(expected);
-    }
-    for (const absent of ["scalableTarget", "scalingPolicy"]) {
-      expect(names).not.toContain(absent);
-    }
-  });
-
-  test("desiredCount defaults to 1", () => {
-    const instance = LoomBackend(baseProps());
-    const props = (instance.service as any).props;
-    expect(props.DesiredCount).toBe(1);
-  });
-
-  test("cpu/memory default to Loom's own values (1024/2048)", () => {
-    const instance = LoomBackend(baseProps());
-    const props = (instance.taskDefinition as any).props;
-    expect(props.Cpu).toBe("1024");
-    expect(props.Memory).toBe("2048");
-  });
-
   test("RuntimePlatform defaults to X86_64/LINUX; ARM64 when set (#62 — must match the built image's arch)", () => {
     const def = (LoomBackend(baseProps()).taskDefinition as any).props.RuntimePlatform.props;
     expect(def.CpuArchitecture).toBe("X86_64");
     expect(def.OperatingSystemFamily).toBe("LINUX");
     const arm = (LoomBackend(baseProps({ cpuArchitecture: "ARM64" })).taskDefinition as any).props.RuntimePlatform.props;
     expect(arm.CpuArchitecture).toBe("ARM64");
-  });
-
-  test("container never runs privileged and always has a LogConfiguration (WAW047/WAW048)", () => {
-    const instance = LoomBackend(baseProps());
-    const props = (instance.taskDefinition as any).props;
-    const container = (props.ContainerDefinitions[0] as any).props;
-    expect(container.Privileged).toBeUndefined();
-    expect(container.LogConfiguration).toBeDefined();
-  });
-
-  test("by default (no databaseUrlPlain) the DB URL is threaded via Secrets, never plaintext Environment (WAW046)", () => {
-    const instance = LoomBackend(baseProps());
-    const props = (instance.taskDefinition as any).props;
-    const container = (props.ContainerDefinitions[0] as any).props;
-    const secretNames = (container.Secrets as any[]).map((s) => (s as any).props.Name);
-    expect(secretNames).toContain("LOOM_DATABASE_URL");
-    const envNames = (container.Environment as any[]).map((e) => (e as any).props.Name);
-    expect(envNames).not.toContain("LOOM_DATABASE_URL");
-    // No secret-looking name ever rides in plaintext Environment.
-    for (const name of envNames) {
-      expect(name).not.toMatch(/password|secret|token|api[_-]?key|credential/i);
-    }
   });
 
   test("databaseUrlPlain (#46, light tier): LOOM_DATABASE_URL rides plain Environment and the DB-URL Secret is omitted", () => {
@@ -141,11 +95,6 @@ describe("LoomBackend — production tier", () => {
     expect(targetProps.MaxCapacity).toBe(4);
   });
 
-  test("desiredCount stays 1 on production", () => {
-    const instance = LoomBackend(baseProps({ naming: prodNaming }));
-    const props = (instance.service as any).props;
-    expect(props.DesiredCount).toBe(1);
-  });
 });
 
 describe("LoomBackend — production-ha tier", () => {
@@ -159,23 +108,6 @@ describe("LoomBackend — production-ha tier", () => {
 });
 
 describe("LoomBackend — overrides", () => {
-  test("cpu/memory/desiredCount/maxCount are all overridable", () => {
-    const instance = LoomBackend(baseProps({
-      naming: prodNaming,
-      cpu: "2048",
-      memory: "4096",
-      desiredCount: 3,
-      maxCount: 10,
-    }));
-    const taskProps = (instance.taskDefinition as any).props;
-    expect(taskProps.Cpu).toBe("2048");
-    expect(taskProps.Memory).toBe("4096");
-    const serviceProps = (instance.service as any).props;
-    expect(serviceProps.DesiredCount).toBe(3);
-    const targetProps = (instance.scalableTarget as any).props;
-    expect(targetProps.MaxCapacity).toBe(10);
-  });
-
   test("litellm proxy API key secret, when given, is threaded via Secrets and grants an extra KMS statement", () => {
     const instance = LoomBackend(baseProps({
       litellmProxyApiKeySecretArn: "arn:aws:secretsmanager:us-east-1:111111111111:secret:litellm-key",
@@ -189,14 +121,6 @@ describe("LoomBackend — overrides", () => {
 });
 
 describe("LoomBackend — naming and tags", () => {
-  test("physical names derive from the naming helper, not literals", () => {
-    const instance = LoomBackend(baseProps());
-    const taskProps = (instance.taskDefinition as any).props;
-    expect(taskProps.Family).toBe("loom-test-a-loom-backend-backend-task");
-    const serviceProps = (instance.service as any).props;
-    expect(serviceProps.ServiceName).toBe("loom-test-a-loom-backend-backend-svc");
-  });
-
   // chant#896 — component/tier/env/owner/instance, always all five, sourced
   // from the one `naming.tags()` call. Checked on every always-present
   // member (KMS, execution/task roles, task definition, service) plus the

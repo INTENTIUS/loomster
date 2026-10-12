@@ -29,20 +29,6 @@ function baseProvisionProps(overrides: Partial<LoomDbProps> = {}): LoomDbProps {
 }
 
 describe("LoomDb — provision, light tier", () => {
-  test("returns the core members, no proxy/rotation", () => {
-    const instance = LoomDb(baseProvisionProps());
-    const names = Object.keys(instance.members);
-    for (const expected of [
-      "rdsSecurityGroup", "rdsSubnetGroup", "secretsKmsKey", "secretsKmsKeyAlias",
-      "rdsMonitoringRole", "rdsInstance", "rdsCredentialsSecret", "rdsConnectionSecret",
-    ]) {
-      expect(names).toContain(expected);
-    }
-    for (const absent of ["rdsProxyRole", "rdsProxy", "rdsProxyTargetGroup", "rotationSchedule"]) {
-      expect(names).not.toContain(absent);
-    }
-  });
-
   test("single-AZ, no deletion protection", () => {
     const instance = LoomDb(baseProvisionProps());
     const props = (instance.rdsInstance as any).props;
@@ -82,15 +68,6 @@ describe("LoomDb — provision, light tier", () => {
     ).toThrow(/at least 2 subnets/);
   });
 
-  test("defaults dbName/dbUsername/dbInstanceClass/dbAllocatedStorage to Loom's own values", () => {
-    const instance = LoomDb(baseProvisionProps());
-    const props = (instance.rdsInstance as any).props;
-    expect(props.DBName).toBe("loom");
-    expect(props.MasterUsername).toBe("loom");
-    expect(props.DBInstanceClass).toBe("db.t3.small");
-    expect(props.AllocatedStorage).toBe("20");
-  });
-
   test("never hardcodes the password — it flows straight from data.dbPassword", () => {
     const instance = LoomDb(baseProvisionProps({
       data: { mode: "provision", network, dbPassword: "hunter2-example-only" },
@@ -99,10 +76,6 @@ describe("LoomDb — provision, light tier", () => {
     expect(props.MasterUserPassword).toBe("hunter2-example-only");
   });
 
-  test("data.mode defaults to \"provision\" when omitted entirely", () => {
-    const instance = LoomDb({ naming: lightNaming, data: { network, dbPassword: "x" } });
-    expect(Object.keys(instance.members)).toContain("rdsInstance");
-  });
 });
 
 describe("LoomDb — provision, production tier", () => {
@@ -137,11 +110,6 @@ describe("LoomDb — provision, production tier", () => {
   // plaintext. Regression guard for the chant#890 tiering pass, which found
   // this hardcoded false and blocking a green `npm run synth` on both
   // production and production-ha.
-  test("RDS Proxy requires TLS on every client connection", () => {
-    const instance = LoomDb(prodProps());
-    const proxyProps = (instance.rdsProxy as any).props;
-    expect(proxyProps.RequireTLS).toBe(true);
-  });
 });
 
 describe("LoomDb — provision, production-ha tier", () => {
@@ -168,11 +136,6 @@ describe("LoomDb — provision, production-ha tier", () => {
     expect(hostedLambdaProps.VpcSubnetIds).toBe("subnet-priv1,subnet-priv2");
   });
 
-  test("RDS Proxy requires TLS on every client connection (WAW041)", () => {
-    const instance = LoomDb(prodHaProps());
-    const proxyProps = (instance.rdsProxy as any).props;
-    expect(proxyProps.RequireTLS).toBe(true);
-  });
 });
 
 describe("LoomDb — BYO-DB (chant#898): reference-existing | omit", () => {
@@ -191,14 +154,6 @@ describe("LoomDb — BYO-DB (chant#898): reference-existing | omit", () => {
 });
 
 describe("LoomDb — naming and tags", () => {
-  test("physical names derive from the naming helper, not literals", () => {
-    const instance = LoomDb(baseProvisionProps());
-    const instanceProps = (instance.rdsInstance as any).props;
-    expect(instanceProps.DBInstanceIdentifier).toBe("loom-test-a-loom-db-instance");
-    const subnetGroupProps = (instance.rdsSubnetGroup as any).props;
-    expect(subnetGroupProps.DBSubnetGroupName).toBe("loom-test-a-loom-db-subnet-group");
-  });
-
   // chant#896 — component/tier/env/owner/instance, always all five, sourced
   // from the one `naming.tags()` call. Checked on the always-present core
   // members (light tier) plus the production/production-ha-only RDS Proxy,

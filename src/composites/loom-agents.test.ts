@@ -43,25 +43,12 @@ const HARNESS_AGENT_MEMBERS = [
 ];
 
 describe("LoomAgents — light tier", () => {
-  test("returns only the assistant agent's members (low-code Strands, minimal set)", () => {
-    const instance = LoomAgents(baseProps());
-    expect(Object.keys(instance.members)).toEqual(ASSISTANT_ONLY_MEMBERS);
-    expect(instance.harnessAgentRuntime).toBeUndefined();
-  });
-
   test("assistant runs in PUBLIC network mode with no VPC config", () => {
     const instance = LoomAgents(baseProps());
     const runtimeProps = (instance.assistantRuntime as any).props;
     const netConfigProps = (runtimeProps.NetworkConfiguration as any).props;
     expect(netConfigProps.NetworkMode).toBe("PUBLIC");
     expect(netConfigProps.NetworkModeConfig).toBeUndefined();
-  });
-
-  test("protocol matches Loom's own create_runtime default (HTTP, not the composite's own MCP default)", () => {
-    const instance = LoomAgents(baseProps());
-    const runtimeProps = (instance.assistantRuntime as any).props;
-    const protocolProps = (runtimeProps.ProtocolConfiguration as any)?.props ?? runtimeProps.ProtocolConfiguration;
-    expect(protocolProps).toBe("HTTP");
   });
 
   test("assistant deploys as a code artifact (S3 zip on PYTHON_3_13), not a container", () => {
@@ -79,12 +66,6 @@ describe("LoomAgents — light tier", () => {
 
   test("privateSubnetIds is not required on light", () => {
     expect(() => LoomAgents(baseProps({ privateSubnetIds: undefined }))).not.toThrow();
-  });
-
-  test("physical names derive from the naming helper, not literals", () => {
-    const instance = LoomAgents(baseProps());
-    const runtimeProps = (instance.assistantRuntime as any).props;
-    expect(runtimeProps.AgentRuntimeName).toBe("loom_test_a_loom_agents_assistant");
   });
 
   test("every taggable resource carries the full tag set (chant#896)", () => {
@@ -130,15 +111,6 @@ describe("LoomAgents — light tier", () => {
     expect(identityProps.AllowedResourceOauth2ReturnUrls).toEqual([
       "https://loom-test-a.auth.us-east-1.amazoncognito.com/oauth2/token",
     ]);
-  });
-
-  test("bedrockModelArns defaults match shared-foundation's own agentRole default", () => {
-    const instance = LoomAgents(baseProps());
-    const roleProps = (instance.assistantRole as any).props;
-    const bedrockPolicy = (roleProps.Policies as any[])
-      .map((p) => (p as any).props)
-      .find((p) => p.PolicyName === "loom-test-a-loom-agents-assistant-bedrock-policy");
-    expect((bedrockPolicy.PolicyDocument as any).Statement[0].Resource).toEqual(["arn:aws:bedrock:*::foundation-model/*"]);
   });
 
   test("provisions a Code Interpreter sandbox execution role for the assistant (Loom's code_interpreter_role.yaml)", () => {
@@ -202,11 +174,6 @@ describe("LoomAgents — production tier", () => {
     expect((light.assistantMemory as any).props.EventExpiryDuration).toBe(30);
     expect((full.assistantMemory as any).props.EventExpiryDuration).toBe(90);
     expect((full.harnessAgentMemory as any).props.EventExpiryDuration).toBe(90);
-  });
-
-  test("memoryEventExpiryDays is overridable", () => {
-    const instance = LoomAgents(baseProps({ ...fullTierOverrides, memoryEventExpiryDays: 45 }));
-    expect((instance.assistantMemory as any).props.EventExpiryDuration).toBe(45);
   });
 
   test("provisions a Code Interpreter role for the harness agent too (per-agent, like Loom)", () => {

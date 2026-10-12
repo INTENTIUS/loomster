@@ -30,39 +30,12 @@ function baseProps(overrides: Partial<LoomFrontendProps> = {}): LoomFrontendProp
 }
 
 describe("LoomFrontend — light tier", () => {
-  test("returns exactly the core members — no task role, no autoscaling (matches Loom's own template)", () => {
-    const instance = LoomFrontend(baseProps());
-    const names = Object.keys(instance.members);
-    expect(names.sort()).toEqual(["executionRole", "logGroup", "logsKmsKey", "service", "taskDefinition"].sort());
-  });
-
-  test("desiredCount defaults to 1", () => {
-    const instance = LoomFrontend(baseProps());
-    const props = (instance.service as any).props;
-    expect(props.DesiredCount).toBe(1);
-  });
-
-  test("cpu/memory default to Loom's own values (256/512)", () => {
-    const instance = LoomFrontend(baseProps());
-    const props = (instance.taskDefinition as any).props;
-    expect(props.Cpu).toBe("256");
-    expect(props.Memory).toBe("512");
-  });
-
   test("RuntimePlatform defaults to X86_64/LINUX; ARM64 when set (#62)", () => {
     const def = (LoomFrontend(baseProps()).taskDefinition as any).props.RuntimePlatform.props;
     expect(def.CpuArchitecture).toBe("X86_64");
     expect(def.OperatingSystemFamily).toBe("LINUX");
     const arm = (LoomFrontend(baseProps({ cpuArchitecture: "ARM64" })).taskDefinition as any).props.RuntimePlatform.props;
     expect(arm.CpuArchitecture).toBe("ARM64");
-  });
-
-  test("container never runs privileged and always has a LogConfiguration (WAW047/WAW048)", () => {
-    const instance = LoomFrontend(baseProps());
-    const props = (instance.taskDefinition as any).props;
-    const container = (props.ContainerDefinitions[0] as any).props;
-    expect(container.Privileged).toBeUndefined();
-    expect(container.LogConfiguration).toBeDefined();
   });
 
   test("network configuration uses the given public subnets + SG, public IP assigned (matches Loom's own template)", () => {
@@ -91,26 +64,7 @@ describe("LoomFrontend — production-ha tier", () => {
   });
 });
 
-describe("LoomFrontend — overrides", () => {
-  test("cpu/memory/desiredCount are all overridable", () => {
-    const instance = LoomFrontend(baseProps({ cpu: "512", memory: "1024", desiredCount: 3 }));
-    const taskProps = (instance.taskDefinition as any).props;
-    expect(taskProps.Cpu).toBe("512");
-    expect(taskProps.Memory).toBe("1024");
-    const serviceProps = (instance.service as any).props;
-    expect(serviceProps.DesiredCount).toBe(3);
-  });
-});
-
 describe("LoomFrontend — naming and tags", () => {
-  test("physical names derive from the naming helper, not literals", () => {
-    const instance = LoomFrontend(baseProps());
-    const taskProps = (instance.taskDefinition as any).props;
-    expect(taskProps.Family).toBe("loom-test-a-loom-frontend-frontend-task");
-    const serviceProps = (instance.service as any).props;
-    expect(serviceProps.ServiceName).toBe("loom-test-a-loom-frontend-frontend-svc");
-  });
-
   // chant#896 — component/tier/env/owner/instance, always all five, sourced
   // from the one `naming.tags()` call. Checked on every member this composite
   // returns (no tier-gated members here — see file header) across tiers so

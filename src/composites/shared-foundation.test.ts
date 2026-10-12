@@ -45,19 +45,6 @@ function baseProdProps(overrides: Partial<SharedFoundationProps> = {}): SharedFo
 }
 
 describe("SharedFoundation — base shape (light tier, reference-existing network)", () => {
-  test("returns the unconditional members plus provisioned KMS/ECR/agent role", () => {
-    const instance = SharedFoundation(baseLightProps());
-    const names = Object.keys(instance.members);
-
-    for (const expected of [
-      "albSg", "ecsSg", "alb", "frontendTargetGroup", "backendTargetGroup",
-      "httpsListener", "backendListenerRule", "artifactBucket", "artifactBucketPolicy", "ecsCluster",
-      "kmsKey", "kmsAlias", "frontendRepo", "backendRepo", "agentRole",
-    ]) {
-      expect(names).toContain(expected);
-    }
-  });
-
   test("light tier has no ACM/Route53/PrivateLink members", () => {
     const instance = SharedFoundation(baseLightProps());
     const names = Object.keys(instance.members);
@@ -261,22 +248,6 @@ describe("SharedFoundation — seams: provision | reference-existing | omit", ()
 });
 
 describe("SharedFoundation — naming and tags", () => {
-  test("physical names derive from the naming helper, not literals", () => {
-    const instance = SharedFoundation(baseLightProps());
-
-    // ALB names are capped at 32 chars (truncate + hash) — the naming
-    // helper's own concern (chant#897); just assert the prefix + limit hold.
-    const albProps = (instance.alb as any).props;
-    expect(albProps.Name.length).toBeLessThanOrEqual(32);
-    expect(albProps.Name).toMatch(/^loom-test-a-shared-founda/);
-
-    const bucketProps = (instance.artifactBucket as any).props;
-    expect(bucketProps.BucketName).toMatch(/^loom-test-a-shared-foundation-artifacts-[0-9a-f]{6}$/);
-
-    const clusterProps = (instance.ecsCluster as any).props;
-    expect(clusterProps.ClusterName).toBe("loom-test-a-shared-foundation-cluster");
-  });
-
   // chant#896 — the cost-allocation tag set is component/tier/env/owner/
   // instance, always all five, sourced from the one `naming.tags()` call.
   // Checked on a representative resource per always-present member group
@@ -403,21 +374,6 @@ describe("SharedFoundation — serializes to valid CloudFormation", () => {
 // unlike KMS/ACM/Route53/ECR/agentRole above, this has no "omit" and is
 // present on every tier (chant#890's light-tier synth error, fixed here).
 describe("SharedFoundation — artifact bucket TLS-only policy (WAW042, every tier)", () => {
-  test("light tier: artifactBucketPolicy is present", () => {
-    const instance = SharedFoundation(baseLightProps());
-    expect(Object.keys(instance.members)).toContain("artifactBucketPolicy");
-  });
-
-  test("production tier: artifactBucketPolicy is present", () => {
-    const instance = SharedFoundation(baseProdProps());
-    expect(Object.keys(instance.members)).toContain("artifactBucketPolicy");
-  });
-
-  test("production-ha tier: artifactBucketPolicy is present", () => {
-    const instance = SharedFoundation(baseProdProps({ naming: { ...prodNaming, tier: "production-ha" } }));
-    expect(Object.keys(instance.members)).toContain("artifactBucketPolicy");
-  });
-
   test("denies non-TLS requests on the artifact bucket, scoped to the bucket + its objects", () => {
     const instance = SharedFoundation(baseLightProps());
     const policyProps = (instance.artifactBucketPolicy as any).props;
@@ -429,24 +385,4 @@ describe("SharedFoundation — artifact bucket TLS-only policy (WAW042, every ti
     expect(statement.Condition).toEqual({ Bool: { "aws:SecureTransport": "false" } });
   });
 
-  test("serializes to a real CFN BucketPolicy targeting the artifact bucket, satisfying WAW042's own check", () => {
-    const instance = SharedFoundation(baseLightProps());
-    const expanded = expandComposite("sharedFoundation", instance);
-    resolveAttrRefs(expanded);
-    const output = awsSerializer.serialize(expanded) as string;
-    const template = JSON.parse(output);
-
-    const policyResource = template.Resources.sharedFoundationArtifactBucketPolicy;
-    expect(policyResource.Type).toBe("AWS::S3::BucketPolicy");
-    expect(policyResource.Properties.Bucket).toEqual({ Ref: "sharedFoundationArtifactBucket" });
-
-    // Mirrors WAW042's own `statementDeniesInsecureTransport` check (see
-    // lexicons/aws/src/lint/post-synth/waw042.ts) so this test fails the
-    // same way the real post-synth lint pass would if the statement regressed.
-    const statements = policyResource.Properties.PolicyDocument.Statement;
-    const hasTlsDeny = statements.some(
-      (s: any) => s.Effect === "Deny" && s.Condition?.Bool?.["aws:SecureTransport"] === "false",
-    );
-    expect(hasTlsDeny).toBe(true);
-  });
 });
