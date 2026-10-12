@@ -4,26 +4,31 @@
  * the phase shape is defined once and the tier dial (chant#890) is just a
  * config flag, not three hand-copied Op bodies.
  *
- * Phases: **Snapshot -> Migrate -> [Approve] -> Apply**, `onFailure: [Rollback]`
- * only when gated. `gated` maps directly to chant#905's acceptance line
- * ("prod/prod-ha carry gate + rollback; light is additive/local with no
- * gate") — everything about the safety posture (snapshot before mutating,
- * migrate before cutover) applies unconditionally to every tier; only the
- * approval/rollback posture is tier-conditioned.
+ * Phases: **Snapshot -> [Approve] -> Migrate -> Apply -> [Scripts]**, with
+ * `onFailure: [Rollback]` only when gated. `gated` maps to chant#905's
+ * acceptance line ("prod/prod-ha carry gate + rollback; light is
+ * additive/local with no gate"). The snapshot runs on every tier; only the
+ * approval/rollback posture and the one-time-scripts phase are
+ * tier-conditioned.
  *
- * **Promote-by-digest, no rebuild.** The Apply phase below runs
- * `chant run --components loom-backend|loom-frontend` — deploying the
- * already-published image through the exact service components chant#889
- * built (`../../src/components/{loom-backend,loom-frontend}.component.ts`:
- * publish-image -> cfn-deploy -> ecs-update-service -> wait-steady-state ->
- * health-gate, with a `rollback-previous` compensation phase of its own).
- * `runComponentDeploy` (chant core's component driver) never invokes a
- * component's `build` field itself — only `deploy` — so this genuinely never
- * rebuilds; it promotes whatever archive a prior `chant build` produced. This
- * Op does not duplicate that apply/verify/rollback logic (chant#905: "no new
- * primitives") — it wraps it with the two things it lacks: RDS data-safety
- * ahead of it, and (gated tiers) a durable approval + a data-safety rollback
- * around it.
+ * **Loom's migration model (loomster#5).** Loom has no Alembic or other
+ * migration tool. The backend migrates its own schema when a new task starts
+ * (`backend/app/db.py` `init_db`: `create_all` plus `_migrate_add_columns`).
+ * So "Migrate" is the backend component deploy itself: `chant run
+ * --components loom-backend` (`../../src/components/loom-backend.component.ts`:
+ * docker-build from `vendor/loom` -> publish-image -> cfn-deploy, which
+ * registers a new task-definition revision and rolls the service -> Verify:
+ * wait-steady-state + health-gate on real AWS, with its own
+ * `rollback-previous` compensation). Steady state plus a passing `/health` is
+ * the signal that the new tasks started and migrated. This Op does not repeat
+ * that roll/verify logic.
+ *
+ * Because the migration is the cutover, the approval gate sits before
+ * Migrate.
+ *
+ * **Scripts** (gated tiers only) runs Loom's one-time `backend/scripts/*.py`
+ * named in `LOOM_UPGRADE_SCRIPTS` at run time, each as a one-off ECS task of
+ * the just-rolled backend (`./backend-scripts.ts`). Empty or unset is a no-op.
  *
  * Runs the nested component deploys on the **local** executor (no
  * `--temporal`) even for gated tiers: the outer Op already gives this whole
@@ -39,46 +44,26 @@ import { Op, phase, gate, shell } from "@intentius/chant-lexicon-temporal";
 import { OpResource } from "@intentius/chant/op";
 import type { LoomNamingParams } from "../../src/lib/naming";
 import { stackRefs } from "./stack-refs";
-import { snapshotBeforeScript, restorePreviousScript, runMigrationScript } from "./rds-safety";
+import { snapshotBeforeScript, restorePreviousScript } from "./rds-safety";
+import { runBackendScriptsScript } from "./backend-scripts";
 
 export interface LoomUpgradeOpConfig {
   naming: LoomNamingParams;
-  /** `true` on `production`/`production-ha` (approval gate + data-safety rollback); `false` on `light` (additive, local-executor-friendly, chant#905). */
+  /** `true` on `production`/`production-ha` (approval gate, one-time-scripts phase, data-safety rollback); `false` on `light` (additive, local-executor-friendly, chant#905). */
   gated: boolean;
 }
 
-/** Migration container command — env-driven (`LOOM_MIGRATION_COMMAND`, comma-separated argv) because Loom's actual migration entrypoint is only known once `vendor/loom` is checked out (see README.md's "Docker build context" note); defaults to a placeholder Alembic invocation to keep the Op runnable/testable before that's wired up. */
-function migrationCommand(): string[] {
-  const raw = process.env.LOOM_MIGRATION_COMMAND ?? "python,-m,alembic,upgrade,head";
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
-}
-
-/** Private subnet ids the migration task runs in — the same `LOOM_PRIVATE_SUBNET_IDS` baseline every stack's own `params.ts` reads (e.g. `../../src/loom-db/params.ts`). */
-function migrationSubnetIds(): string[] {
-  return (process.env.LOOM_PRIVATE_SUBNET_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-}
+/** Container name in the backend task definition (`../../src/composites/loom-backend.ts`). */
+const BACKEND_CONTAINER = "backend";
 
 export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<typeof OpResource> {
   const { naming, gated } = config;
   const tier = naming.tier;
   const refs = stackRefs(naming);
   const opName = `loom-upgrade-${tier}`;
-  const securityGroupId = process.env.LOOM_ECS_SECURITY_GROUP_ID ?? "";
 
   const phases = [
     phase("Snapshot", [shell(snapshotBeforeScript({ dbInstanceIdentifier: refs.dbInstanceIdentifier }), { profile: "longInfra" })]),
-    phase("Migrate", [
-      shell(
-        runMigrationScript({
-          cluster: refs.ecsClusterName,
-          taskFamily: refs.backendTaskFamily,
-          command: migrationCommand(),
-          subnetIds: migrationSubnetIds(),
-          securityGroupId,
-        }),
-        { profile: "longInfra" },
-      ),
-    ]),
   ];
 
   if (gated) {
@@ -86,18 +71,27 @@ export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<ty
       phase("Approve", [
         gate(`approve-${opName}`, {
           timeout: "24h",
-          description: `Approve promoting the new Loom image to ${tier} (env=${naming.env}, instance=${naming.instance})`,
+          description: `Approve rolling the new Loom backend (it migrates the schema on startup) and frontend to ${tier} (env=${naming.env}, instance=${naming.instance})`,
         }),
       ]),
     );
   }
 
   phases.push(
-    phase("Apply", [
-      shell(`npx chant run --components loom-backend --env ${naming.env}`, { profile: "longInfra" }),
-      shell(`npx chant run --components loom-frontend --env ${naming.env}`, { profile: "longInfra" }),
-    ]),
+    phase("Migrate", [shell(`npx chant run --components loom-backend --env ${naming.env}`, { profile: "longInfra" })]),
+    phase("Apply", [shell(`npx chant run --components loom-frontend --env ${naming.env}`, { profile: "longInfra" })]),
   );
+
+  if (gated) {
+    phases.push(
+      phase("Scripts", [
+        shell(
+          runBackendScriptsScript({ cluster: refs.ecsClusterName, serviceName: refs.backendServiceName, container: BACKEND_CONTAINER }),
+          { profile: "longInfra" },
+        ),
+      ]),
+    );
+  }
 
   // Hoisted to a const before the return (chant's EVL004 requires a spread
   // source to be a const identifier/literal, never an inline ternary).
@@ -113,7 +107,7 @@ export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<ty
 
   return Op({
     name: opName,
-    overview: `Promote-by-digest upgrade of the Loom "${tier}" deployment (env=${naming.env}): snapshot -> migrate${gated ? " -> approve" : ""} -> apply`,
+    overview: `Upgrade the Loom "${tier}" deployment (env=${naming.env}): snapshot ->${gated ? " approve ->" : ""} roll the backend (schema migrates on startup) -> roll the frontend${gated ? " -> one-time scripts (LOOM_UPGRADE_SCRIPTS)" : ""}`,
     taskQueue: "loom-lifecycle",
     searchAttributes: { Tier: tier, Env: naming.env },
     phases,

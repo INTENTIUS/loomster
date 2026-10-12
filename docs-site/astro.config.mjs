@@ -33,6 +33,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Overview', slug: 'operations/overview' },
 						{ label: 'Production on real AWS', slug: 'operations/production-live-e2e' },
+						{ label: 'Upgrade', slug: 'operations/upgrade' },
 						{ label: 'Backup & restore', slug: 'operations/backup-restore' },
 						{ label: 'CI providers', slug: 'operations/ci' },
 					],

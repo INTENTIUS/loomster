@@ -29,7 +29,8 @@ and restore are about.
 - **Multi-AZ on `production-ha`.** This is availability, not backup, but it
   removes single-AZ failure as a data-loss path.
 - **Pre-migration snapshot.** The upgrade Op takes a manual snapshot before
-  running migrations (`ops/lib/rds-safety.ts`), and on rollback restores the
+  rolling the backend, which is when Loom migrates its schema
+  (`ops/lib/rds-safety.ts`), and on rollback restores the
   latest manual snapshot to a **new** instance. It deliberately stops before
   cutover.
 - **On-demand and scheduled backup.** `chant run loom-backup` takes a labelled
