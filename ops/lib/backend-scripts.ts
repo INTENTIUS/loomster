@@ -40,19 +40,73 @@ export interface BackendTaskTarget {
   container: string;
 }
 
-export function runBackendScriptsScript(target: BackendTaskTarget, envVar = "LOOM_UPGRADE_SCRIPTS"): string {
+/** Single-quote `s` for bash (an embedded `'` becomes `'\''`). */
+export function shq(s: string): string {
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * Bash that resolves the backend service's task definition, awsvpc network
+ * configuration and log location, then defines `run_backend_task LABEL
+ * OVERRIDES_JSON`: one `run-task` of that task definition with the given
+ * container overrides, waited until it stops, its logs printed, and a
+ * non-zero exit returned as failure. `tag` prefixes every message. With
+ * `missingServiceOk`, a service that no longer exists (a re-run teardown)
+ * ends the script with exit 0 instead of failing it.
+ */
+export function backendTaskPrelude(target: BackendTaskTarget, tag: string, opts: { missingServiceOk?: boolean } = {}): string[] {
   const { cluster, serviceName, container } = target;
   const logOpt = (key: string) =>
     `aws ecs describe-task-definition --task-definition "$TASK_DEF" --query "taskDefinition.containerDefinitions[?name=='${container}'] | [0].logConfiguration.options.\\"${key}\\"" --output text`;
+  const missing = opts.missingServiceOk
+    ? `echo "${tag}: service ${serviceName} not found in ${cluster}, nothing to do"; exit 0`
+    : `echo "${tag}: service ${serviceName} not found in ${cluster}" >&2; exit 1`;
+  return [
+    `TASK_DEF=$(aws ecs describe-services --cluster "${cluster}" --services "${serviceName}" --query "services[0].taskDefinition" --output text 2>/dev/null || true)`,
+    `NETWORK=$(aws ecs describe-services --cluster "${cluster}" --services "${serviceName}" --query "services[0].networkConfiguration" --output json 2>/dev/null || echo null)`,
+    `if [ -z "$TASK_DEF" ] || [ "$TASK_DEF" = "None" ] || [ -z "$NETWORK" ] || [ "$NETWORK" = "null" ]; then ${missing}; fi`,
+    `LOG_GROUP=$(${logOpt("awslogs-group")})`,
+    `LOG_PREFIX=$(${logOpt("awslogs-stream-prefix")})`,
+    `run_backend_task() { # label overrides-json`,
+    `  local LABEL="$1" OVERRIDES="$2" TASK_ARN EXIT_CODE STOPPED_REASON`,
+    `  TASK_ARN=$(aws ecs run-task --cluster "${cluster}" --task-definition "$TASK_DEF" --launch-type FARGATE --network-configuration "$NETWORK" --overrides "$OVERRIDES" --started-by loom-${tag} --query "tasks[0].taskArn" --output text)`,
+    `  if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "None" ]; then echo "${tag}: run-task returned no task for $LABEL" >&2; return 1; fi`,
+    `  aws ecs wait tasks-stopped --cluster "${cluster}" --tasks "$TASK_ARN"`,
+    `  EXIT_CODE=$(aws ecs describe-tasks --cluster "${cluster}" --tasks "$TASK_ARN" --query "tasks[0].containers[?name=='${container}'] | [0].exitCode" --output text)`,
+    `  STOPPED_REASON=$(aws ecs describe-tasks --cluster "${cluster}" --tasks "$TASK_ARN" --query "tasks[0].stoppedReason" --output text)`,
+    `  echo "----- $LABEL logs ($LOG_GROUP) -----"`,
+    `  aws logs get-log-events --log-group-name "$LOG_GROUP" --log-stream-name "$LOG_PREFIX/${container}/\${TASK_ARN##*/}" --start-from-head --query "events[].message" --output json | jq -r '.[]' || echo "(no logs found)"`,
+    `  echo "-----"`,
+    `  if [ "$EXIT_CODE" != "0" ]; then echo "${tag}: $LABEL exited $EXIT_CODE ($STOPPED_REASON)" >&2; return 1; fi`,
+    `  echo "${tag}: $LABEL exited 0"`,
+    `}`,
+  ];
+}
+
+/**
+ * One fixed command as a one-off task of the backend (same image, task role,
+ * env, secrets and network as the service). `command` is the container argv.
+ */
+export function runBackendCommandScript(
+  target: BackendTaskTarget,
+  spec: { tag: string; label: string; command: string[]; missingServiceOk?: boolean },
+): string {
+  const overrides = JSON.stringify({ containerOverrides: [{ name: target.container, command: spec.command }] });
+  return [
+    "set -euo pipefail",
+    ...backendTaskPrelude(target, spec.tag, { missingServiceOk: spec.missingServiceOk }),
+    `echo "${spec.tag}: running ${spec.label} on $TASK_DEF"`,
+    `run_backend_task ${shq(spec.label)} ${shq(overrides)}`,
+  ].join("\n");
+}
+
+export function runBackendScriptsScript(target: BackendTaskTarget, envVar = "LOOM_UPGRADE_SCRIPTS"): string {
+  const { container } = target;
   return [
     "set -euo pipefail",
     `SPECS="\${${envVar}:-}"`,
     `if [ -z "$SPECS" ]; then echo "backend-scripts: ${envVar} is empty, nothing to run"; exit 0; fi`,
-    `TASK_DEF=$(aws ecs describe-services --cluster "${cluster}" --services "${serviceName}" --query "services[0].taskDefinition" --output text)`,
-    `NETWORK=$(aws ecs describe-services --cluster "${cluster}" --services "${serviceName}" --query "services[0].networkConfiguration" --output json)`,
-    `if [ -z "$TASK_DEF" ] || [ "$TASK_DEF" = "None" ] || [ "$NETWORK" = "null" ]; then echo "backend-scripts: service ${serviceName} not found in ${cluster}" >&2; exit 1; fi`,
-    `LOG_GROUP=$(${logOpt("awslogs-group")})`,
-    `LOG_PREFIX=$(${logOpt("awslogs-stream-prefix")})`,
+    ...backendTaskPrelude(target, "backend-scripts"),
     `IFS=',' read -r -a ENTRIES <<< "$SPECS"`,
     `for ENTRY in "\${ENTRIES[@]}"; do`,
     `  read -r -a WORDS <<< "$ENTRY" || true`,
@@ -65,16 +119,7 @@ export function runBackendScriptsScript(target: BackendTaskTarget, envVar = "LOO
     `  for ((i = 1; i < \${#WORDS[@]}; i++)); do ARGV=$(jq -c --arg a "\${WORDS[$i]}" '. + [$a]' <<< "$ARGV"); done`,
     `  OVERRIDES=$(jq -cn --arg c "${container}" --arg m "scripts.$NAME" --argjson argv "$ARGV" '{containerOverrides:[{name:$c,command:(["python","-m",$m]+$argv)}]}')`,
     `  echo "backend-scripts: running python -m scripts.$NAME \${WORDS[*]:1} on $TASK_DEF"`,
-    `  TASK_ARN=$(aws ecs run-task --cluster "${cluster}" --task-definition "$TASK_DEF" --launch-type FARGATE --network-configuration "$NETWORK" --overrides "$OVERRIDES" --started-by loom-backend-scripts --query "tasks[0].taskArn" --output text)`,
-    `  if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "None" ]; then echo "backend-scripts: run-task returned no task for $NAME" >&2; exit 1; fi`,
-    `  aws ecs wait tasks-stopped --cluster "${cluster}" --tasks "$TASK_ARN"`,
-    `  EXIT_CODE=$(aws ecs describe-tasks --cluster "${cluster}" --tasks "$TASK_ARN" --query "tasks[0].containers[?name=='${container}'] | [0].exitCode" --output text)`,
-    `  STOPPED_REASON=$(aws ecs describe-tasks --cluster "${cluster}" --tasks "$TASK_ARN" --query "tasks[0].stoppedReason" --output text)`,
-    `  echo "----- $NAME logs ($LOG_GROUP) -----"`,
-    `  aws logs get-log-events --log-group-name "$LOG_GROUP" --log-stream-name "$LOG_PREFIX/${container}/\${TASK_ARN##*/}" --start-from-head --query "events[].message" --output json | jq -r '.[]' || echo "(no logs found)"`,
-    `  echo "-----"`,
-    `  if [ "$EXIT_CODE" != "0" ]; then echo "backend-scripts: $NAME exited $EXIT_CODE ($STOPPED_REASON)" >&2; exit 1; fi`,
-    `  echo "backend-scripts: $NAME exited 0"`,
+    `  run_backend_task "$NAME" "$OVERRIDES"`,
     `done`,
   ].join("\n");
 }

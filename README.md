@@ -183,6 +183,7 @@ exit 3, `chant approve <op> <gate>` records the approval, and the next
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes, in reverse `chant graph --components` order. No foreign deletes. | Yes |
 | `loom-dns-setup` | Create + delegate a custom-domain Route53 zone, wait for the delegation to resolve. Human-in-the-loop, local. | No |
 | `loom-bootstrap` | Once per account: create the ECS and AgentCore runtime-identity service-linked roles if missing (Loom's `make ecs.init`/`agentcore.init`). Idempotent. | No |
+| `loom-import-sqlite`, `loom-fix-sequences`, `loom-reset-db`, `loom-credentials[-delete]`, `loom-memory`, `loom-cognito-set-passwords` | Loom's operator make targets (`just import-sqlite`, `just reset-db`, `just memory`, ...); see the docs' Loom make targets page. | `import-sqlite`, `reset-db`, `credentials-delete` |
 
 ```
 npm run ops:build                            # ops/dist/ops/<name>/op.json

@@ -28,6 +28,7 @@ lists them with the guardrails.
 | `loom-audit` | Security-audit the generated CI YAML. | No |
 | `loom-dns-setup` | Create + delegate the Route53 zone for a custom domain, then wait for the delegation to resolve. Human-in-the-loop, local. | No |
 | `loom-bootstrap` | Once per account: create the ECS and AgentCore runtime-identity service-linked roles if missing (Loom's `make ecs.init`/`agentcore.init`). Idempotent. | No |
+| `loom-import-sqlite`, `loom-fix-sequences`, `loom-reset-db`, `loom-credentials[-delete]`, `loom-memory`, `loom-cognito-set-passwords` | Loom's operator make targets; see [Loom make targets](/loomster/reference/make-targets/). | `import-sqlite`, `reset-db`, `credentials-delete` |
 
 ## Running them
 
