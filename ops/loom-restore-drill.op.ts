@@ -20,7 +20,7 @@
  * `backup.yml` uses.
  */
 
-import { Op, phase, shell } from "@intentius/chant-lexicon-temporal";
+import { Op, phase, shell } from "@intentius/chant/op";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { stackRefs } from "./lib/stack-refs";
 import { restoreDrillScript, type DrillRefs } from "./lib/restore-drill";
@@ -36,8 +36,7 @@ const drillRefs: DrillRefs = {
 export default Op({
   name: "loom-restore-drill",
   overview: `Restore-verification drill for the Loom deployment (env=${naming.env}, instance=${naming.instance}): restore the latest backup snapshot to a throwaway instance, assert it comes up healthy with matching config, then delete it. Non-destructive, ungated, local executor.`,
-  taskQueue: "loom-lifecycle",
-  searchAttributes: { Env: naming.env, RestoreDrill: "true" },
+  labels: { Env: naming.env, RestoreDrill: "true" },
   phases: [
     phase("Drill", [shell(restoreDrillScript(drillRefs), { profile: "longInfra" })]),
   ],

@@ -8,17 +8,14 @@ name: watch
 # docs/src/content/docs/components/orchestration.mdx's "keep logic out of
 # the trigger" and README.md's "Scheduled CI" section.
 #
-# CI-cron is one trigger host among several (chant#906's settled decision,
-# see the issue's comments) — a team may run this instead of, or alongside,
-# loom-watch's own Temporal schedule (ops/loom-watch.op.ts). Every tier
-# watches (chant#890's per-env dial only gates *reconcile* — see
+# Every tier watches (chant#890's per-env dial only gates *reconcile* — see
 # reconcile.yml).
 #
 # Inert until a team opts in — see README.md's "Scheduled CI" section for
 # the repo variable + environment this needs.
 on:
-  # Same cadence as ops/loom-watch.op.ts's own Temporal schedule, but this
-  # is an independent trigger host — not kept in sync with it mechanically.
+  # Same cadence as ops/loom-watch.op.ts's `schedule`; not kept in sync with
+  # it mechanically.
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch: {}

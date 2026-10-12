@@ -68,16 +68,18 @@ Export the same deployment variables you deploy with (`LOOM_ENV`,
 `LOOM_INSTANCE`, `AWS_REGION`, network and domain settings), then:
 
 ```bash
-npm run synth   # the component deploys apply dist/*.template.json
-
-# light: local executor, no Temporal
+# light: no gate
 chant run loom-upgrade-light
 
-# production / production-ha: durable, pauses at Approve
-LOOM_UPGRADE_SCRIPTS="migrate_oauth2_secrets.py --apply" \
-  chant run loom-upgrade-production --temporal
-chant run signal loom-upgrade-production approve-loom-upgrade-production
+# production / production-ha: stops at Approve (exit 3) until approved
+export LOOM_UPGRADE_SCRIPTS="migrate_oauth2_secrets.py --apply"
+chant run loom-upgrade-production
+chant approve loom-upgrade-production approve-loom-upgrade-production
+chant run loom-upgrade-production    # snapshot again, then past the gate
 ```
+
+Each component deploy synthesizes its own template from these variables first
+(the components' `Synth` phase), so there is no separate `npm run synth` step.
 
 Swap `production` for `production-ha` on that tier. The Snapshot phase takes a
 manual RDS snapshot named `<db-instance>-upgrade-<timestamp>` and waits for it

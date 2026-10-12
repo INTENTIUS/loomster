@@ -9,14 +9,13 @@
  * `loom.intentius.io` at the `intentius.io` provider). If the zone isn't delegated,
  * the cert never validates and the CloudFormation apply hangs.
  *
- * This models that as a human-in-the-loop step that still runs on the LOCAL
- * executor: `ensureZoneScript` creates (idempotently) the hosted zone and prints
+ * This models that as a human-in-the-loop step inside one run:
+ * `ensureZoneScript` creates (idempotently) the hosted zone and prints
  * the NS records to add, and `awaitDelegationScript` polls public DNS until the
  * delegation resolves. The human action (adding the records at the provider)
  * happens between the two; the Op waits for its observable effect rather than a
- * durable approval signal — a real chant `gate()` needs `--temporal` (the local
- * executor rejects gates), and here the completion condition is observable, so a
- * poll is both local-runnable and safer than a blind approve.
+ * chant `gate()`, because the completion condition is observable and a poll is
+ * safer than a blind approve.
  */
 
 /**

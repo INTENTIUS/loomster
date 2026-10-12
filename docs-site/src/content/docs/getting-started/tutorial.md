@@ -202,7 +202,9 @@ Two caveats:
 ### Tear it down
 
 ```
-chant run loom-teardown --temporal        # gated, deletes only what this deploy owns
+chant run loom-teardown                   # stops at the gate, exit 3
+chant approve loom-teardown approve-loom-teardown
+chant run loom-teardown                   # deletes only what this deploy owns
 ```
 
 Teardown is deliberately conservative: it deletes only stacks this deployment
@@ -353,21 +355,20 @@ Standing the stacks up is the start. Beyond the component deploys:
 | Restore (snapshot/PITR + cutover) | `chant run loom-restore` | Yes, before cutover | Whichever tier is live |
 | Teardown | `chant run loom-teardown` | Yes, owned-only | Whichever tier is live |
 
-The observe and reconcile Ops are stateless, so they run one-shot on the local
-executor (`npm run watch` / `npm run reconcile`) or on a schedule, either a
-plain GitHub Actions cron or each Op's own Temporal schedule.
+The observe and reconcile Ops are stateless, so they run one-shot
+(`npm run watch` / `npm run reconcile`) or on a GitHub Actions cron.
 
-The upgrade, rotate, and teardown Ops need a durable approval gate and
-saga-style rollback a one-shot run can't give them, so they run on
-[Temporal](https://temporal.io). A gated Op pauses for a human:
+The upgrade, rotate, restore, and teardown Ops stop at an approval gate. The
+gate is a fact on chant's lifecycle ledger (the `chant/lifecycle` branch), so
+the run exits 3, someone approves, and the next run continues:
 
 ```
-chant run loom-upgrade-production --temporal        # pauses at "Approve"
-chant run signal loom-upgrade-production approve-loom-upgrade-production
+chant run loom-upgrade-production        # stops at "Approve", exit 3
+chant approve loom-upgrade-production approve-loom-upgrade-production
+chant run loom-upgrade-production        # continues past the gate
 ```
 
-`loom-upgrade-light` is the exception. Additive only, nothing to gate, so it
-runs on the local executor with no Temporal server.
+`loom-upgrade-light` is the exception: additive only, nothing to gate.
 
 ## Generated CI
 

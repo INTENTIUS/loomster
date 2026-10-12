@@ -9,7 +9,7 @@
  * secret at the restored endpoint and forces a backend redeploy.
  *
  * Cutover is destructive to the live data plane, so `../loom-restore.op.ts`
- * gates before it (Temporal approval), like teardown/rotate. Decommissioning
+ * gates before it (chant/lifecycle ledger approval), like teardown/rotate. Decommissioning
  * the old instance is left as a documented, human-confirmed follow-up rather
  * than an automatic delete — see the Op and guides/backup-restore.
  */

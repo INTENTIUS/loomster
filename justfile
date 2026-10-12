@@ -4,9 +4,12 @@
 default:
     @just --list
 
-# Install dependencies (chant and its lexicons from npm).
+# Install dependencies (chant and its lexicons from npm) and the pre-push guard
+# that keeps chant's lifecycle ledger (chant/lifecycle) off origin unless CI is
+# set or LOOM_LEDGER_PUSH=1 (scripts/git-hooks/pre-push).
 install:
     npm install
+    bash scripts/install-git-hooks.sh
 
 # Typecheck the helper, composites, and project-local lint rules.
 build:
@@ -26,8 +29,8 @@ test:
 vendor:
     npm run vendor
 
-# Synthesize the CFN templates (dist/*.template.json) + the lifecycle Ops'
-# worker code + temporal-setup.sh (dist/temporal-manifest.txt, dist/schedules/).
+# Synthesize the CFN templates (dist/*.template.json) and build the lifecycle
+# Ops (ops/dist/ops/<name>/op.json).
 synth:
     npm run synth
 
@@ -37,15 +40,16 @@ synth:
 estimate-cost:
     npm run estimate-cost
 
-# Compile the lifecycle Ops (chant#905) to generated Temporal worker code
-# under ops/dist/ops/ — workflow.ts/activities.ts/worker.ts per Op. Needs
-# `--temporal` at `chant run` time only for the gated Ops (loom-upgrade-
-# production[-ha], loom-rotate-*, loom-teardown); loom-upgrade-light runs on
-# the local executor with no build step required.
+# Build the lifecycle Ops (chant#905) to ops/dist/ops/<name>/op.json. Every Op
+# runs in-process with `chant run <op>`. A gated Op (loom-upgrade-production[-ha],
+# loom-rotate-*, loom-restore, loom-teardown) exits 3 at its gate until
+# `chant approve <op> <gate>` records the approval on the chant/lifecycle
+# ledger; the next `chant run <op>` continues.
 ops-build:
     npm run ops:build
+
 # Observe: one-shot `chant lifecycle diff --live` across every stack this
-# build targets (chant#904). Scheduled form needs Temporal — see ops/loom-watch.op.ts.
+# build targets (chant#904). The CI-cron form is .github/workflows/watch.yml.
 watch:
     npm run watch
 

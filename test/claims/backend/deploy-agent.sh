@@ -79,20 +79,37 @@ P="$CLAIMS_AWS_PREFIX"
 stack_status() { aws cloudformation describe-stacks --stack-name "$P-$1" --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo MISSING; }
 stack_output() { aws cloudformation describe-stacks --stack-name "$P-$1" --query "Stacks[0].Outputs[?OutputKey=='$2'].OutputValue | [0]" --output text 2>/dev/null || true; }
 NEEDED="shared-foundation loom-cognito loom-db loom-backend"
+# A status the stack will not leave without another deploy: a failed
+# operation, or any rollback (in progress or done).
+stack_failed() { case "$1" in *_FAILED|*ROLLBACK*) return 0 ;; *) return 1 ;; esac; }
+# The earliest failed resource in the stack's events: "<logical id>: <reason>".
+first_failure() { # stack
+  aws cloudformation describe-stack-events --stack-name "$P-$1" \
+    --query "reverse(StackEvents)[?ends_with(ResourceStatus, '_FAILED')] | [0].[LogicalResourceId, ResourceStatusReason]" \
+    --output text 2>/dev/null | awk -F'\t' 'NF && $1 != "None" { print $1 ": " $2; exit }'
+}
+failure_detail() { # stack status
+  local first
+  first="$(first_failure "$1")"
+  echo "$1 is $2${first:+ (first failed resource $first)}"
+}
 stacks_ready() {
   local s st
   for s in $NEEDED; do
     st="$(stack_status "$s")"
-    case "$st" in CREATE_COMPLETE|UPDATE_COMPLETE) ;; *) echo "$s is $st"; return 1 ;; esac
+    case "$st" in
+      CREATE_COMPLETE|UPDATE_COMPLETE) ;;
+      *) if stack_failed "$st"; then failure_detail "$s" "$st"; else echo "$s is $st"; fi; return 1 ;;
+    esac
   done
 }
 
 # ── exit: undo what this run added ──────────────────────────────────────────
 
 AUTHCFG="$(mktemp "${TMPDIR:-/tmp}/loomster-claim-auth.XXXXXX")"
-HEARTBEAT="" TEMP_CLIENT="" POOL="" MINTED="" BREAK_ROLE="" AGENT_ID="" BASE=""
+DEPLOY_PID="" TEMP_CLIENT="" POOL="" MINTED="" BREAK_ROLE="" AGENT_ID="" BASE=""
 on_exit() {
-  [ -z "$HEARTBEAT" ] || kill "$HEARTBEAT" 2>/dev/null || true
+  [ -z "$DEPLOY_PID" ] || kill "$DEPLOY_PID" 2>/dev/null || true
   if [ -n "$AGENT_ID" ] && [ -n "$BASE" ]; then
     curl -fsS -K "$AUTHCFG" -X DELETE "$BASE/api/agents/$AGENT_ID" >/dev/null 2>&1 || log "could not delete agent $AGENT_ID; the cleanup removes its runtime"
   fi
@@ -110,16 +127,6 @@ on_exit() {
 }
 trap on_exit EXIT
 
-# A line a minute while CloudFormation works, so a granted run's watch sees
-# progress during long creates.
-heartbeat_start() {
-  ( while sleep 60; do
-      for s in $NEEDED loom-frontend loom-agents downstream-stub; do printf '%s=%s ' "$s" "$(stack_status "$s")"; done
-      echo
-    done ) &
-  HEARTBEAT=$!
-}
-heartbeat_stop() { [ -z "$HEARTBEAT" ] || kill "$HEARTBEAT" 2>/dev/null || true; HEARTBEAT=""; }
 
 # Every failure ends the run here: before the BREAK is in place the claim
 # cannot say anything (fail); after it, a failure is what BREAK expects.
@@ -138,11 +145,38 @@ if [ -n "${BREAK:-}" ] && stacks_ready >/dev/null; then
 else
   log "deploying the light tier under $P to $ACCT/$AWS_REGION ($LOOM_CPU_ARCHITECTURE)"
   npm run vendor || stop "npm run vendor failed"
-  heartbeat_start
   # The agents wave (last) may fail where AgentCore is unavailable; this claim
   # needs only the waves through loom-backend, checked below.
-  ./node_modules/.bin/chant run --components all --env "$LOOM_ENV" || log "chant run exited non-zero; checking the stacks this claim needs"
-  heartbeat_stop
+  # A failed status a stack already had before this run (a rollback left by
+  # an earlier attempt) is not this run failing. Once the stack's status has
+  # moved off it, any failed status counts.
+  for s in $NEEDED; do printf -v "BEFORE_${s//-/_}" '%s' "$(stack_status "$s")"; done
+  ./node_modules/.bin/chant run --components all --env "$LOOM_ENV" &
+  DEPLOY_PID=$!
+  # Watch the stacks this claim needs while chant works: stop at the first one
+  # that fails or rolls back instead of waiting for the rest of the run, and
+  # print a line a minute so a granted run's watch sees progress.
+  ticks=0
+  while kill -0 "$DEPLOY_PID" 2>/dev/null; do
+    line=""
+    for s in $NEEDED; do
+      st="$(stack_status "$s")"
+      line="$line$s=$st "
+      var="BEFORE_${s//-/_}"
+      [ "$st" = "${!var}" ] || printf -v "$var" '%s' moved
+      if stack_failed "$st" && [ "${!var}" = moved ]; then
+        kill "$DEPLOY_PID" 2>/dev/null || true
+        wait "$DEPLOY_PID" 2>/dev/null || true
+        DEPLOY_PID=""
+        stop "deploy: $(failure_detail "$s" "$st")"
+      fi
+    done
+    [ $((ticks % 4)) -ne 0 ] || log "$line"
+    ticks=$((ticks + 1))
+    sleep 15
+  done
+  wait "$DEPLOY_PID" || log "chant run exited non-zero; checking the stacks this claim needs"
+  DEPLOY_PID=""
 fi
 why="$(stacks_ready)" || stop "deploy: $why"
 

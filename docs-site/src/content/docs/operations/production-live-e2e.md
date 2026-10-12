@@ -42,10 +42,9 @@ Between the two, add the printed records at your DNS provider. For a subdomain l
 | Value | the four `ns-*.awsdns-*` servers the Op printed |
 
 The Op continues on its own once `dig +short NS loom.example.com` returns those
-servers. It waits rather than asking for a click on purpose — a real chant `gate()`
-needs the durable (`--temporal`) runtime, and a DNS delegation has an observable
-completion condition, so a poll is both local-runnable and safer than approving
-before propagation.
+servers. It polls rather than gating on purpose: a DNS delegation has an
+observable completion condition, so a poll finishes in one run and is safer than
+approving before propagation.
 
 Keep the `LOOM_HOSTED_ZONE_ID` it printed; the deploy references it.
 

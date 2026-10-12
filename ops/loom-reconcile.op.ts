@@ -11,21 +11,16 @@
  * is never touched.
  *
  * Per-env dial (chant#890): `light` observes only — `reconcilesOnSchedule`
- * is false there, so `schedule` below is `undefined` and `chant build`
- * emits no `TemporalSchedule` for this Op (nothing to discover: an
- * `undefined` export is simply skipped). `production`/`production-ha`
- * additionally get an hourly scheduled reconcile. Every tier can still run
- * a one-shot reconcile locally:
+ * is false there, so the Op carries no `schedule`. `production`/
+ * `production-ha` additionally get an hourly scheduled reconcile. Every tier
+ * can still run a one-shot reconcile:
  *
  *   chant run loom-reconcile
- *
- * Scheduled on Temporal (production/production-ha only): chant build
- * (emits the TemporalSchedule), then apply + start it.
  */
-import { ReconcileOp } from "@intentius/chant-lexicon-temporal";
+import { ReconcileOp } from "@intentius/chant/op";
 import { loomEnv, reconcilesOnSchedule } from "./params";
 
-const { op, schedule } = ReconcileOp({
+const { op } = ReconcileOp({
   name: "loom-reconcile",
   env: loomEnv,
   schedule: reconcilesOnSchedule ? "0 * * * *" : undefined, // hourly — production/production-ha only
@@ -34,8 +29,3 @@ const { op, schedule } = ReconcileOp({
 });
 
 export default op; // discovered by `chant run loom-reconcile`
-// Named uniquely (not `schedule`) — chant's discovery keys named exports by
-// their literal binding name project-wide (unlike `export default`, which is
-// keyed per-file), and ./loom-watch.op.ts also exports a schedule.
-// `undefined` on light tier — nothing for `chant build` to discover there.
-export const loomReconcileSchedule = schedule;

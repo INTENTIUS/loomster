@@ -10,18 +10,18 @@
  * loom-backend — in a single tick; there is no separate per-stack Op.
  *
  * Every tier watches (chant#890's per-env dial only gates *reconcile* —
- * see ./loom-reconcile.op.ts). Drift surfaces as the `Drift` search
- * attribute; `./search-attributes.ts` registers it (plus `Watch`/`Env`/
- * `OpName`) so the first run's upsert succeeds.
+ * see ./loom-reconcile.op.ts). Drift lands as the run's `Drift` outcome
+ * on the chant/lifecycle ledger.
  *
- * One-shot on the local executor:  chant run loom-watch
- * Scheduled on Temporal:            chant build (emits the TemporalSchedule
- *                                    below), then apply + start it
+ *   chant run loom-watch
+ *
+ * `schedule` is a property of the Op; `.github/workflows/watch.yml` is the
+ * CI-cron host that fires it.
  */
-import { WatchOp } from "@intentius/chant-lexicon-temporal";
+import { WatchOp } from "@intentius/chant/op";
 import { loomEnv } from "./params";
 
-const { op, schedule } = WatchOp({
+const { op } = WatchOp({
   name: "loom-watch",
   env: loomEnv,
   schedule: "*/15 * * * *", // every 15 minutes
@@ -29,7 +29,3 @@ const { op, schedule } = WatchOp({
 });
 
 export default op; // discovered by `chant run loom-watch`
-// Named uniquely (not `schedule`) — chant's discovery keys named exports by
-// their literal binding name project-wide (unlike `export default`, which is
-// keyed per-file), and ./loom-reconcile.op.ts also exports a schedule.
-export const loomWatchSchedule = schedule; // deployed by `chant build`

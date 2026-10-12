@@ -2,12 +2,12 @@ import type { ChantConfig } from "@intentius/chant";
 
 // Loom's real footprint (ALB, ECS, RDS, Cognito, ECR, KMS, S3, PrivateLink) is
 // standard CloudFormation — the aws lexicon types all of it, no synthesis gap.
-// `temporal` is read for the lifecycle Ops under `ops/` (chant#904 — WatchOp
-// observe + ReconcileOp cloud→code, `@intentius/chant-lexicon-temporal`).
+// The lifecycle Ops under `ops/` come from `@intentius/chant/op` and need no
+// lexicon of their own.
 const loomEnv = process.env.LOOM_ENV ?? "dev";
 
 export default {
-  lexicons: ["aws", "temporal", "docker"],
+  lexicons: ["aws", "docker"],
   // Scope whole-project discovery (bare `chant lifecycle diff|snapshot`, the
   // path WatchOp/ReconcileOp use) to `src/`, so it never walks `docs-site/`'s
   // Astro config (`astro:`-scheme imports the ESM loader rejects) or `test/`
@@ -15,6 +15,10 @@ export default {
   // (`chant build --components`), and Ops (`chant build ops`) commands pass
   // their own explicit path and are unaffected.
   sourceDir: "src",
+  // `chant lint .` and Op discovery share one walk of the whole project
+  // (chant 0.81). Keep it out of the Astro docs site, whose config imports
+  // `astro:` modules the ESM loader refuses.
+  exclude: ["docs-site"],
   // Whatever LOOM_ENV this build/lint/lifecycle invocation targets is the
   // only allowed environment — same single-deployment-at-a-time convention
   // every src/*/params.ts file already follows.
@@ -141,8 +145,7 @@ export default {
         // EVL003/EVL004 keep composite/component authoring code statically
         // evaluable. src/lib/**, .chant/rules/**, and ops/** are plain
         // runtime helpers (the naming/tagging helper, project-local lint
-        // rules, the lifecycle Ops' Temporal workflow-definition code,
-        // chant#905) — never a composite property expression — so they're
+        // rules, the lifecycle Ops' definition code, chant#905) — never a composite property expression — so they're
         // out of scope. EVL004 in particular only traces a spread source to
         // a *module-top-level* const declaration (see
         // packages/core/src/lint/rules/evl004-spread-non-const.ts's

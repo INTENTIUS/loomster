@@ -30,18 +30,12 @@
  * named in `LOOM_UPGRADE_SCRIPTS` at run time, each as a one-off ECS task of
  * the just-rolled backend (`./backend-scripts.ts`). Empty or unset is a no-op.
  *
- * Runs the nested component deploys on the **local** executor (no
- * `--temporal`) even for gated tiers: the outer Op already gives this whole
- * step Temporal's durability (retry, crash-resume of the activity); nesting a
- * second durable workflow inside one activity buys nothing extra, and the
- * component driver's saga rollback (`rollback-previous`) already runs
- * identically on the local executor (`docs/components/orchestration.mdx`
- * — "The saga mechanism ... runs identically on the local executor and on
- * Temporal").
+ * The nested component deploys run in-process like the Op itself; the
+ * component driver's own saga rollback (`rollback-previous`) covers a failed
+ * roll.
  */
 
-import { Op, phase, gate, shell } from "@intentius/chant-lexicon-temporal";
-import { OpResource } from "@intentius/chant/op";
+import { Op, OpResource, phase, gate, shell } from "@intentius/chant/op";
 import type { LoomNamingParams } from "../../src/lib/naming";
 import { stackRefs } from "./stack-refs";
 import { snapshotBeforeScript, restorePreviousScript } from "./rds-safety";
@@ -108,8 +102,7 @@ export function buildLoomUpgradeOp(config: LoomUpgradeOpConfig): InstanceType<ty
   return Op({
     name: opName,
     overview: `Upgrade the Loom "${tier}" deployment (env=${naming.env}): snapshot ->${gated ? " approve ->" : ""} roll the backend (schema migrates on startup) -> roll the frontend${gated ? " -> one-time scripts (LOOM_UPGRADE_SCRIPTS)" : ""}`,
-    taskQueue: "loom-lifecycle",
-    searchAttributes: { Tier: tier, Env: naming.env },
+    labels: { Tier: tier, Env: naming.env },
     phases,
     ...onFailureConfig,
   });

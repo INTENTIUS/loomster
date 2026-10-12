@@ -18,7 +18,7 @@ function configOf(op: ReturnType<typeof buildLoomUpgradeOp>): OpConfig {
 }
 
 describe("buildLoomUpgradeOp — the dial (chant#905: prod/prod-ha gate+rollback, light additive/local)", () => {
-  test("gated=false (light): no Approve phase, no onFailure — additive/local, no Temporal required", () => {
+  test("gated=false (light): no Approve phase, no onFailure — additive, no approval needed", () => {
     const op = buildLoomUpgradeOp({ naming: { ...naming, tier: "light" }, gated: false });
     const config = configOf(op);
 
@@ -51,17 +51,17 @@ describe("buildLoomUpgradeOp — the dial (chant#905: prod/prod-ha gate+rollback
     ]);
   });
 
-  test("Op name and search attributes are tier/env-scoped", () => {
+  test("Op name and labels are tier/env-scoped", () => {
     const op = buildLoomUpgradeOp({ naming, gated: true });
     const config = configOf(op);
     expect(config.name).toBe("loom-upgrade-production");
-    expect(config.searchAttributes).toEqual({ Tier: "production", Env: "prod" });
+    expect(config.labels).toEqual({ Tier: "production", Env: "prod" });
   });
 
-  test("the gate's signal name is derived from the Op's own name", () => {
+  test("the gate name is derived from the Op's own name", () => {
     const op = buildLoomUpgradeOp({ naming, gated: true });
     const config = configOf(op);
     const approve = config.phases.find((p) => p.name === "Approve")!;
-    expect(approve.steps[0]).toMatchObject({ kind: "gate", signalName: "approve-loom-upgrade-production" });
+    expect(approve.steps[0]).toMatchObject({ kind: "gate", gate: "approve-loom-upgrade-production" });
   });
 });

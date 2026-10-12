@@ -18,7 +18,7 @@
  * `watch.yml` / `reconcile.yml` use.
  */
 
-import { Op, phase, shell } from "@intentius/chant-lexicon-temporal";
+import { Op, phase, shell } from "@intentius/chant/op";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { stackRefs } from "./lib/stack-refs";
 import { backupSnapshotScript, drCopySnapshotScript } from "./lib/backup";
@@ -30,8 +30,7 @@ const dbRefs = { dbInstanceIdentifier: refs.dbInstanceIdentifier };
 export default Op({
   name: "loom-backup",
   overview: `RDS backup for the Loom deployment (env=${naming.env}, instance=${naming.instance}): a labelled manual snapshot, then a cross-region DR copy when LOOM_DR_REGION is set. Additive, ungated, local executor.`,
-  taskQueue: "loom-lifecycle",
-  searchAttributes: { Env: naming.env, Backup: "true" },
+  labels: { Env: naming.env, Backup: "true" },
   phases: [
     phase("Snapshot", [shell(backupSnapshotScript(dbRefs), { profile: "longInfra" })]),
     phase("DrCopy", [shell(drCopySnapshotScript(dbRefs), { profile: "longInfra" })]),

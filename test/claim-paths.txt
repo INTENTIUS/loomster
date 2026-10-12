@@ -32,7 +32,7 @@ src/lib/naming.ts                   backend/* teardown/*
 src/lib/stack-name.ts               backend/* teardown/*
 
 # The component graph and the teardown that must cover it.
-src/components/                     teardown/* backend/*
+src/components/                     teardown/* backend/* params/reach-deploy
 ops/lib/teardown-plan.ts            teardown/*
 ops/loom-teardown.op.ts             teardown/*
 

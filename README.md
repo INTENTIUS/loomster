@@ -149,35 +149,45 @@ Bedrock AgentCore Runtime, never as a container image.
 
 ## Lifecycle Ops
 
-Beyond the one-shot component deploys, `ops/` holds the durable, gated concerns
-for a running Loom deployment (upgrade, credential rotation, teardown), plus a
-scheduled observe/reconcile pair. These run as
-[chant Ops](https://intentius.io/chant/guide/ops/) on
-[Temporal](https://temporal.io) where they need an approval gate and saga
-rollback, or on the local executor where they don't.
+Beyond the one-shot component deploys, `ops/` holds the gated concerns for a
+running Loom deployment (upgrade, credential rotation, teardown), plus a
+scheduled observe/reconcile pair. These are
+[chant Ops](https://intentius.io/chant/guide/ops/) from `@intentius/chant/op`,
+run in-process with `chant run <op>`. A gate is a fact on chant's lifecycle
+ledger (the `chant/lifecycle` branch): an unapproved gate stops the run with
+exit 3, `chant approve <op> <gate>` records the approval, and the next
+`chant run <op>` continues past it.
 
 | Op | What it does | Gated? |
 |---|---|---|
 | `loom-watch` | Drift detection — `chant lifecycle diff --live` across every stack, on a 15-min cron. Every tier. | No |
 | `loom-reconcile` | On drift, opens a cloud-to-code PR (owned-only, never mutates the cloud). `production` / `production-ha`. | No |
-| `loom-upgrade-light` | Snapshot RDS, roll the backend (Loom migrates on startup), roll the frontend. | No — local executor |
+| `loom-upgrade-light` | Snapshot RDS, roll the backend (Loom migrates on startup), roll the frontend. | No |
 | `loom-upgrade-production[-ha]` | Same, plus an approval gate, one-time Loom scripts (`LOOM_UPGRADE_SCRIPTS`), and an RDS-restore rollback. | Yes |
 | `loom-rotate-production[-ha]` | Rotate the Cognito M2M client, the RDS credential, and (custom-domain tiers) the ALB's ACM cert. | Yes |
-| `loom-backup` | Labelled RDS snapshot, plus a cross-region DR copy when `LOOM_DR_REGION` is set. Additive. | No — local executor |
-| `loom-restore-drill` | Restore the latest backup to a throwaway instance, assert it comes up healthy, delete it. Proves the backup restores. | No — local executor |
-| `loom-cognito-export` | Export the Cognito pool's users, groups, and memberships (to stdout, or S3 with `LOOM_BACKUP_BUCKET`). Read-only. | No — local executor |
+| `loom-backup` | Labelled RDS snapshot, plus a cross-region DR copy when `LOOM_DR_REGION` is set. Additive. | No |
+| `loom-restore-drill` | Restore the latest backup to a throwaway instance, assert it comes up healthy, delete it. Proves the backup restores. | No |
+| `loom-cognito-export` | Export the Cognito pool's users, groups, and memberships (to stdout, or S3 with `LOOM_BACKUP_BUCKET`). Read-only. | No |
 | `loom-restore` | Restore the DB (snapshot or PITR) to a new instance, then cut the backend over to it (repoint secret + redeploy). | Yes — cutover is destructive |
 | `loom-teardown` | Gated, owned-only, marker-scoped stack deletes, in reverse `chant graph --components` order. No foreign deletes. | Yes |
 | `loom-dns-setup` | Create + delegate a custom-domain Route53 zone, wait for the delegation to resolve. Human-in-the-loop, local. | No |
 
 ```
-chant build ops                              # compile to dist/ops/<name>/
-chant run loom-upgrade-light                 # local executor, no Temporal needed
-chant run loom-upgrade-production --temporal # pauses at "Approve"
-chant run signal loom-upgrade-production approve-loom-upgrade-production
+npm run ops:build                            # ops/dist/ops/<name>/op.json
+chant run loom-upgrade-light                 # no gate
+chant run loom-upgrade-production            # stops at "Approve", exit 3
+chant approve loom-upgrade-production approve-loom-upgrade-production
+chant run loom-upgrade-production            # continues past the gate
 npm run watch                                # one-shot loom-watch
 npm run reconcile                            # one-shot loom-reconcile
 ```
+
+chant pushes the `chant/lifecycle` branch to `origin` after every gate, run
+record and release it writes, and has no setting to stop that. `just install`
+adds a pre-push hook (`scripts/git-hooks/pre-push`) that refuses that one
+branch unless `CI` is set or `LOOM_LEDGER_PUSH=1`, so a local run against Floci
+or a scratch account keeps its ledger in the checkout. Set `LOOM_LEDGER_PUSH=1`
+for a deployment whose gates someone else approves from another clone.
 
 Loom has no migration tool: the backend migrates its schema when a new task
 starts. The upgrade Op's Migrate phase is therefore the backend roll itself
@@ -209,11 +219,13 @@ carry a gated deploy and scheduled lifecycle workflows. See
 and Forgejo compare.
 
 Every generated job is a thin trigger (`chant run --components <name>`) that
-assumes `chant`, its deps, and `dist/*.template.json` already exist. Neither is
-true in a bare checkout. Wire it once, project-wide, through
+assumes `chant`, its deps, and `awscli` already exist, which a bare checkout
+doesn't give it. Each component's first phase, `Synth`, builds its own
+`dist/<stack>.template.json` from the job's `LOOM_*` variables, so no separate
+synth step is needed. Wire the rest once, project-wide, through
 `generateComponentPipeline`'s `beforeScript`/`image`/`extraScript` options: a
 custom runner image with `chant` + `awscli` preinstalled, or `beforeScript:
-["npm ci", "npm run synth"]` plus an `awscli` install on a stock image.
+["npm ci"]` plus an `awscli` install on a stock image.
 
 `just gitlab-runtime-e2e` proves the generated pipeline actually executes. It
 runs the generated component pipeline in Docker (via `gitlab-ci-local`) against
@@ -223,10 +235,9 @@ The GitHub equivalent is `just github-runtime-e2e` (via `act`).
 
 ## Scheduled CI
 
-The stateless lifecycle concerns also run on plain GitHub Actions cron, a second
-trigger host alongside each Op's own Temporal schedule. The durable/gated Ops
-(upgrade, rotation, teardown) are never scheduled here; they need a durable gate a
-cron can't give. Each workflow stays inert until a team opts in.
+The stateless lifecycle concerns run on plain GitHub Actions cron. The gated Ops
+(upgrade, rotation, restore, teardown) are never scheduled; a person runs and
+approves them. Each workflow stays inert until a team opts in.
 
 | Workflow | Runs | Cron | Opt-in |
 |---|---|---|---|

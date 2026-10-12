@@ -77,8 +77,10 @@ repoints loom-db's connection secret at the restored endpoint and redeploys the
 backend:
 
 ```
-LOOM_RESTORE_SNAPSHOT_ID=<id> chant run loom-restore --temporal   # or LOOM_RESTORE_TIME=<ts> for PITR
-chant run signal loom-restore approve-loom-restore
+export LOOM_RESTORE_SNAPSHOT_ID=<id>     # or LOOM_RESTORE_TIME=<ts> for PITR
+chant run loom-restore                   # restores, then stops at Approve (exit 3)
+chant approve loom-restore approve-loom-restore
+chant run loom-restore                   # cuts over
 ```
 
 With neither variable set it restores the latest `loom-backup` snapshot. The old

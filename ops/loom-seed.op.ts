@@ -16,7 +16,7 @@
  * production/production-ha) and overridable via `LOOM_SEED_PROFILE`.
  */
 
-import { Op, phase, shell } from "@intentius/chant-lexicon-temporal";
+import { Op, phase, shell } from "@intentius/chant/op";
 import { loomNaming } from "../src/lib/naming";
 import { namingParamsFromEnv } from "./lib/naming-env";
 import { stackRefs } from "./lib/stack-refs";
@@ -37,8 +37,7 @@ const defaultProfile: SeedProfile = naming.tier === "light" ? "demo" : "foundati
 export default Op({
   name: "loom-seed",
   overview: `Seed Loom's app DB so a fresh deploy is usable (env=${naming.env}, tier=${naming.tier}, default profile=${defaultProfile}): import the agent execution role + a Cognito authorizer, plus demo content on the demo profile. Idempotent, ungated, local executor. Override with LOOM_SEED_PROFILE (demo|foundation|none) and LOOM_API_BASE_URL.`,
-  taskQueue: "loom-lifecycle",
-  searchAttributes: { Env: naming.env },
+  labels: { Env: naming.env },
   phases: [
     phase("Seed", [
       shell(seedDefaultsScript({ agentRoleName, cognitoUserPoolName: refs.cognitoUserPoolName, cognitoStackName, defaultProfile }), { profile: "fastIdempotent" }),
