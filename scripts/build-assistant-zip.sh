@@ -40,6 +40,21 @@ python3 -m pip install --quiet --disable-pip-version-check --break-system-packag
   --platform "$PLAT" --python-version 3.13 --implementation cp --only-binary=:all: \
   --target "$BUILD/package" -r "$SRC/requirements.txt"
 
+# The agent's configuration, baked into the artifact as Loom bakes it when
+# AGENT_CONFIG_JSON would overflow AgentCore Runtime V2's 1536-byte env payload
+# (`bake_config_into_artifact` in Loom's deployment.py): config.py reads
+# AGENT_CONFIG_PATH, relative to the artifact root, which loom-agents sets.
+# Without it every invoke fails with "No configuration found". The model is
+# the region's cross-region profile of Nova Lite unless LOOM_ASSISTANT_MODEL_ID
+# names one.
+case "${AWS_REGION:-us-east-1}" in eu-*) GEO=eu ;; ap-*) GEO=apac ;; *) GEO=us ;; esac
+MODEL="${LOOM_ASSISTANT_MODEL_ID:-$GEO.amazon.nova-lite-v1:0}"
+jq -n --arg model "$MODEL" '{
+  system_prompt: "You are the loomster assistant, deployed with Loom. Answer questions clearly and concisely.",
+  model_id: $model,
+  integrations: { mcp_servers: [], a2a_agents: [], memory: { enabled: false } }
+}' >"$BUILD/package/agent_config.json"
+
 ( cd "$BUILD/package" && zip -qr ../agent.zip . -x '*.pyc' '*__pycache__*' )
 
 # Stack names are namespaced by project+env+instance (loomster#140), so resolve the

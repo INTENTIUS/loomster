@@ -173,6 +173,8 @@ export type LoomAgentsResult = {
 // contract literal below, not from the naming helper — LOOM001 governs
 // physical names/tags, not upstream API contract values).
 const ASSISTANT_RUNTIME = "PYTHON_3_13" as const;
+/** The config file scripts/build-assistant-zip.sh bakes into the assistant zip (Loom's BAKED_CONFIG_FILENAME). */
+export const ASSISTANT_CONFIG_PATH = "agent_config.json";
 const ASSISTANT_ENTRY_POINT = ["opentelemetry-instrument", "src/handler.py"] as const;
 
 // Loom v1.8.0+ creates and redeploys every runtime with platformVersion "V2"
@@ -377,7 +379,13 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
   }
 
   const tags = tagList(naming.tags());
-  const bedrockModelArns = props.bedrockModelArns ?? ["arn:aws:bedrock:*::foundation-model/*"];
+  // This account's inference profiles too: the assistant's baked config names a
+  // cross-region profile (`us.amazon.nova-lite-v1:0`), which needs both (the
+  // same default as ./loom-agent-role.ts).
+  const bedrockModelArns = props.bedrockModelArns ?? [
+    Sub`arn:${AWS.Partition}:bedrock:*:${AWS.AccountId}:inference-profile/*` as unknown as string,
+    Sub`arn:${AWS.Partition}:bedrock:*::foundation-model/*` as unknown as string,
+  ];
   const memoryEventExpiryDays = props.memoryEventExpiryDays ?? (fullTier ? 90 : undefined);
   const networkMode: "PUBLIC" | "VPC" = fullTier ? "VPC" : "PUBLIC";
   const protocolConfiguration: "A2A" | "AGUI" | "HTTP" | "MCP" = "HTTP"; // matches Loom's own create_runtime default protocol
@@ -422,7 +430,9 @@ export const LoomAgents = Composite<LoomAgentsProps, LoomAgentsResult>((props) =
     vpcSubnetIds,
     vpcSecurityGroupIds,
     protocolConfiguration,
-    environmentVariables: sharedEnvironment,
+    // The Strands agent's config is baked into its zip (scripts/build-assistant-zip.sh),
+    // as Loom bakes it; config.py reads it from AGENT_CONFIG_PATH.
+    environmentVariables: { ...sharedEnvironment, AGENT_CONFIG_PATH: ASSISTANT_CONFIG_PATH },
     memoryEventExpiryDays,
     allowedResourceOauth2ReturnUrls,
     Policies: buildAgentExecutionPolicies(naming, "assistant", bedrockModelArns, props.artifactBucket),

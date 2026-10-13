@@ -99,6 +99,11 @@ if ! aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn "$ARN" --qua
 fi
 reply="$(cat "$work/reply" 2>/dev/null || true)"
 if grep -qiE 'AccessDenied|not authorized|"error"|event: error|ValidationException|Throttling' <<<"$reply"; then
+  # Under BREAK only the denial counts: an error for any other reason (a
+  # missing config, a bad model id) says nothing about the role.
+  if [ -n "${BREAK:-}" ] && [ -n "$BROKEN" ] && ! grep -qiE 'AccessDenied|not authorized' <<<"$reply"; then
+    say fail "with bedrock:InvokeModel* denied, the invoke failed for another reason: $(grep -m1 -iE 'error|Exception' <<<"$reply" | head -c 300)"; exit 0
+  fi
   stop "the invoke streamed an error: $(grep -m1 -iE 'AccessDenied|not authorized|error|Exception' <<<"$reply" | head -c 300)"
 fi
 [ -n "$(tr -d '[:space:]' <<<"$reply")" ] || stop "the invoke returned an empty reply"
