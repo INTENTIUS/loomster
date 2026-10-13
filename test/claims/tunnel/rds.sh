@@ -16,9 +16,14 @@
 #      loom-db's secret and runs SELECT 1 through the forward.
 # Needs the AWS CLI's Session Manager plugin; pending without it.
 #
-# BREAK=1 revokes the host's ingress rule on loom-db's security group (the
-# rule the tunnel host stack adds), so the forward opens but the database
-# never answers, and expects the query to fail. The rule is put back on exit.
+# BREAK=1 cuts the path at the host: it replaces the host security group's
+# egress (AWS's default allow-all, which the stack leaves in place) with
+# HTTPS only, so Session Manager still reaches the host and the forward opens,
+# but the host can't reach the database port, and expects the query to fail.
+# The allow-all egress is put back on exit. The host's ingress rule on
+# loom-db's security group is not the break point: loom-db also allows
+# 10.0.0.0/8 on its port (Loom's own rds.yaml default, pAllowedCidr), which
+# lets the host in without that rule.
 set -euo pipefail
 
 name=tunnel/rds
@@ -34,13 +39,19 @@ why="$(claims_aws_needs session-manager-plugin node)"
 [ -z "$why" ] || { say pending "$why"; exit 0; }
 claims_aws_light_env || { say fail "no claims prefix (test/claims-aws.sh prefix)"; exit 0; }
 
-TUNNEL_PID="" DB_SG="" HOST_SG="" PORT_NUM=""
+TUNNEL_PID="" HOST_SG=""
 work="$(mktemp -d "${TMPDIR:-/tmp}/loomster-claim-tunnel.XXXXXX")"
+ALL_EGRESS='[{"IpProtocol":"-1","IpRanges":[{"CidrIp":"0.0.0.0/0"}]}]'
+HTTPS_EGRESS='[{"IpProtocol":"tcp","FromPort":443,"ToPort":443,"IpRanges":[{"CidrIp":"0.0.0.0/0"}]}]'
 on_exit() {
-  [ -z "$TUNNEL_PID" ] || { kill "$TUNNEL_PID" 2>/dev/null || true; wait "$TUNNEL_PID" 2>/dev/null || true; }
-  if [ -n "$DB_SG" ] && [ -n "$HOST_SG" ]; then
-    aws ec2 authorize-security-group-ingress --group-id "$DB_SG" --protocol tcp --port "$PORT_NUM" \
-      --source-group "$HOST_SG" >/dev/null 2>&1 || true
+  # The tunnel's whole process group, so the Session Manager plugin goes too.
+  if [ -n "$TUNNEL_PID" ]; then
+    kill -TERM -- "-$TUNNEL_PID" 2>/dev/null || kill "$TUNNEL_PID" 2>/dev/null || true
+    wait "$TUNNEL_PID" 2>/dev/null || true
+  fi
+  if [ -n "$HOST_SG" ]; then
+    aws ec2 authorize-security-group-egress --group-id "$HOST_SG" --ip-permissions "$ALL_EGRESS" >/dev/null 2>&1 || true
+    aws ec2 revoke-security-group-egress --group-id "$HOST_SG" --ip-permissions "$HTTPS_EGRESS" >/dev/null 2>&1 || true
   fi
   rm -rf "$work"
 }
@@ -48,7 +59,7 @@ trap on_exit EXIT
 
 BROKEN=""
 stop() { # detail
-  if [ -n "${BREAK:-}" ] && [ -n "$BROKEN" ]; then say caught "with the host's database ingress revoked: $1"
+  if [ -n "${BREAK:-}" ] && [ -n "$BROKEN" ]; then say caught "with the host's egress cut to HTTPS only: $1"
   elif [ -n "${BREAK:-}" ]; then say fail "BREAK could not be applied: $1"
   else say fail "$1"; fi
   exit 0
@@ -59,19 +70,23 @@ why="$(claims_aws_ensure loom-db)" || stop "deploy: $why"
 INSTANCE="$(claims_aws_tunnel_host)" || stop "$INSTANCE"
 
 if [ -n "${BREAK:-}" ]; then
-  DB_SG="$(claims_aws_output loom-db oRdsSecurityGroupId)"
   HOST_SG="$(claims_aws_output tunnel-host oSecurityGroupId)"
-  PORT_NUM="$(claims_aws_output loom-db oRdsPort)"; PORT_NUM="${PORT_NUM:-5432}"
-  [ -n "$DB_SG" ] && [ -n "$HOST_SG" ] || { DB_SG=""; stop "no oRdsSecurityGroupId/oSecurityGroupId output to break"; }
-  aws ec2 revoke-security-group-ingress --group-id "$DB_SG" --protocol tcp --port "$PORT_NUM" --source-group "$HOST_SG" >/dev/null \
-    || { DB_SG=""; stop "could not revoke the tunnel host's ingress on $DB_SG"; }
+  [ -n "$HOST_SG" ] || stop "the tunnel host stack has no oSecurityGroupId output to break"
+  # HTTPS first, so Session Manager never loses the host, then drop allow-all.
+  aws ec2 authorize-security-group-egress --group-id "$HOST_SG" --ip-permissions "$HTTPS_EGRESS" >/dev/null \
+    || { HOST_SG=""; stop "could not add HTTPS-only egress to $HOST_SG"; }
+  aws ec2 revoke-security-group-egress --group-id "$HOST_SG" --ip-permissions "$ALL_EGRESS" >/dev/null \
+    || stop "could not revoke the allow-all egress on $HOST_SG"
   BROKEN=1
 fi
 
 # 2. The forward, as `just tunnel <port>` starts it.
 LOCAL_PORT="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')"
+# In a process group of its own (job control), which the exit trap ends whole.
+set -m
 bash scripts/tunnel.sh "$LOCAL_PORT" >"$work/tunnel.log" 2>&1 &
 TUNNEL_PID=$!
+set +m
 open=""
 for _ in $(seq 1 60); do
   (exec 3<>"/dev/tcp/127.0.0.1/$LOCAL_PORT") 2>/dev/null && { open=1; break; }
@@ -94,7 +109,7 @@ if CLAIM_DB_CREDS="$creds" CLAIM_DB_NAME="${dbname:-loom}" CLAIM_DB_PORT="$LOCAL
       if (r.rows[0].one !== 1) throw new Error("SELECT 1 gave " + JSON.stringify(r.rows));
       return client.end();
     }).catch((e) => { console.error(e.message); process.exit(1); });' >"$work/query.log" 2>&1; then
-  if [ -n "${BREAK:-}" ]; then say fail "with the host's ingress on $DB_SG revoked, SELECT 1 still answered through the tunnel"; exit 0; fi
+  if [ -n "${BREAK:-}" ]; then say fail "with the host's egress on $HOST_SG cut to HTTPS only, SELECT 1 still answered through the tunnel"; exit 0; fi
   say pass "the tunnel host $INSTANCE came online in SSM and scripts/tunnel.sh forwarded 127.0.0.1:$LOCAL_PORT to the database, where SELECT 1 answered"
 else
   stop "SELECT 1 through 127.0.0.1:$LOCAL_PORT failed: $(tail -n 1 "$work/query.log")"

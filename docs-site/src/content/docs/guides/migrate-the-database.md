@@ -40,10 +40,14 @@ project is `db/`:
   Manager plugin, as in [Open a tunnel to the database](/loomster/guides/open-a-tunnel-to-the-database/).
   `just db` brings the tunnel up itself for each command, to the RDS instance
   rather than the proxy, because a migration takes a session advisory lock and
-  runs DDL.
+  runs DDL, and closes it when the command ends. It connects with SSL, which
+  RDS requires; the certificate isn't checked, since the connection reaches
+  the database as `127.0.0.1` through the tunnel's authenticated session.
 - On the local stack (`just local-up`), nothing more: `just db` forwards a
   loopback port to [Floci](/loomster/concepts/glossary/#floci)'s RDS for the
   length of the command.
+- `just db` picks a free local port each time. Set `LOOM_DB_LOCAL_PORT` to use
+  a fixed one; a fixed port that is already in use is refused.
 - Docker, for `just db-schema` and `just db-replay`.
 
 ## Steps
