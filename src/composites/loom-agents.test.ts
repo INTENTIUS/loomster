@@ -2,7 +2,7 @@ import { describe, test, expect } from "vitest";
 import { expandComposite } from "@intentius/chant";
 import { resolveAttrRefs } from "@intentius/chant/discovery/resolve";
 import { awsSerializer } from "@intentius/chant-lexicon-aws";
-import { LoomAgents, type LoomAgentsProps } from "./loom-agents";
+import { LoomAgents, ASSISTANT_CONFIG_PATH, type LoomAgentsProps } from "./loom-agents";
 import type { LoomNamingParams } from "../lib/naming";
 
 const lightNaming: LoomNamingParams = {
@@ -295,5 +295,25 @@ describe("LoomAgents — AgentCore Runtime V2 (#7)", () => {
     const runtime = template.Resources.loomAgentsAssistantRuntime.Properties;
     expect(runtime.Description).toBe("mine");
     expect(runtime.PlatformVersion).toBe("V1");
+  });
+});
+
+describe("LoomAgents — the assistant's config and model grant", () => {
+  function synth(props: LoomAgentsProps) {
+    const expanded = expandComposite("loomAgents", LoomAgents(props));
+    resolveAttrRefs(expanded);
+    return JSON.parse(awsSerializer.serialize(expanded) as string);
+  }
+
+  test("the assistant runtime reads the config baked into its zip (AGENT_CONFIG_PATH), or every invoke fails", () => {
+    const runtime = synth(baseProps({})).Resources.loomAgentsAssistantRuntime.Properties;
+    expect(runtime.EnvironmentVariables.AGENT_CONFIG_PATH).toBe(ASSISTANT_CONFIG_PATH);
+  });
+
+  test("by default the assistant role may invoke this account's inference profiles as well as foundation models", () => {
+    const template = synth(baseProps({}));
+    const text = JSON.stringify(template);
+    expect(text).toContain(":inference-profile/*");
+    expect(text).toContain("::foundation-model/*");
   });
 });
