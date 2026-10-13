@@ -57,7 +57,7 @@ and statement.
 
 Each item below has a claim written for it, named in brackets. The five AWS
 claims among them have recorded runs, but those ran before the fixes for what
-they found (the demo seed's memory namespace, the assistant's baked config, SSL
+they found (the memory namespace in the demo seed [Op](/loomster/concepts/glossary/#op), the assistant's baked config, SSL
 to RDS, and claims that mistook a streamed error for an answer). They haven't
 run since, so their rows above show the old failures.
 
