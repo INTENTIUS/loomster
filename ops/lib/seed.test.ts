@@ -12,6 +12,13 @@ const script = seedDefaultsScript({
   defaultProfile: "demo",
 });
 
+describe("demo memory", () => {
+  test("names AgentCore's {memoryStrategyId} namespace variable, which AWS accepts ({strategyId} is rejected)", () => {
+    expect(script).toContain("/strategy/{memoryStrategyId}/actor/{actorId}/session/{sessionId}/");
+    expect(script).not.toContain("{strategyId}");
+  });
+});
+
 describe("seedDefaultsScript failure handling (#42)", () => {
   test("is valid bash", () => {
     execFileSync("bash", ["-n"], { input: script });

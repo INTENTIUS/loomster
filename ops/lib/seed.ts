@@ -149,12 +149,14 @@ export function seedDefaultsScript(refs: SeedRefs): string {
     `fi`,
     // Memory resource (create provisions an AgentCore memory — free on the emulator).
     // A summary strategy, so the memory actually processes events rather than
-    // being an inert resource — the most representative single strategy.
+    // being an inert resource — the most representative single strategy. Its
+    // namespace variable is AgentCore's {memoryStrategyId} (as Loom's UI and
+    // memory queries use); AWS rejects {strategyId}, which Floci accepted.
     `MEM_NAME="loomster_demo_memory"`,
     `if curl -fsS "$BASE/api/memories" | jq -e --arg n "$MEM_NAME" 'any(.[]; .name == $n)' >/dev/null; then`,
     `  verdict demo-memory present`,
     `elif curl -fsS -X POST "$BASE/api/memories" -H 'Content-Type: application/json' \\`,
-    `    -d "{\\"name\\":\\"$MEM_NAME\\",\\"description\\":\\"Loomster demo memory (seeded demo content)\\",\\"event_expiry_duration\\":30,\\"memory_strategies\\":[{\\"strategy_type\\":\\"summary\\",\\"name\\":\\"summary\\",\\"namespaces\\":[\\"/strategy/{strategyId}/actor/{actorId}/session/{sessionId}/\\"]}],\\"tags\\":$BRAND_TAGS}" >/dev/null; then`,
+    `    -d "{\\"name\\":\\"$MEM_NAME\\",\\"description\\":\\"Loomster demo memory (seeded demo content)\\",\\"event_expiry_duration\\":30,\\"memory_strategies\\":[{\\"strategy_type\\":\\"summary\\",\\"name\\":\\"summary\\",\\"namespaces\\":[\\"/strategy/{memoryStrategyId}/actor/{actorId}/session/{sessionId}/\\"]}],\\"tags\\":$BRAND_TAGS}" >/dev/null; then`,
     `  verdict demo-memory ok "with a summary strategy"`,
     `else`,
     `  verdict demo-memory failed "POST /api/memories failed"`,
