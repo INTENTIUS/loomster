@@ -16,6 +16,7 @@
  *   LOOM_DB_READER_PASSWORD=... npx tsx scripts/db/reader.ts
  */
 import pg from "pg";
+import { clientConfig, databaseOf } from "./connection";
 
 export const HISTORY_SCHEMA = "yodeler";
 export const READ_SCHEMAS = ["public", HISTORY_SCHEMA];
@@ -52,19 +53,13 @@ function need(name: string): string {
 }
 
 async function main(): Promise<void> {
-  const url = new URL(need("LOOM_YODEL_URL"));
-  const database = decodeURIComponent(url.pathname.replace(/^\//, ""));
+  const url = need("LOOM_YODEL_URL");
+  const database = databaseOf(url);
   const writer = need("LOOM_DB_WRITER_USER");
   const reader = need("LOOM_DB_READER_USER");
   if (reader === writer) throw new Error("reader: the reader and the writer are the same user");
-  const connection: pg.ClientConfig = {
-    host: url.hostname,
-    port: Number(url.port || 5432),
-    database,
-    user: writer,
-    password: need("LOOM_DB_WRITER_PASSWORD"),
-  };
-  const client = new pg.Client(connection);
+  // SSL as the URL says: yodel.sh asks for it on AWS, where RDS requires it (./connection.ts).
+  const client = new pg.Client(clientConfig(url, writer, need("LOOM_DB_WRITER_PASSWORD")));
   await client.connect();
   try {
     for (const sql of readerStatements(database, reader, need("LOOM_DB_READER_PASSWORD"), writer)) await client.query(sql);

@@ -2,7 +2,9 @@ import { describe, test, expect } from "vitest";
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { parse } from "pg-connection-string";
 import { readerStatements, READ_SCHEMAS } from "./reader";
+import { AWS_SSL_QUERY, clientConfig, databaseOf } from "./connection";
 
 const root = join(import.meta.dirname, "..", "..");
 
@@ -52,5 +54,35 @@ describe("db/ (#78)", () => {
     for (const f of ["yodel.sh", "schema.sh", "replay.sh", "loom-init-db.sh"]) {
       execFileSync("bash", ["-n", join(root, "scripts", "db", f)]);
     }
+  });
+});
+
+describe("reaching the database (#78)", () => {
+  const yodel = readFileSync(join(root, "scripts", "db", "yodel.sh"), "utf8");
+
+  test("an AWS URL asks for libpq's require: encrypted, no certificate check (RDS forces SSL; the tunnel's 127.0.0.1 matches no certificate)", () => {
+    const url = `postgres://127.0.0.1:15432/loom?${AWS_SSL_QUERY}`;
+    const parsed = parse(clientConfig(url, "loom", "p@ss:w/rd").connectionString as string);
+    expect(parsed.ssl).toEqual({ rejectUnauthorized: false });
+    expect(parsed.user).toBe("loom");
+    expect(parsed.password).toBe("p@ss:w/rd");
+    expect(databaseOf(url)).toBe("loom");
+  });
+
+  test("a Floci URL carries no SSL", () => {
+    const parsed = parse(clientConfig("postgres://127.0.0.1:15432/loom", "loom", "x").connectionString as string);
+    expect(parsed.ssl).toBeFalsy();
+  });
+
+  test("yodel.sh adds the SSL query to the AWS URL only", () => {
+    expect(yodel).toContain(`else export LOOM_YODEL_URL="postgres://127.0.0.1:$PORT/$DBNAME?${AWS_SSL_QUERY}"`);
+    expect(yodel).toContain(`if $onFloci; then export LOOM_YODEL_URL="postgres://127.0.0.1:$PORT/$DBNAME"\n`);
+  });
+
+  test("yodel.sh takes a free port unless LOOM_DB_LOCAL_PORT names one, and ends the tunnel's whole process group", () => {
+    expect(yodel).not.toContain("15432");
+    expect(yodel).toContain(`PORT="$(free_port)"`);
+    expect(yodel).toMatch(/set -m\n\s+LOOM_TUNNEL_TARGET=instance bash "\$ROOT\/scripts\/tunnel.sh"/);
+    expect(yodel).toContain(`kill -TERM -- "-$FORWARD_PID"`);
   });
 });

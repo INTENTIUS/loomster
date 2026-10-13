@@ -17,7 +17,11 @@
 #   tunnel host (`just tunnel-host`, #37): scripts/tunnel.sh forwards a local
 #   port to the RDS instance itself (LOOM_TUNNEL_TARGET=instance), not the
 #   proxy, since a migration takes a session advisory lock and runs DDL. The
-#   tunnel lives as long as this command.
+#   tunnel lives as long as this command: it runs in its own process group,
+#   and the exit trap ends that group (the AWS CLI and the Session Manager
+#   plugin it starts), so no forward outlives the command. RDS requires SSL,
+#   so the URL asks for it (scripts/db/connection.ts says why libpq's
+#   `require` and not verify-full).
 # - local (LOOM_ENV=local, `just local-up`) and floci: Floci serves RDS on its
 #   Docker network only, so a small socat container on that network publishes
 #   a loopback port to it for the length of this command.
@@ -28,6 +32,9 @@
 # has no reader secret: set LOOM_DB_READER_USER and LOOM_DB_READER_PASSWORD
 # yourself. Passwords stay in this process's environment, never on disk or in
 # argv. LOOM_YODEL_URL set by hand skips the forward entirely.
+#
+# The local port is a free one unless LOOM_DB_LOCAL_PORT names one (a named
+# port that is busy is refused).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -78,18 +85,28 @@ export LOOM_DB_WRITER_USER LOOM_DB_WRITER_PASSWORD LOOM_DB_READER_USER LOOM_DB_R
 # ── reaching the database ────────────────────────────────────────────────────
 FORWARD_PID="" FORWARD_CONTAINER=""
 cleanup() {
-  [ -z "$FORWARD_PID" ] || kill "$FORWARD_PID" 2>/dev/null || true
+  # The tunnel's whole process group: killing only its first process (the AWS
+  # CLI) would leave the Session Manager plugin holding the port.
+  if [ -n "$FORWARD_PID" ]; then
+    kill -TERM -- "-$FORWARD_PID" 2>/dev/null || kill "$FORWARD_PID" 2>/dev/null || true
+    wait "$FORWARD_PID" 2>/dev/null || true
+  fi
   [ -z "$FORWARD_CONTAINER" ] || docker rm -f "$FORWARD_CONTAINER" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
 port_open() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+free_port() { node -e 'const s=require("net").createServer();s.listen(0,"127.0.0.1",()=>{process.stdout.write(String(s.address().port));s.close()})'; }
 
 if [ -z "${LOOM_YODEL_URL:-}" ]; then
-  PORT="${LOOM_DB_LOCAL_PORT:-15432}"
   # A forward an interrupted run left behind.
   ! $onFloci || docker rm -f "$PREFIX-db-forward" >/dev/null 2>&1 || true
-  port_open "$PORT" && { echo "db: 127.0.0.1:$PORT is already in use; set LOOM_DB_LOCAL_PORT" >&2; exit 1; }
+  if [ -n "${LOOM_DB_LOCAL_PORT:-}" ]; then
+    PORT="$LOOM_DB_LOCAL_PORT"
+    port_open "$PORT" && { echo "db: 127.0.0.1:$PORT (LOOM_DB_LOCAL_PORT) is already in use" >&2; exit 1; }
+  else
+    PORT="$(free_port)"
+  fi
   DBNAME="$(out loom-db oRdsDbName)"; DBNAME="${DBNAME:-loom}"
   if $onFloci; then
     RDS_PORT="$(out loom-db oRdsPort)"
@@ -101,14 +118,20 @@ if [ -z "${LOOM_YODEL_URL:-}" ]; then
   else
     # The SSM tunnel to the RDS instance (scripts/tunnel.sh), in the background.
     LOG="$(mktemp "${TMPDIR:-/tmp}/loomster-db-tunnel.XXXXXX")"
+    # Job control gives the background tunnel a process group of its own
+    # (its id is FORWARD_PID), which the exit trap ends whole.
+    set -m
     LOOM_TUNNEL_TARGET=instance bash "$ROOT/scripts/tunnel.sh" "$PORT" >"$LOG" 2>&1 &
     FORWARD_PID=$!
+    set +m
   fi
   for _ in $(seq 1 60); do port_open "$PORT" && break; sleep 1
     [ -z "$FORWARD_PID" ] || kill -0 "$FORWARD_PID" 2>/dev/null || { echo "db: the tunnel exited:" >&2; cat "$LOG" >&2; exit 1; }
   done
   port_open "$PORT" || { echo "db: nothing answered on 127.0.0.1:$PORT within 60 s" >&2; [ -z "${LOG:-}" ] || cat "$LOG" >&2; exit 1; }
-  export LOOM_YODEL_URL="postgres://127.0.0.1:$PORT/$DBNAME"
+  if $onFloci; then export LOOM_YODEL_URL="postgres://127.0.0.1:$PORT/$DBNAME"
+  # RDS requires SSL (scripts/db/connection.ts AWS_SSL_QUERY).
+  else export LOOM_YODEL_URL="postgres://127.0.0.1:$PORT/$DBNAME?uselibpqcompat=true&sslmode=require"; fi
 fi
 
 cd "$PROJECT"
@@ -131,17 +154,8 @@ case "$cmd" in
   baseline) writer "${YODEL[@]}" init --baseline "$ENV_NAME" "$@" ;;
   reader) (cd "$ROOT" && "$ROOT/node_modules/.bin/tsx" scripts/db/reader.ts) ;;
   # An out-of-band change, as an operator's psql session would make it: the
-  # claims use it to make the live schema differ from the declared one. The
-  # credentials come from the environment, never argv.
-  sql)
-    (cd "$ROOT" && SQL_IN="$SQL_IN" node -e '
-      const { Client } = require("pg");
-      const u = new URL(process.env.LOOM_YODEL_URL);
-      const c = new Client({ host: u.hostname, port: Number(u.port || 5432), database: u.pathname.slice(1),
-        user: process.env.LOOM_DB_WRITER_USER, password: process.env.LOOM_DB_WRITER_PASSWORD });
-      c.connect().then(() => c.query(process.env.SQL_IN)).then((r) => {
-        for (const res of [].concat(r)) if (res.rows && res.rows.length) console.log(JSON.stringify(res.rows));
-        return c.end();
-      }).catch((e) => { console.error("db sql: " + e.message); process.exit(1); });') ;;
+  # claims use it to make the live schema differ from the declared one
+  # (scripts/db/sql.ts; credentials from the environment, never argv).
+  sql) (cd "$ROOT" && SQL_IN="$SQL_IN" "$ROOT/node_modules/.bin/tsx" scripts/db/sql.ts) ;;
   watch) "$ROOT/node_modules/.bin/chant" run "watch-$ENV_NAME" "$@" ;;
 esac
