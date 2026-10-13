@@ -387,6 +387,14 @@ claims_aws_agent_invoke() { # base authcfg id
     echo "invoke streamed an error: $(grep -A1 '^event: error' <<<"$out" | sed -n 's/^data: //p' | head -c 300)"; return 1
   fi
   grep -q '^event: chunk' <<<"$out" || { echo "invoke streamed no chunk: $(head -c 300 <<<"$out")"; return 1; }
+  # Loom's Strands agent reports a failed model call as answer text ("Error:
+  # AccessDeniedException: ... ConverseStream ..."), which Loom streams as an
+  # ordinary chunk, so the text is checked too: an error is not an answer.
+  local text
+  text="$(sed -n 's/^data: //p' <<<"$out" | jq -r 'select(type == "object") | .text? // empty' 2>/dev/null | tr -d '\n')"
+  if grep -qE '(^|[[:space:]])Error: |AccessDenied|not authorized|ValidationException|ThrottlingException|ResourceNotFoundException' <<<"$text"; then
+    echo "the agent answered with an error: $(head -c 300 <<<"$text")"; return 1
+  fi
 }
 
 # An access token for a throwaway admin (t-admin + g-admins-super), through the
