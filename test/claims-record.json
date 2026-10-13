@@ -1,5 +1,45 @@
 [
   {
+    "claim": "agents/per-agent-role",
+    "target": "aws",
+    "tier": "light",
+    "run": "break",
+    "verdict": "fail",
+    "detail": "with bedrock model calls denied to the per-agent role, the agent still reached READY and answered",
+    "timestamp": "2026-10-13T00:38:11Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "agents/per-agent-role",
+    "target": "aws",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "loom-agent-role made loom-claims-c633b8-agent-role-loomster-claim-c633b8-role and registered it in Loom (loom:group loomster); an agent on it reached READY in 322s and answered one invoke",
+    "timestamp": "2026-10-13T00:31:27Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "agents/ready-and-invoke",
+    "target": "aws",
+    "tier": "light",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with bedrock:InvokeModel* denied to the runtime's role: the invoke streamed an error: data: {\"error\": \"No configuration found. Set AGENT_CONFIG_JSON or AGENT_CONFIG_PATH.\", \"error_type\": \"ValueError\", \"message\": \"An error occurred during streaming\"}",
+    "timestamp": "2026-10-13T00:24:29Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "agents/ready-and-invoke",
+    "target": "aws",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "fail",
+    "detail": "the invoke streamed an error: data: {\"error\": \"No configuration found. Set AGENT_CONFIG_JSON or AGENT_CONFIG_PATH.\", \"error_type\": \"ValueError\", \"message\": \"An error occurred during streaming\"}",
+    "timestamp": "2026-10-13T00:23:50Z",
+    "sha": "135fdea"
+  },
+  {
     "claim": "backend/deploy-agent",
     "target": "aws",
     "tier": "light",
@@ -20,6 +60,26 @@
     "sha": "bd7ac01"
   },
   {
+    "claim": "backend/task-role",
+    "target": "static",
+    "tier": "any",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "dropped=iam:PassRole denied=6/82 hit=iam:PassRole@role/loom-dev-a-shared-foundation-agent-role",
+    "timestamp": "2026-10-12T22:20:09Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "backend/task-role",
+    "target": "static",
+    "tier": "any",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "allowed=82/82",
+    "timestamp": "2026-10-12T22:19:57Z",
+    "sha": "dcbfca4"
+  },
+  {
     "claim": "cognito/user-client",
     "target": "static",
     "tier": "any",
@@ -38,6 +98,86 @@
     "detail": "light, production and production-ha: the user client allows password sign-in, and every frontend build passes its id from loom-cognito's oUserClientId",
     "timestamp": "2026-10-12T22:15:45Z",
     "sha": "12a1d76"
+  },
+  {
+    "claim": "db/baseline",
+    "target": "aws",
+    "tier": "light",
+    "run": "break",
+    "verdict": "fail",
+    "detail": "BREAK could not be applied: just db reader failed: db: 127.0.0.1:15432 is already in use; set LOOM_DB_LOCAL_PORT",
+    "timestamp": "2026-10-13T00:43:41Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "db/baseline",
+    "target": "aws",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "fail",
+    "detail": "just db reader failed: no pg_hba.conf entry for host \"10.0.1.162\", user \"loom\", database \"loom\", no encryption",
+    "timestamp": "2026-10-13T00:43:35Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "db/migrate-local",
+    "target": "floci",
+    "tier": "light",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with agents.description changed out of band, just db drift reported it (exit 2)",
+    "timestamp": "2026-10-12T22:55:31Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "db/migrate-local",
+    "target": "floci",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "baseline recorded, the loomster_claim_probe_1791845574 migration stopped at its gate (exit 3), applied after its plan was approved, and status and drift are clean",
+    "timestamp": "2026-10-12T22:53:23Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "local/auth",
+    "target": "floci",
+    "tier": "light",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with LOOM_COGNITO_ENDPOINT_URL unset, Loom refused the Floci token (401)",
+    "timestamp": "2026-10-12T22:55:38Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "local/auth",
+    "target": "floci",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "the SPA logs in at /floci-cognito/ and Loom accepts the Floci token (200 with g-admins-super; 401 without one)",
+    "timestamp": "2026-10-12T22:55:32Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "ops/bootstrap",
+    "target": "aws",
+    "tier": "any",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with iam:CreateServiceLinkedRole refused and no role present, loom-bootstrap failed with AccessDenied",
+    "timestamp": "2026-10-12T22:49:37Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "ops/bootstrap",
+    "target": "aws",
+    "tier": "any",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "both service-linked roles exist after loom-bootstrap, and the second run found both and created nothing",
+    "timestamp": "2026-10-12T22:49:18Z",
+    "sha": "dcbfca4"
   },
   {
     "claim": "params/reach-build",
@@ -80,6 +220,46 @@
     "sha": "12a1d76"
   },
   {
+    "claim": "screens/all",
+    "target": "aws",
+    "tier": "light",
+    "run": "break",
+    "verdict": "fail",
+    "detail": "BREAK could not be applied: loom-seed (demo) failed: Op \"loom-seed\" failed after 23.7s",
+    "timestamp": "2026-10-13T00:17:02Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "screens/all",
+    "target": "aws",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "fail",
+    "detail": "loom-seed (demo) failed: Op \"loom-seed\" failed after 24.0s",
+    "timestamp": "2026-10-13T00:16:26Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "seed/demo-loud",
+    "target": "floci",
+    "tier": "light",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "with the A2A card URL on a closed port, loom-seed's demo profile exited non-zero",
+    "timestamp": "2026-10-12T22:56:15Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "seed/demo-loud",
+    "target": "floci",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "loom-seed's demo profile exited 0, and agents, memories, MCP servers and A2A agents each list an entry",
+    "timestamp": "2026-10-12T22:55:44Z",
+    "sha": "dcbfca4"
+  },
+  {
     "claim": "teardown/covers-components",
     "target": "static",
     "tier": "any",
@@ -98,5 +278,45 @@
     "detail": "all 7 components are in the teardown order, consumers first",
     "timestamp": "2026-10-12T22:15:55Z",
     "sha": "12a1d76"
+  },
+  {
+    "claim": "tier/light-live",
+    "target": "aws",
+    "tier": "light",
+    "run": "break",
+    "verdict": "caught",
+    "detail": "without g-admins-super the web app's sign-in gave a token (groups [\"t-admin\"]) that /api/agents refused (403)",
+    "timestamp": "2026-10-12T23:09:52Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "tier/light-live",
+    "target": "aws",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "http://loom-claims-c633b8-shared-458efb-646878298.us-east-1.elb.amazonaws.com serves the SPA with the user client 70860og0bk9auhsvgieu9qriku baked in; signing in through it gave a g-admins-super token that /api/auth/me and /api/agents accept (401 without one)",
+    "timestamp": "2026-10-12T23:09:38Z",
+    "sha": "dcbfca4"
+  },
+  {
+    "claim": "tunnel/rds",
+    "target": "aws",
+    "tier": "light",
+    "run": "break",
+    "verdict": "fail",
+    "detail": "with the host's ingress on sg-061ab6fd637417540 revoked, SELECT 1 still answered through the tunnel",
+    "timestamp": "2026-10-13T00:43:24Z",
+    "sha": "135fdea"
+  },
+  {
+    "claim": "tunnel/rds",
+    "target": "aws",
+    "tier": "light",
+    "run": "plain",
+    "verdict": "pass",
+    "detail": "the tunnel host i-0754858d6479074b1 came online in SSM and scripts/tunnel.sh forwarded 127.0.0.1:61577 to the database, where SELECT 1 answered",
+    "timestamp": "2026-10-13T00:43:09Z",
+    "sha": "135fdea"
   }
 ]
